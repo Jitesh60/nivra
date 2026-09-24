@@ -84,7 +84,7 @@ export class ListReportsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 25;
+  limit: number = 25;
 }
 
 export class ReportTargetDto {
@@ -156,7 +156,7 @@ export class TranscriptQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 50;
+  limit: number = 50;
 }
 
 export class AdminMessageDto {

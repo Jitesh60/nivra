@@ -38,6 +38,7 @@ pnpm --filter @sajha/admin test:e2e
 Covered: wrong password, signed-out redirect, first login with 2FA setup and recovery codes, httpOnly cookies, silent token refresh, inviting an admin, forced password change, role-limited menu and 403, recovery-code sign-in (single use), disabling an admin signs them out.
 Listings (`e2e/listings.spec.ts`): a verified lender publishes through the API; Ops approves the first listing (flagged "first listing"; photos, price and earnings shown, exact address never), and it becomes public. The lender's next listing is live without review and Ops unpublishes it. Rejecting with a reason and moving a category reach the lender. Categories: create, a duplicate slug is refused, reorder, and hide (which removes it from the public list). Support can read listings but can't moderate or open Categories.
 Documents (`e2e/documents.spec.ts`): an app user uploads IDs through presigned URLs, an Ops admin reviews them (the image streams through the admin server with `no-store`, with a watermark), approving flips the user's `idVerified`, rejecting records the reason, suspending revokes the user's sessions, and Support gets 403 on documents.
+Reports (`e2e/reports.spec.ts`): two app users chat through the API; the lender's UPI ID and phone number are masked for the borrower, who reports the message and the listing. Ops finds the report, sees the original and masked text, reads the logged transcript and closes it as actioned. Support can read reports but can't close them.
 
 ## API types
 

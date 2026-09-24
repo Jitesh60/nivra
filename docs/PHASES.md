@@ -397,8 +397,13 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** t
 ### 5c — Admin
 **Branch:** `phase/5c-chat-admin`
 
-- A reports queue (open, actioned, dismissed), report detail with the target and links to user and listing actions, the read-only logged transcript, and resolve.
-- **Done when:** Playwright covers a reported masked message resolved by OPS, and SUPPORT viewing it read-only.
+- **Reports queue** (`/reports`, every admin role): Open, Actioned and Dismissed tabs with paging. Each row shows what was reported, the reason, the reporter and when.
+- **Report detail** (`/reports/[id]`):
+  - The reporter's note and the target. A user or listing links to its page, where the suspend, ban and unpublish actions already live.
+  - A reported message shows what the sender typed and what the other person saw (masked).
+  - "View conversation (logged)" opens a read-only transcript with original text. The API records every view as `admin.conversation.view`, and the page says so.
+- **Closing a report** (SUPER_ADMIN and OPS): Actioned or Dismissed, with a note for the record. Support can read but not close.
+- **Done when:** Playwright covers a masked UPI ID and phone number reported by the borrower, read in its original form and closed by OPS, and SUPPORT viewing a report read-only.
 
 ## Phase 6 — Bookings & document sharing
 **Branch:** `phase/6-bookings`

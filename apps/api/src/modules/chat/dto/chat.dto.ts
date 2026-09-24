@@ -144,7 +144,7 @@ export class ListConversationsQueryDto {
   @IsInt()
   @Min(1)
   @Max(50)
-  limit = 20;
+  limit: number = 20;
 }
 
 export class ListMessagesQueryDto {
@@ -159,7 +159,7 @@ export class ListMessagesQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 30;
+  limit: number = 30;
 }
 
 export class SendMessageDto {
