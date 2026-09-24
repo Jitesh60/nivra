@@ -33,6 +33,14 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - Admin review: `/v1/admin/documents` (SUPER_ADMIN, OPS); user detail and suspend/ban/reactivate under `/v1/admin/users/:id`.
 - Design: [docs/ARCHITECTURE.md §8](../../docs/ARCHITECTURE.md#8-files--the-document-vault).
 
+## Listings & categories (Phase 3a)
+
+- `GET /v1/categories` and `GET /v1/config` (marketplace rules: commission, price and deposit limits) are public.
+- Lender flow (needs a verified phone and email): `POST /v1/me/listings` (draft) → `POST /v1/uploads` (purpose `LISTING_PHOTO`) + `POST /v1/me/listings/:id/photos` → optional `PUT …/blocks` and `PUT …/required-docs` → `POST …/publish`. A lender's first listing goes to review; after one approval, later listings go live immediately.
+- Admin: `/v1/admin/listings` (queue, approve, reject, unpublish, change category) and `/v1/admin/categories`.
+- Set `ADDRESS_ENC_KEY` (32 bytes, base64) in every environment: it encrypts exact pickup addresses.
+- Rules and limits: `src/modules/listings/listing-rules.ts` (the database CHECK constraints match). Design: [docs/ARCHITECTURE.md §3.3](../../docs/ARCHITECTURE.md#33-phase-3-tables-built-in-phase-3a).
+
 ## Tests
 
 | Command | What |

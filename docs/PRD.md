@@ -296,7 +296,7 @@ Sections:
 
 1. Launch city (Pune / Bengaluru / Delhi NCR / Dehradun, a trekking hub)?
 2. Final commission and whether to charge borrowers a service fee.
-3. Should listings require admin approval before going live, or go live immediately with post-moderation?
+3. ~~Should listings require admin approval before going live, or go live immediately with post-moderation?~~ **Decided (Phase 3):** a lender's first listing is reviewed; once one is approved, later listings go live immediately, and admins can unpublish at any time.
 4. Deposit caps and whether the platform suggests the deposit from the category and item value.
 5. Is ID verification (Phase 2) mandatory for borrowers above a deposit or item-value threshold?
 6. Brand assets: logo, colours and typography.

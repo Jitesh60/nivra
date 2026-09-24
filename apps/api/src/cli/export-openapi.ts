@@ -22,6 +22,7 @@ Object.assign(process.env, {
   JWT_ADMIN_ACCESS_SECRET: 'y'.repeat(32),
   OTP_PEPPER: 'z'.repeat(32),
   TOTP_ENC_KEY: Buffer.alloc(32).toString('base64'),
+  ADDRESS_ENC_KEY: Buffer.alloc(32).toString('base64'),
   S3_ACCESS_KEY_ID: 'x',
   S3_SECRET_ACCESS_KEY: 'x',
   S3_PUBLIC_BUCKET: 'public-x',

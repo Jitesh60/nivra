@@ -14,6 +14,7 @@ export const TEST_ENV = {
   JWT_ADMIN_ACCESS_SECRET: 'test-admin-access-secret-0123456789abcdef',
   OTP_PEPPER: 'test-otp-pepper-0123456789abcdef0123456789',
   TOTP_ENC_KEY: Buffer.alloc(32, 7).toString('base64'),
+  ADDRESS_ENC_KEY: Buffer.alloc(32, 9).toString('base64'),
 };
 
 /**

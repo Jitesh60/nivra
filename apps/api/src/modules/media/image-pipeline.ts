@@ -40,6 +40,33 @@ export function processAvatar(bytes: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
+export interface ListingPhotoVariants {
+  /** Longest side ≤ 1600 px WebP, for the detail gallery. */
+  full: Buffer;
+  /** Longest side ≤ 480 px WebP, for cards and lists. */
+  thumb: Buffer;
+  width: number;
+  height: number;
+}
+
+/** Listing photo: a gallery-size and a card-size WebP from one decode. */
+export async function processListingPhoto(bytes: Buffer): Promise<ListingPhotoVariants> {
+  const base = load(bytes);
+  const [full, thumb] = await Promise.all([
+    base
+      .clone()
+      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer({ resolveWithObject: true }),
+    base
+      .clone()
+      .resize(480, 480, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 75 })
+      .toBuffer(),
+  ]);
+  return { full: full.data, thumb, width: full.info.width, height: full.info.height };
+}
+
 /** Readable JPEG, longest side at most 2400 px (enough to read small print on an ID). */
 export function processDocument(bytes: Buffer): Promise<Buffer> {
   return load(bytes)

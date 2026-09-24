@@ -8,7 +8,9 @@ import { AdminAuthModule } from './modules/admin-auth/admin-auth.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { CategoriesModule } from './modules/categories/categories.module.js';
 import { DocumentsModule } from './modules/documents/documents.module.js';
+import { ListingsModule } from './modules/listings/listings.module.js';
 import { MediaModule } from './modules/media/media.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { UserViewModule } from './modules/users/user-view.module.js';
@@ -44,6 +46,8 @@ import { RedisModule } from './redis/redis.module.js';
     UsersModule,
     MediaModule,
     DocumentsModule,
+    CategoriesModule,
+    ListingsModule,
     AdminAuthModule,
     AdminModule,
     WaitlistModule,

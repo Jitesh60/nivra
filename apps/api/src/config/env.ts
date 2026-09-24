@@ -51,6 +51,12 @@ export const envSchema = z.object({
     .refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64-encoded'),
   TOTP_ISSUER: z.string().default('Sajha Admin'),
 
+  // ── Listings ──
+  /** 32-byte key (base64) that encrypts lenders' exact pickup addresses at rest. */
+  ADDRESS_ENC_KEY: z
+    .string()
+    .refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64-encoded'),
+
   // ── SMS ──
   SMS_PROVIDER: z.enum(['console', 'msg91']).default('console'),
   MSG91_AUTH_KEY: optional(z.string()),

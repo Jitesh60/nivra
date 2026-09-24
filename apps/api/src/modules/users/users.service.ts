@@ -8,6 +8,7 @@ import { StorageService } from '../../providers/storage/storage.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { processAvatar } from '../media/image-pipeline.js';
 import { invalid, UploadsService } from '../media/uploads.service.js';
+import { ListingsService } from '../listings/listings.service.js';
 import { SessionsService } from '../sessions/sessions.service.js';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class UsersService {
     private readonly audit: AuditService,
     private readonly uploads: UploadsService,
     private readonly storage: StorageService,
+    private readonly listings: ListingsService,
   ) {}
 
   /** Name lives on User; city and bio on Profile (created on first use). Empty strings clear. */
@@ -132,6 +134,7 @@ export class UsersService {
       );
     });
     // Personal files go too (DPDP right to erasure).
+    await this.listings.deleteAllFor(userId);
     await this.storage.delete('public', [profile?.avatarKey]);
     await this.storage.delete(
       'private',
