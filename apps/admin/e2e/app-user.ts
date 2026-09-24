@@ -216,3 +216,46 @@ export function report(
 ) {
   return call<{ id: string; status: string }>('POST', '/reports', user.token, body);
 }
+
+/** YYYY-MM-DD, [offset] days from today. */
+export const isoDay = (offset: number) =>
+  new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+
+export interface BookingView {
+  id: string;
+  status: string;
+  requiredDocs: { id: string }[];
+  sharedDocuments: { id: string }[];
+}
+
+/** "Request to book" as the borrower. */
+export function requestBooking(user: AppUser, listingId: string, from: number, to: number) {
+  return call<BookingView>('POST', '/bookings', user.token, {
+    listingId,
+    startDate: isoDay(from),
+    endDate: isoDay(to),
+  });
+}
+
+/** accept | decline | cancel | documents/approve | documents/reject, as [user]. */
+export function bookingAction(user: AppUser, id: string, action: string, body: object = {}) {
+  return call<BookingView>('POST', `/bookings/${id}/${action}`, user.token, body);
+}
+
+/** The borrower shares one vault document for each document the lender asks for. */
+export async function shareDocuments(user: AppUser, id: string, documentId: string) {
+  const booking = await call<BookingView>('GET', `/bookings/${id}`, user.token);
+  return bookingAction(user, id, 'documents', {
+    shares: booking.requiredDocs.map((r) => ({ requiredDocId: r.id, userDocumentId: documentId })),
+  });
+}
+
+/** The lender opens a shared document (logged). */
+export async function viewSharedDocument(user: AppUser, id: string) {
+  const booking = await call<BookingView>('GET', `/bookings/${id}`, user.token);
+  return call<{ url: string }>(
+    'GET',
+    `/bookings/${id}/documents/${booking.sharedDocuments[0]!.id}/view`,
+    user.token,
+  );
+}

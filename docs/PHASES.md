@@ -501,9 +501,21 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
 ### 6c — Admin
 **Branch:** `phase/6c-bookings-admin`
 
-- A bookings list (open, awaiting payment, closed, with search) and a detail page with parties, money, the event timeline, shared documents and their access log.
-- Cancel with a reason (Super Admin and Ops).
-- Playwright covers the documents flow to AWAITING_PAYMENT and the cancel (Support read-only).
+- **`/bookings`** (every admin role):
+  - Open (requested or waiting for documents), Awaiting payment and Closed tabs, newest first, with keyset paging.
+  - A search box matches the listing title or the borrower's or lender's name or phone.
+- **`/bookings/[id]`:**
+  - the people, with links to their user pages, their phones, and the lender's count of cancellations after accepting
+  - links to the listing and the logged conversation
+  - the timeline, with who did each step and any note
+  - the documents asked for and shared, with status, Sajha verification, access end or purge, and every view (who, when, IP); no images
+  - the money breakdown
+- **Cancel with a reason** (Super Admin and Ops): common reasons plus free text, after a confirm step. Both people are notified. Support reads only.
+- **Done when:** Playwright covers:
+  - a lender's ID-requiring listing approved by Ops
+  - a request → accept → PAN shared → opened → approved → Awaiting payment
+  - Ops finding the booking by search and tab, reading the timeline and document log, and cancelling it (it moves to Closed)
+  - Support viewing a request without being able to cancel
 
 ## Phase 7 — Payments & payouts
 **Branch:** `phase/7-payments`

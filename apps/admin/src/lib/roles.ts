@@ -17,6 +17,7 @@ export const NAV: NavItem[] = [
   { href: '/', label: 'Overview' },
   { href: '/users', label: 'Users' },
   { href: '/listings', label: 'Listings' },
+  { href: '/bookings', label: 'Bookings' },
   { href: '/reports', label: 'Reports' },
   { href: '/documents', label: 'Documents', roles: ['SUPER_ADMIN', 'OPS'] },
   { href: '/categories', label: 'Categories', roles: ['SUPER_ADMIN', 'OPS'] },
@@ -25,7 +26,7 @@ export const NAV: NavItem[] = [
   { href: '/account', label: 'My account' },
 ];
 
-/** Roles that can approve, reject or unpublish listings, and close reports (mirrors the API). */
+/** Roles that can moderate listings, close reports and cancel bookings (mirrors the API). */
 export const MODERATORS: AdminRole[] = ['SUPER_ADMIN', 'OPS'];
 
 export function canSee(item: { roles?: AdminRole[] }, role: AdminRole): boolean {
