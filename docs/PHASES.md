@@ -324,12 +324,77 @@ Delivered as two sub-phases, each with its own branch and PR. **Done when:** a b
 - **Done when:** widget tests cover the guest → sign-in-to-save flow, filters, the dates quote and the wishlist, and the live contract test searches the local API
 
 ## Phase 5 — Chat, offers & notifications
-**Branch:** `phase/5-chat-offers`
+Delivered as three sub-phases, each with its own branch and PR. **Done when:** two devices chat in real time and negotiate an offer to an agreed deal; phone numbers in chat are masked.
 
-- **API:** `chat` (REST + Socket.IO gateway, Redis adapter), `offers` (offer, counter, accept, decline, expire), contact masking, `notifications` module (FCM, email), device tokens
-- **Mobile:** inbox, chat screen (text, image, offer cards, typing, read receipts), push notifications with deep links, report/block user
-- **Admin:** view a conversation from a report (read-only, logged)
-- **Done when:** two devices chat in realtime, negotiate an offer, and the accepted offer creates a booking request stub; phone numbers in chat are masked
+**Decisions:**
+- **Push:**
+  - FCM behind a `PushProvider` interface.
+  - `PUSH_PROVIDER=console` (the default) logs pushes. Real pushes start when Firebase credentials are added (`PUSH_PROVIDER=fcm`).
+  - Live in-app updates work either way.
+- **Accepting an offer locks the deal** (status ACCEPTED with the agreed dates and price). Phase 6's "Request to book" uses it; there is no bookings table yet.
+- **Starting a chat** needs a verified phone and email.
+  - One thread per borrower and listing; only the borrower starts it, on someone else's LIVE listing.
+  - An existing chat continues if the listing is paused later.
+- **Contact masking:**
+  - Always on until a booking is confirmed (Phase 7 turns it off per pair).
+  - Hidden: phone numbers (spaced, dashed, +91, spelled out), emails (including "at … dot com"), UPI IDs and WhatsApp/Telegram links.
+  - The sender sees what they typed; the other person sees `•••`. Admins can read the original in a logged view.
+- **Offers:**
+  - Either side can offer dates plus a price per day. Rent is price × days, with no weekly discount on a negotiated price.
+  - There is one open offer per chat (a new offer or a counter replaces it), and only the other person can accept or decline.
+  - Accepting re-checks the listing's rules and needs it to be LIVE.
+  - Offers expire after 48 h or at the end of the first rental day. Expiry is applied lazily; the job queue arrives in Phase 6.
+- **Delivery:** messages are stored via REST (idempotent `clientId`); the socket only pushes events out and relays typing.
+- **Blocks** stop messages and offers both ways. **Reports** cover users, listings and messages: one open report per target per reporter, 10 a day.
+
+### 5a — API
+**Branch:** `phase/5a-chat-api`
+
+- **Chat:**
+  - `POST /v1/conversations` gets or creates a chat.
+  - `GET /v1/conversations` is the inbox; `GET /v1/me/unread` gives the badge count.
+  - `GET` / `POST /v1/conversations/:id/messages` handle TEXT and IMAGE messages. `CHAT_IMAGE` uploads go to the private bucket and are served as 10-minute links.
+  - `POST /v1/conversations/:id/read` marks messages read.
+  - Limits: 30 messages a minute, 20 new chats a day.
+- **Offers:** `POST /v1/conversations/:id/offers`, and `POST /v1/offers/:id/counter | accept | decline`.
+- **Socket.IO `/ws`:**
+  - The access token is checked at the handshake, and the socket disconnects when the token expires.
+  - Events: `message:new` (each side gets its own view), `message:read`, `offer:updated`, `typing`.
+  - A Redis adapter lets it run on several API instances.
+- **Push:** `PUT` / `DELETE /v1/me/devices/push-token`, tied to the session.
+  - A push goes out only when the recipient has no socket open.
+  - Tokens FCM reports as dead, and tokens for signed-out sessions, are removed.
+- **Safety:** `PUT` / `DELETE /v1/me/blocks/:userId`, `GET /v1/me/blocks`, `POST /v1/reports`.
+- **Admin:** `GET /v1/admin/reports` and `GET /v1/admin/reports/:id`, `POST /v1/admin/reports/:id/resolve` (SUPER_ADMIN and OPS), and `GET /v1/admin/conversations/:id/messages` (the original text; every view is audited).
+- **Done when:** e2e covers:
+  - chat rules
+  - masking per viewer
+  - idempotent sends, paging and read receipts
+  - private photos
+  - the offer flow and its rules and expiry
+  - blocks and reports
+  - the admin queue and audited transcripts
+  - push only when away, and token cleanup
+  - the socket (a refused token, per-viewer messages, typing, read and offer events)
+
+  Unit tests cover masking and the offer rules; coverage ≥ 80%.
+
+### 5b — Mobile
+**Branch:** `phase/5b-chat-mobile`
+
+- **Inbox and chat:**
+  - an inbox with unread badges
+  - a chat with text, photos, offer cards (accept, counter, decline), typing indicators and read ticks
+  - the masked-content note, and report and block
+- **Item page:** "Chat" opens the conversation. Guests go through sign-in and come back; an unverified email gets a prompt.
+- **Realtime and push:** a socket client that refreshes its token, and push behind a `PushService` (off until Firebase is configured).
+- **Done when:** widget tests cover chat and offers with a fake socket, and the live contract test has two users chatting over the real socket.
+
+### 5c — Admin
+**Branch:** `phase/5c-chat-admin`
+
+- A reports queue (open, actioned, dismissed), report detail with the target and links to user and listing actions, the read-only logged transcript, and resolve.
+- **Done when:** Playwright covers a reported masked message resolved by OPS, and SUPPORT viewing it read-only.
 
 ## Phase 6 — Bookings & document sharing
 **Branch:** `phase/6-bookings`

@@ -14,6 +14,8 @@ export interface AccessClaims {
   /** Session id. Absent on admin_mfa tokens. */
   sid?: string;
   typ: TokenType;
+  /** Expiry (seconds since the epoch), set when signed. */
+  exp?: number;
 }
 
 export interface SignedToken {

@@ -52,6 +52,24 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - Wishlist (signed in): `GET /v1/me/favorites`, `PUT` / `DELETE /v1/me/favorites/:listingId`.
 - Design: [docs/ARCHITECTURE.md §3.4](../../docs/ARCHITECTURE.md#34-phase-4-tables-and-search-built-in-phase-4a).
 
+## Chat, offers & safety (Phase 5a)
+
+- **Chat** (verified phone and email to start):
+  - `POST /v1/conversations {listingId}`, `GET /v1/conversations`, `GET /v1/me/unread`
+  - `GET` / `POST /v1/conversations/:id/messages` (TEXT, or IMAGE via a `CHAT_IMAGE` upload)
+  - `POST /v1/conversations/:id/read`
+- **Offers:** `POST /v1/conversations/:id/offers`, `POST /v1/offers/:id/counter | accept | decline`.
+- **Live updates:** Socket.IO at `ws://localhost:3000/ws` with `auth: { token: <access token> }`. Events: `message:new`, `message:read`, `offer:updated`, `typing`.
+- **Push:** `PUT` / `DELETE /v1/me/devices/push-token`. Locally `PUSH_PROVIDER=console` logs pushes. For real pushes, set:
+  - `PUSH_PROVIDER=fcm`
+  - `FCM_PROJECT_ID`
+  - `FCM_SERVICE_ACCOUNT_JSON`: the Firebase service account key on one line
+- **Safety:** `PUT` / `DELETE /v1/me/blocks/:userId`, `GET /v1/me/blocks`, `POST /v1/reports`.
+- **Admin:**
+  - `/v1/admin/reports` (resolve: SUPER_ADMIN and OPS)
+  - `/v1/admin/conversations/:id/messages`: the original text, with every view audited
+- Design: [docs/ARCHITECTURE.md §7](../../docs/ARCHITECTURE.md#7-chat--realtime-phase-5a).
+
 ## Tests
 
 | Command | What |

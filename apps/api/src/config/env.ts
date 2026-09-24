@@ -62,6 +62,13 @@ export const envSchema = z.object({
   MSG91_AUTH_KEY: optional(z.string()),
   MSG91_OTP_TEMPLATE_ID: optional(z.string()),
 
+  // ── Push (FCM) ──
+  /** `console` logs pushes (development, or until Firebase is set up). */
+  PUSH_PROVIDER: z.enum(['console', 'fcm']).default('console'),
+  FCM_PROJECT_ID: optional(z.string()),
+  /** The Firebase service account key file's JSON (one line). */
+  FCM_SERVICE_ACCOUNT_JSON: optional(z.string()),
+
   // ── Email ──
   EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
   EMAIL_FROM: z.string().default('Sajha <no-reply@sajha.app>'),
@@ -105,6 +112,21 @@ const envRules = envSchema.superRefine((env, ctx) => {
     if (!env.MSG91_AUTH_KEY) issue('MSG91_AUTH_KEY', 'required when SMS_PROVIDER=msg91');
     if (!env.MSG91_OTP_TEMPLATE_ID) {
       issue('MSG91_OTP_TEMPLATE_ID', 'required when SMS_PROVIDER=msg91');
+    }
+  }
+  if (env.PUSH_PROVIDER === 'fcm') {
+    if (!env.FCM_PROJECT_ID) issue('FCM_PROJECT_ID', 'required when PUSH_PROVIDER=fcm');
+    if (!env.FCM_SERVICE_ACCOUNT_JSON) {
+      issue('FCM_SERVICE_ACCOUNT_JSON', 'required when PUSH_PROVIDER=fcm');
+    } else {
+      try {
+        const key = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON) as Record<string, unknown>;
+        if (typeof key.client_email !== 'string' || typeof key.private_key !== 'string') {
+          issue('FCM_SERVICE_ACCOUNT_JSON', 'needs client_email and private_key');
+        }
+      } catch {
+        issue('FCM_SERVICE_ACCOUNT_JSON', 'must be the service account JSON');
+      }
     }
   }
   if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {

@@ -1,11 +1,13 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { inject } from 'vitest';
+import { InMemoryPushProvider } from './helpers/in-memory-push.js';
 import { InMemorySmsProvider } from './helpers/in-memory-sms.js';
 
 export interface TestApp {
   app: INestApplication;
   sms: InMemorySmsProvider;
+  push: InMemoryPushProvider;
 }
 
 /** Test-only secrets. */
@@ -19,7 +21,8 @@ export const TEST_ENV = {
 
 /**
  * Boots the real AppModule against the Testcontainers services.
- * SMS is captured in memory; email goes over SMTP to a real Mailpit container.
+ * SMS and push are captured in memory; email goes over SMTP to a real Mailpit
+ * container. Socket tests call `app.listen(0)` to get a port.
  * Env vars are set before AppModule is imported because ConfigModule validates at import time.
  */
 export async function createTestApp(): Promise<TestApp> {
@@ -50,13 +53,17 @@ export async function createTestApp(): Promise<TestApp> {
   const { AppModule } = await import('../src/app.module.js');
   const { configureApp } = await import('../src/app.setup.js');
   const { SmsProvider } = await import('../src/providers/sms/sms.provider.js');
+  const { PushProvider } = await import('../src/providers/push/push.provider.js');
 
   const sms = new InMemorySmsProvider();
+  const push = new InMemoryPushProvider();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(SmsProvider)
     .useValue(sms)
+    .overrideProvider(PushProvider)
+    .useValue(push)
     .compile();
   const app = configureApp(moduleRef.createNestApplication({ logger: false }));
   await app.init();
-  return { app, sms };
+  return { app, sms, push };
 }

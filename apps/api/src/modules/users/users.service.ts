@@ -124,6 +124,7 @@ export class UsersService {
         data: { revokedAt: new Date(), revokeReason: 'account_deleted' },
       });
       await tx.profile.deleteMany({ where: { userId } });
+      await tx.deviceToken.deleteMany({ where: { userId } });
       await tx.userDocument.updateMany({
         where: { userId, deletedAt: null },
         data: { deletedAt: new Date() },
