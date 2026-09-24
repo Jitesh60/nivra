@@ -86,8 +86,12 @@ String nextStep(BookingDetail d) {
           : 'Waiting for $other to share the documents you asked for.';
     case BookingStatus.awaitingPayment:
       return b.isBorrower
-          ? 'Accepted! Payment opens in the next update of Sajha. Your dates are held until then.'
+          ? 'Accepted! Pay to confirm. Your dates are held until the timer runs out.'
           : 'Accepted. The dates are held while $other pays.';
+    case BookingStatus.confirmed:
+      return b.isBorrower
+          ? 'Confirmed! Pick it up from $other on ${formatRange(BlockedRange(b.startDate, b.startDate))}. The address is below.'
+          : 'Confirmed and paid. $other picks it up on ${formatRange(BlockedRange(b.startDate, b.startDate))}.';
     case BookingStatus.declined:
       return b.declineReason == null
           ? 'This request was declined.'
@@ -128,8 +132,16 @@ String eventText(BookingEvent e, Booking b) {
     BookingEventType.docsSubmitted => '$who shared documents',
     BookingEventType.docsApproved => '$who approved the documents',
     BookingEventType.docsRejected => '$who didn’t accept the documents',
+    BookingEventType.paid => 'Paid: booking confirmed',
   };
 }
+
+/// "Cancellation refund", "Late payment refund", "Refund from Sajha".
+String refundText(BookingRefund r) => switch (r.kind) {
+  RefundKind.cancellation => 'Cancellation refund',
+  RefundKind.latePayment => 'Late payment refund',
+  RefundKind.manual => 'Refund from Sajha',
+};
 
 /// "Expires in 5h 12m", ticking once a minute.
 class Countdown extends StatefulWidget {

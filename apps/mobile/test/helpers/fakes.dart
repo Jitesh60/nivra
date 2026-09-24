@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:sajha/core/device/device_info.dart';
 import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
+import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
 import 'package:sajha/core/security/screen_protection.dart';
@@ -179,5 +180,24 @@ class FakeScreenProtection implements ScreenProtection {
   Future<void> release() async {
     protected = false;
     calls.add('release');
+  }
+}
+
+/// Stands in for the Razorpay SDK: answers each checkout with [next], or
+/// with a correctly signed success for the order when [next] is null.
+class FakePaymentGateway implements PaymentGateway {
+  CheckoutResult? next;
+  final opened = <CheckoutRequest>[];
+
+  @override
+  Future<CheckoutResult> open(CheckoutRequest request) async {
+    opened.add(request);
+    const paymentId = 'pay_sdk_1';
+    return next ??
+        CheckoutSuccess(
+          orderId: request.orderId,
+          paymentId: paymentId,
+          signature: fakeSignature(request.orderId, paymentId),
+        );
   }
 }

@@ -210,6 +210,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: () => context.push(Routes.bookings),
             ),
             ListTile(
+              key: const ValueKey('open-earnings'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('Earnings & payouts'),
+              subtitle: const Text('Money from lending, and your bank account'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push(Routes.earnings),
+            ),
+            ListTile(
               key: const ValueKey('open-documents'),
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.badge_outlined),

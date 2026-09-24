@@ -51,6 +51,13 @@ abstract final class Routes {
   static const bookingSharePattern = '/booking/:id/share';
   static String bookingShare(String id) => '/booking/$id/share';
 
+  /// After the checkout, confirming the payment (the result in `extra`).
+  static const bookingPayingPattern = '/booking/:id/paying';
+  static String bookingPaying(String id) => '/booking/$id/paying';
+
+  static const earnings = '/earnings';
+  static const payouts = '/payouts';
+
   /// A document shared with the lender (args in `extra`).
   static const bookingDocument = '/booking-document';
   static const notifications = '/notifications';

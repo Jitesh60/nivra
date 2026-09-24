@@ -417,6 +417,17 @@ describe('Payments, refunds & payouts (e2e)', () => {
   });
 
   describe('payouts', () => {
+    it('deleting the account removes the payout details', async () => {
+      const lender = await verifiedUser(app, sms, 'Meera Joshi');
+      await http(app)
+        .put('/v1/me/payout-account')
+        .set(bearer(lender.accessToken))
+        .send(PAYOUT)
+        .expect(200);
+      await http(app).delete('/v1/me').set(bearer(lender.accessToken)).expect(202);
+      expect(await prisma.payoutAccount.count({ where: { userId: lender.userId } })).toBe(0);
+    });
+
     it('set up once; earnings wait for the account, then go out on hold', async () => {
       const m = await paid();
       const bad = await http(app)

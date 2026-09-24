@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/core/router/app_router.dart';
@@ -39,8 +40,18 @@ void main() {
     expect(currentUser(h).city, isNull);
 
     // A name is required.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('profile-name')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await enterText(tester, 'profile-name', 'R');
     await tapKey(tester, 'profile-save');
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('profile-name')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Enter your name as on your ID'), findsOneWidget);
     expect(currentUser(h).name, 'Rahul Sharma');
   });

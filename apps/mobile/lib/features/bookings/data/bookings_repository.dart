@@ -114,6 +114,14 @@ class BookingsRepository {
     ),
   );
 
+  /// What cancelling now would refund.
+  Future<CancelPreview> cancelPreview(String id) async =>
+      CancelPreview.fromJson(
+        await _call(
+          () => _dio.get<Map<String, dynamic>>('/bookings/$id/cancel-preview'),
+        ),
+      );
+
   // ── Notifications ──
 
   Future<NotificationPage> notifications({String? cursor}) async {
