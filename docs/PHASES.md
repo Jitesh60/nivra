@@ -388,7 +388,11 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** t
   - the masked-content note, and report and block
 - **Item page:** "Chat" opens the conversation. Guests go through sign-in and come back; an unverified email gets a prompt.
 - **Realtime and push:** a socket client that refreshes its token, and push behind a `PushService` (off until Firebase is configured).
-- **Done when:** widget tests cover chat and offers with a fake socket, and the live contract test has two users chatting over the real socket.
+  - The socket is open only while signed in and in the foreground. Coming back to the app refreshes the inbox and badge.
+  - Firebase is initialised from `FIREBASE_*` in `config/<env>.json`, with no google-services files. Empty values mean no push.
+- **Sending:** messages appear at once and can be retried if they fail. The `clientId` means a retry is stored once.
+- **Reporting:** "Report this listing" on the item page; long-press a message to report it.
+- **Done when:** widget tests cover chat and offers with a fake socket, and the live contract test chats over the real socket (open, send, get the message back live, make an offer, register for push).
 
 ### 5c — Admin
 **Branch:** `phase/5c-chat-admin`

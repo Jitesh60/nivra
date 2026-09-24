@@ -7,9 +7,11 @@ import '../../../core/router/routes.dart';
 import '../../../core/router/sign_in_return.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../../shared/widgets/user_avatar.dart';
+import '../../../shared/widgets/verify_email_dialog.dart';
 import '../../../shared/widgets/verification_badges.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/data/models.dart';
+import '../../chat/application/inbox.dart';
 import '../../discovery/application/discovery_providers.dart';
 import '../../discovery/application/search_area.dart';
 import '../../discovery/data/models.dart';
@@ -49,6 +51,7 @@ class HomeScreen extends ConsumerWidget {
               child: const Text('Sign in'),
             )
           else ...[
+            const _InboxButton(),
             IconButton(
               key: const ValueKey('open-wishlist'),
               tooltip: 'Wishlist',
@@ -368,30 +371,6 @@ class _LendCard extends ConsumerWidget {
   const _LendCard({required this.user});
   final AppUser? user;
 
-  Future<void> _verifyFirst(BuildContext context) async {
-    final go = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Verify your email first'),
-        content: const Text(
-          'Lenders need a verified phone and email, so borrowers can trust them.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Later'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Verify email'),
-          ),
-        ],
-      ),
-    );
-    if ((go ?? false) && context.mounted) context.push(Routes.setupEmail);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
@@ -432,7 +411,10 @@ class _LendCard extends ConsumerWidget {
                     style: rowButton,
                     onPressed: () => user.emailVerified
                         ? context.push(Routes.newListing)
-                        : _verifyFirst(context),
+                        : askToVerifyEmail(
+                            context,
+                            why: 'Lenders need a verified phone and email, so borrowers can trust them.',
+                          ),
                     icon: const Icon(Icons.add),
                     label: const Text('List an item'),
                   ),
@@ -445,6 +427,26 @@ class _LendCard extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The chats, with a badge for unread ones.
+class _InboxButton extends ConsumerWidget {
+  const _InboxButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadCountProvider).value ?? 0;
+    return IconButton(
+      key: const ValueKey('open-inbox'),
+      tooltip: unread == 0 ? 'Chats' : 'Chats, $unread unread',
+      onPressed: () => context.push(Routes.inbox),
+      icon: Badge(
+        isLabelVisible: unread > 0,
+        label: Text('$unread', key: const ValueKey('inbox-badge')),
+        child: const Icon(Icons.chat_bubble_outline),
       ),
     );
   }

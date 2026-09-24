@@ -2,11 +2,43 @@
 /// `--dart-define-from-file=config/<env>.json` (see config/).
 enum AppEnv { dev, staging, prod }
 
+/// Firebase project settings for push (from the Firebase console's app
+/// config). Push stays off until all four are set.
+class FirebaseConfig {
+  const FirebaseConfig({
+    required this.apiKey,
+    required this.appId,
+    required this.messagingSenderId,
+    required this.projectId,
+  });
+
+  final String apiKey;
+  final String appId;
+  final String messagingSenderId;
+  final String projectId;
+
+  /// Null unless every value is present.
+  static FirebaseConfig? maybe({
+    required String apiKey,
+    required String appId,
+    required String messagingSenderId,
+    required String projectId,
+  }) => [apiKey, appId, messagingSenderId, projectId].any((v) => v.isEmpty)
+      ? null
+      : FirebaseConfig(
+          apiKey: apiKey,
+          appId: appId,
+          messagingSenderId: messagingSenderId,
+          projectId: projectId,
+        );
+}
+
 class AppConfig {
   const AppConfig({
     required this.env,
     required this.apiBaseUrl,
     this.mapTileUrl = osmTileUrl,
+    this.firebase,
   });
 
   /// OpenStreetMap's public tiles: fine for development and light use. Point
@@ -26,12 +58,21 @@ class AppConfig {
       'MAP_TILE_URL',
       defaultValue: osmTileUrl,
     ),
+    firebase: FirebaseConfig.maybe(
+      apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
+      appId: const String.fromEnvironment('FIREBASE_APP_ID'),
+      messagingSenderId: const String.fromEnvironment(
+        'FIREBASE_MESSAGING_SENDER_ID',
+      ),
+      projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
+    ),
   );
 
   factory AppConfig.parse({
     required String env,
     required String apiBaseUrl,
     String mapTileUrl = osmTileUrl,
+    FirebaseConfig? firebase,
   }) {
     final parsed = AppEnv.values.where((e) => e.name == env).firstOrNull;
     if (parsed == null) {
@@ -60,6 +101,7 @@ class AppConfig {
       env: parsed,
       apiBaseUrl: apiBaseUrl,
       mapTileUrl: mapTileUrl,
+      firebase: firebase,
     );
   }
 
@@ -69,5 +111,11 @@ class AppConfig {
   /// Map tile URL template for the pickup-location map.
   final String mapTileUrl;
 
+  /// Push notifications; null until Firebase is set up for this build.
+  final FirebaseConfig? firebase;
+
   bool get isProd => env == AppEnv.prod;
+
+  /// Socket.IO endpoint for live chat updates (same host as the API).
+  String get socketUrl => '$apiBaseUrl/ws';
 }

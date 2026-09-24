@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+part 'fake_chat.dart';
+
 /// In-memory stand-in for the Sajha API, plugged into Dio as its HTTP adapter.
 /// Mirrors the real endpoints and error shapes closely enough to drive
 /// full sign-in flows in widget tests.
@@ -254,6 +256,16 @@ class FakeSajhaApi implements HttpClientAdapter {
       ..rejectionReason = approve ? null : reason;
   }
 
+  /// Chats, offers, blocks, reports and push tokens (see fake_chat.dart).
+  final chat = FakeChat();
+
+  /// The user the app is signed in as (the last authenticated caller).
+  String? appUserId;
+
+  /// Live events for [FakeRealtime]: (recipient, event, payload).
+  void Function(String userId, String event, Map<String, dynamic> data)?
+  onRealtime;
+
   /// Query parameters of the last request to each path.
   final lastQueries = <String, Map<String, String>>{};
 
@@ -359,6 +371,7 @@ class FakeSajhaApi implements HttpClientAdapter {
     }
     final user = _users[session.userId]!;
     if (user.suspended) return _error(403, 'ACCOUNT_SUSPENDED', 'Suspended');
+    appUserId = user.id;
 
     switch ('$method $path') {
       case 'GET /me':
@@ -617,6 +630,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       target.revoked = true;
       return (204, null);
     }
+    final chatResult = _chat(method, path, body, query, user);
+    if (chatResult != null) return chatResult;
     return _error(404, 'NOT_FOUND', 'Cannot $method $path');
   }
 

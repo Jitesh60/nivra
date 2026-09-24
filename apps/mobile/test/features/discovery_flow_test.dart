@@ -106,12 +106,15 @@ void main() {
     expect(find.text('Canon EOS 200D camera'), findsOneWidget);
     expect(find.textContaining('Shivajinagar, Pune · 3'), findsOneWidget);
     expect(find.text('Vikram Rao'), findsOneWidget);
-    // Chat and booking come later.
+    // Booking comes later; chat is open.
     final book = tester.widget<FilledButton>(
       find.byKey(const ValueKey('request-booking')),
     );
     expect(book.onPressed, isNull);
-    expect(find.text('Chat and booking are coming soon.'), findsOneWidget);
+    final chat = tester.widget<OutlinedButton>(
+      find.byKey(const ValueKey('chat-lender')),
+    );
+    expect(chat.onPressed, isNotNull);
 
     // The view counts, and the item joins "Recently viewed".
     expect(api.views[m.camera], 1);

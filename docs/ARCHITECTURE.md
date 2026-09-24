@@ -503,6 +503,8 @@ lib/
 │   │                             #   ListingDetailView (also the public item page)
 │   ├── discovery/                # DiscoveryRepository, SearchArea, saved/recent state; search,       (Phase 4b)
 │   │                             #   filters, item page with quote, wishlist, area picker
+│   ├── chat/                     # ChatRepository, inbox + unread, ChatController, chat screen,       (Phase 5b)
+│   │                             #   offer and report sheets; core/realtime (socket), core/push
 │   ├── home/ settings/
 │   ├── chat/ bookings/ ...       # later phases
 └── shared/widgets/               # buttons, inputs, OTP field, loaders
@@ -522,6 +524,15 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - Actions that need an account call `requireSignIn(returnTo)`. It stores where the guest was and replaces the stack with the login screen, rather than pushing it, so the router's redirects always see the sign-in pages.
   - Once signed in (after the name and email steps for new users), `authRedirect` sends the user to `returnTo`. For a save, that's `/item/:id?save=1`, and the page finishes the save.
   - When the auth state changes, go_router re-checks the bottom page of the stack, so the router checks the page on top instead. Otherwise a page pushed over home, such as settings, would stay open after sign-out.
+- **Chat** (Phase 5b):
+  - **Socket:** `RealtimeClient` (`core/realtime/`, Socket.IO over WebSocket) connects to `/ws` with the access token (`TokenManager.validAccessToken()`).
+    - A refused handshake (`TOKEN_EXPIRED` / `TOKEN_INVALID`) or the server closing the socket at token expiry triggers one refresh, then a reconnect. Network drops back off 1 s → 30 s.
+    - `realtimeConnectionProvider` keeps it open only while signed in and in the foreground (`AppLifecycleListener`). Resuming refreshes the inbox and unread badge.
+  - **Writes:** the app only listens on the socket; writes go over REST. `ChatController` (one per open chat) shows a sent message at once with a `clientId`, then swaps in the stored message. A failed send can be retried, and the server stores it only once.
+  - **Merging events:** `message:new`, `message:read`, `offer:updated` and `typing` are merged into the open chat. After offer actions it reloads the newest messages in case the socket missed the system note.
+  - **Inbox and badge:** `inboxProvider` and `unreadCountProvider` refetch on `message:new` / `message:read`.
+  - **Push:** `PushService` is a no-op unless the build has `FIREBASE_*` settings. Then `FirebasePushService` initialises Firebase from them (no google-services files), registers the token via `PUT /v1/me/devices/push-token` after sign-in and on rotation, and opens `/chat/:id` when a notification is tapped.
+  - **Routes:** guests reach chat through `requireSignIn(returnTo: /item/:id?chat=1)`. `/inbox` and `/chat/:id` need an account.
 - **Discovery state** (Phase 4b):
   - **Search area:** `searchAreaProvider` (GPS or map, 1–25 km), saved in `AppPrefs`.
   - **Recently viewed:** the last 20 ids, on the device.
