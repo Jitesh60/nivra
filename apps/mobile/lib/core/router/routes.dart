@@ -24,8 +24,16 @@ abstract final class Routes {
   /// A listing's public page. `/item/`, not `/listings/`, which is the
   /// lender's own space.
   static const itemPattern = '/item/:id';
-  static String item(String id, {bool save = false}) =>
-      '/item/$id${save ? '?save=1' : ''}';
+  static String item(String id, {bool save = false, bool chat = false}) =>
+      '/item/$id${save
+          ? '?save=1'
+          : chat
+          ? '?chat=1'
+          : ''}';
+
+  static const inbox = '/inbox';
+  static const chatPattern = '/chat/:id';
+  static String chat(String conversationId) => '/chat/$conversationId';
 
   /// The sign-in screens.
   static const public = {onboarding, login, loginVerify};

@@ -8,6 +8,10 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../../shared/widgets/date_range_chooser.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../chat/data/chat_repository.dart';
+import '../../chat/data/models.dart' show ReportTarget;
+import '../../chat/presentation/open_chat.dart';
+import '../../chat/presentation/report_sheet.dart';
 import '../../listings/data/models.dart';
 import '../../listings/presentation/listing_detail_view.dart';
 import '../application/discovery_providers.dart';
@@ -40,12 +44,20 @@ ListingViewData viewDataFor(PublicListing l, {double? distanceKm}) =>
 /// A listing's public page: photos, details, the lender, and the price for
 /// chosen dates. Chat and booking arrive in Phases 5–6.
 class ItemScreen extends ConsumerStatefulWidget {
-  const ItemScreen({required this.id, this.saveOnOpen = false, super.key});
+  const ItemScreen({
+    required this.id,
+    this.saveOnOpen = false,
+    this.chatOnOpen = false,
+    super.key,
+  });
 
   final String id;
 
   /// Set when a guest tapped save and just signed in: finish the save.
   final bool saveOnOpen;
+
+  /// Set when a guest tapped Chat and just signed in: open the chat.
+  final bool chatOnOpen;
 
   @override
   ConsumerState<ItemScreen> createState() => _ItemScreenState();
@@ -72,10 +84,12 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
     if (_handledOpen || !mounted) return;
     _handledOpen = true;
     ref.read(recentlyViewedProvider.notifier).add(listing.id);
-    if (!widget.saveOnOpen || !ref.read(signedInProvider) || listing.saved) {
+    if (!ref.read(signedInProvider) || _isMine(listing)) return;
+    if (widget.chatOnOpen) {
+      if (mounted) await openChat(context, ref, listing.id);
       return;
     }
-    if (_isMine(listing)) return;
+    if (!widget.saveOnOpen || listing.saved) return;
     try {
       await ref
           .read(savedListingsProvider.notifier)
@@ -89,6 +103,27 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
       }
+    }
+  }
+
+  Future<void> _reportListing(PublicListing listing) async {
+    final draft = await showReportSheet(context, title: 'Report this listing');
+    if (draft == null || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(chatRepositoryProvider)
+          .report(
+            target: ReportTarget.listing,
+            targetId: listing.id,
+            reason: draft.reason,
+            note: draft.note,
+          );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Thanks. Our team will take a look.')),
+      );
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
     }
   }
 
@@ -226,12 +261,23 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
                 ),
               ),
             ),
+          if (!mine && ref.watch(signedInProvider))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('report-listing'),
+                onPressed: () => _reportListing(listing),
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                label: const Text('Report this listing'),
+              ),
+            ),
           const SizedBox(height: SajhaSpacing.xl),
         ],
       ),
       bottomNavigationBar: mine
           ? null
           : _BottomBar(
+              onChat: () => openChat(context, ref, listing.id),
               listing: listing,
               quote: _quote,
               hasDates: _dates != null,
@@ -247,12 +293,14 @@ class _BottomBar extends StatelessWidget {
     required this.quote,
     required this.hasDates,
     required this.onChooseDates,
+    required this.onChat,
   });
 
   final PublicListing listing;
   final Quote? quote;
   final bool hasDates;
   final VoidCallback onChooseDates;
+  final VoidCallback onChat;
 
   @override
   Widget build(BuildContext context) {
@@ -323,7 +371,10 @@ class _BottomBar extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       key: const ValueKey('chat-lender'),
-                      onPressed: null,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: onChat,
                       icon: const Icon(Icons.chat_bubble_outline),
                       label: const Text('Chat'),
                     ),
@@ -342,7 +393,7 @@ class _BottomBar extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: SajhaSpacing.xs),
                 child: Text(
-                  'Chat and booking are coming soon.',
+                  'Booking opens soon. Chat to agree dates and a price.',
                   style: text.bodySmall?.copyWith(color: muted),
                 ),
               ),

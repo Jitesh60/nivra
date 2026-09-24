@@ -7,6 +7,8 @@ import '../../features/auth/presentation/email_screen.dart';
 import '../../features/auth/presentation/name_screen.dart';
 import '../../features/auth/presentation/otp_screens.dart';
 import '../../features/auth/presentation/phone_screen.dart';
+import '../../features/chat/presentation/chat_screen.dart';
+import '../../features/chat/presentation/inbox_screen.dart';
 import '../../features/documents/presentation/add_document_screen.dart';
 import '../../features/documents/presentation/document_viewer_screen.dart';
 import '../../features/documents/presentation/documents_screen.dart';
@@ -95,7 +97,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => ItemScreen(
           id: state.pathParameters['id']!,
           saveOnOpen: state.uri.queryParameters['save'] == '1',
+          chatOnOpen: state.uri.queryParameters['chat'] == '1',
         ),
+      ),
+      GoRoute(path: Routes.inbox, builder: (_, _) => const InboxScreen()),
+      GoRoute(
+        path: Routes.chatPattern,
+        builder: (_, state) =>
+            ChatScreen(conversationId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: Routes.areaPicker,

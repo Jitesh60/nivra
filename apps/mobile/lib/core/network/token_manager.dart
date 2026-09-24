@@ -38,6 +38,10 @@ class TokenManager {
 
   String? get accessToken => _accessToken;
 
+  /// The current access token, refreshing first if there isn't one (e.g. the
+  /// socket connecting before any API call). Null when signed out.
+  Future<String?> validAccessToken() async => _accessToken ?? await refresh();
+
   Future<bool> hasStoredSession() async =>
       await _store.readRefreshToken() != null;
 

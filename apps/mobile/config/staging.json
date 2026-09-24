@@ -1,4 +1,8 @@
 {
   "ENV": "staging",
-  "API_BASE_URL": "https://api.staging.sajha.app"
+  "API_BASE_URL": "https://api.staging.sajha.app",
+  "FIREBASE_API_KEY": "",
+  "FIREBASE_APP_ID": "",
+  "FIREBASE_MESSAGING_SENDER_ID": "",
+  "FIREBASE_PROJECT_ID": ""
 }

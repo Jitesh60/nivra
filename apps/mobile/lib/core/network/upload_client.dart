@@ -9,7 +9,8 @@ import 'api_exception.dart';
 enum UploadPurpose {
   avatar('AVATAR'),
   document('DOCUMENT'),
-  listingPhoto('LISTING_PHOTO');
+  listingPhoto('LISTING_PHOTO'),
+  chatImage('CHAT_IMAGE');
 
   const UploadPurpose(this.apiValue);
   final String apiValue;

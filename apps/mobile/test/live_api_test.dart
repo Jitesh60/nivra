@@ -15,6 +15,9 @@ import 'package:sajha/core/network/api_exception.dart';
 import 'package:sajha/core/network/auth_interceptor.dart';
 import 'package:sajha/core/network/token_manager.dart';
 import 'package:sajha/core/network/upload_client.dart';
+import 'package:sajha/core/realtime/realtime_client.dart';
+import 'package:sajha/features/chat/data/chat_repository.dart';
+import 'package:sajha/features/chat/data/models.dart';
 import 'package:sajha/features/auth/data/auth_repository.dart';
 import 'package:sajha/features/discovery/application/search_area.dart';
 import 'package:sajha/features/discovery/data/discovery_repository.dart';
@@ -202,6 +205,64 @@ void main() {
       throwsA(isA<ApiException>().having((e) => e.status, 'status', 404)),
     );
 
+    // Chat over the real socket: open a chat on someone else's live listing,
+    // write with a phone number in it, and make an offer. The sender gets
+    // each message back live, with their own (unmasked) text.
+    if (anyLive.isNotEmpty) {
+      final chat = ChatRepository(dio: api, uploads: uploads);
+      final socket = SocketRealtimeClient(url: '$liveUrl/ws', tokens: tokens);
+      final events = <RealtimeEvent>[];
+      final sub = socket.events.listen(events.add);
+      socket.connect();
+      await _until(() => socket.connected.value);
+
+      final conversation = await chat.start(anyLive.first.id);
+      expect(conversation.isBorrower, isTrue);
+      expect((await chat.start(anyLive.first.id)).id, conversation.id);
+      final sent = await chat.sendText(
+        conversation.id,
+        'Call me on 98765 43210',
+        'live-1',
+      );
+      expect(sent.body, 'Call me on 98765 43210');
+      expect(sent.masked, isTrue);
+      await _until(
+        () => events.any((e) => e.name == RealtimeEvents.messageNew),
+      );
+      final live = ChatMessage.fromJson(
+        events.firstWhere((e) => e.name == RealtimeEvents.messageNew).data,
+      );
+      expect(
+        (live.id, live.mine, live.body),
+        (sent.id, true, 'Call me on 98765 43210'),
+      );
+
+      final start = DateTime.now().add(const Duration(days: 20));
+      final offerMessage = await chat.makeOffer(
+        conversation.id,
+        start: start,
+        end: start.add(const Duration(days: 1)),
+        pricePerDayPaise: anyLive.first.pricePerDayPaise,
+      );
+      expect(offerMessage.offer!.status, OfferStatus.pending);
+      expect(offerMessage.offer!.mine, isTrue);
+      final own = await chat
+          .accept(offerMessage.offer!.id)
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect((own! as ApiException).code, 'OFFER_OWN');
+
+      final inbox = await chat.inbox();
+      expect(inbox.items.first.id, conversation.id);
+      expect(inbox.items.first.pendingOffer?.id, offerMessage.offer!.id);
+      await chat.registerPushToken(
+        'live-test-token-${DateTime.now().millisecondsSinceEpoch}',
+        'android',
+      );
+
+      await sub.cancel();
+      socket.disconnect();
+    }
+
     // Delete the account so the test leaves nothing behind.
     await repo.deleteAccount();
     expect(storage.refreshToken, isNull);
@@ -257,4 +318,12 @@ void main() {
     ]);
     expect(cards.map((c) => c.id), [card.id]);
   }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
+}
+
+/// Waits (up to 5 s) for [done].
+Future<void> _until(bool Function() done) async {
+  for (var i = 0; i < 50 && !done(); i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  expect(done(), isTrue);
 }

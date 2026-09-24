@@ -10,6 +10,8 @@ import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/features/listings/presentation/pickup_map.dart';
 import 'package:sajha/core/network/api_client.dart';
+import 'package:sajha/core/push/push_service.dart';
+import 'package:sajha/core/realtime/realtime_client.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
 import 'package:sajha/features/splash/presentation/splash_screen.dart';
@@ -36,6 +38,8 @@ class TestHarness {
   final FakeAppPrefs prefs;
   final FakePhotoPicker picker;
   final FakeLocationService location;
+  late final FakeRealtime realtime = FakeRealtime(api);
+  final push = FakePushService();
   late ProviderContainer container;
 
   /// What the next date-range pick returns; null means cancelled.
@@ -55,6 +59,8 @@ class TestHarness {
     photoPickerProvider.overrideWithValue(picker),
     locationServiceProvider.overrideWithValue(location),
     mapTilesEnabledProvider.overrideWithValue(false),
+    realtimeClientProvider.overrideWithValue(realtime),
+    pushServiceProvider.overrideWithValue(push),
     dateRangeChooserProvider.overrideWithValue((
       context, {
       required first,
