@@ -197,3 +197,25 @@ model AuditLog {
   @@index([action, createdAt])
   @@map("audit_logs")
 }
+
+// ─── Phase 1d: marketing waitlist ────────────────────────────────────────────
+
+enum WaitlistRole {
+  BORROWER
+  LENDER
+  BOTH
+}
+
+/// People who asked to hear when Sajha launches (marketing website).
+model WaitlistEntry {
+  id        String        @id @default(uuid(7)) @db.Uuid
+  email     String        @unique @db.Citext
+  city      String?
+  role      WaitlistRole?
+  /// utm_source or referrer, for launch attribution.
+  source    String?
+  ip        String?
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@map("waitlist_entries")
+}

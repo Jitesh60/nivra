@@ -101,6 +101,14 @@ test('Ops: temporary password → 2FA → forced password change → limited men
   await expect(nav.getByRole('link', { name: 'Users' })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'Admins' })).toHaveCount(0);
 
+  // Ops can see the waitlist and download it as CSV.
+  await nav.getByRole('link', { name: 'Waitlist' }).click();
+  await expect(page.getByRole('heading', { name: 'Waitlist' })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download CSV' }).click();
+  const csv = await download;
+  expect(csv.suggestedFilename()).toMatch(/^sajha-waitlist-\d{4}-\d{2}-\d{2}\.csv$/);
+
   await page.goto('/admins');
   await expect(page.getByTestId('forbidden')).toBeVisible();
 });

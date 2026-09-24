@@ -248,7 +248,7 @@ flowchart LR
 **Purpose:** explain Sajha, build trust, collect a waitlist before launch, and drive app installs.
 
 Sections:
-1. **Hero** with an animated shader background (shaders.com), animated headline (React Bits text effects), and CTA buttons (uiverse)
+1. **Hero** with an animated shader background (Paper Shaders; shaders.com needs a paid commercial license), animated headline (React Bits text effects), and CTA buttons (uiverse)
 2. **How it works**, with borrower and lender tabs
 3. **Categories** grid, with hover effects
 4. **Why Sajha**: save money, earn from idle things, sustainability

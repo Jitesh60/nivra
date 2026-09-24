@@ -7,6 +7,77 @@
   --font-display: var(--font-bricolage);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
-  @apply bg-ink-950 text-ink-50;
+  @apply bg-white text-ink-900;
+}
+
+/* Animated gradient border (uiverse-style). The border is a rotating conic
+   gradient painted behind a padding-box background. */
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.glow-border {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--color-ink-950), var(--color-ink-950)) padding-box,
+    conic-gradient(
+        from var(--glow-angle),
+        var(--color-brand-400),
+        var(--color-accent-400),
+        var(--color-brand-300),
+        var(--color-accent-500),
+        var(--color-brand-400)
+      )
+      border-box;
+  animation: glow-spin 4s linear infinite;
+}
+
+@keyframes glow-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-border {
+    animation: none;
+  }
+}
+
+/* BlurText (see components/effects/blur-text.tsx). */
+.blur-in {
+  animation: blur-in 0.55s ease-out both;
+  animation-delay: var(--blur-delay, 0s);
+}
+
+@keyframes blur-in {
+  from {
+    filter: blur(10px);
+    opacity: 0.01;
+    transform: translateY(12px);
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blur-in {
+    animation: none;
+  }
 }

@@ -1,27 +1,64 @@
-// Phase 0 placeholder. The full landing page (shaders.com hero, React Bits text
-// effects, uiverse buttons, waitlist) is built in Phase 1d.
+import { CategoryGrid } from '@/components/sections/categories';
+import { EarningsCalculator } from '@/components/sections/earnings-calculator';
+import { FaqList } from '@/components/sections/faq';
+import { Hero } from '@/components/sections/hero';
+import { HowItWorksTabs } from '@/components/sections/how-it-works';
+import { TrustGrid } from '@/components/sections/trust';
+import { WaitlistSection } from '@/components/sections/waitlist-section';
+import { WhySajha } from '@/components/sections/why-sajha';
+import { Footer } from '@/components/site/footer';
+import { Header } from '@/components/site/header';
+import { Section } from '@/components/site/section';
+import { GlowLink } from '@/components/ui/glow-button';
+
 export default function Home() {
   return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden px-4">
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,var(--color-brand-700),transparent_55%),radial-gradient(ellipse_at_bottom_right,var(--color-accent-600),transparent_50%)] opacity-60"
-      />
-      <div className="relative max-w-2xl text-center">
-        <p className="font-medium tracking-wide text-brand-300">साझा · Sajha</p>
-        <h1 className="mt-4 font-display text-4xl leading-tight font-semibold sm:text-6xl">
-          Borrow what you need.
-          <br />
-          <span className="text-accent-300">Lend what you don’t use.</span>
-        </h1>
-        <p className="mt-6 text-lg text-ink-200">
-          Rent trekking gear, cameras, tools and more from people near you — or earn from things
-          that sit idle most of the year.
-        </p>
-        <p className="mt-10 inline-block rounded-full border border-ink-50/20 px-4 py-2 text-sm text-ink-200">
-          Coming soon
-        </p>
-      </div>
-    </main>
+    <>
+      <Header overlay />
+      <main>
+        <Hero />
+        <Section
+          id="how-it-works"
+          eyebrow="How it works"
+          title="Rent in four simple steps"
+          intro="Whether you’re borrowing for a weekend or lending something that sits in a cupboard."
+        >
+          <HowItWorksTabs />
+        </Section>
+        <Section
+          eyebrow="Categories"
+          title="Things people rarely need, but really need once"
+          className="bg-ink-50"
+        >
+          <CategoryGrid />
+        </Section>
+        <Section eyebrow="Why Sajha" title="Owning is expensive. Sharing isn’t.">
+          <WhySajha />
+        </Section>
+        <Section
+          eyebrow="Trust & safety"
+          title="Built so both sides feel safe"
+          className="bg-ink-50"
+        >
+          <TrustGrid />
+        </Section>
+        <Section
+          id="lend"
+          eyebrow="Become a lender"
+          title="What could your idle things earn?"
+          intro="Move the sliders to see what one item could make you."
+        >
+          <EarningsCalculator />
+        </Section>
+        <Section eyebrow="FAQ" title="Questions, answered" className="bg-ink-50">
+          <FaqList limit={5} />
+          <GlowLink href="/faq" variant="brand" className="mt-8">
+            See all questions
+          </GlowLink>
+        </Section>
+        <WaitlistSection />
+      </main>
+      <Footer />
+    </>
   );
 }

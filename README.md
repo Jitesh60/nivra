@@ -20,7 +20,7 @@ Sajha is a peer-to-peer rental marketplace for India. People list things they ra
 | `apps/api` | Backend API | Node.js · NestJS · PostgreSQL/PostGIS · Prisma · Redis |
 | `apps/mobile` | Mobile app | Flutter · Riverpod · go_router |
 | `apps/admin` | Admin panel | Next.js · shadcn/ui · Tailwind |
-| `apps/web` | Marketing website | Next.js · React Bits · shaders.com · uiverse.io |
+| `apps/web` | Marketing website | Next.js · Paper Shaders · React Bits · uiverse.io |
 
 ## Getting started
 

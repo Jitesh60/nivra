@@ -440,7 +440,9 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 ## 11. Marketing site architecture (`apps/web`)
 
 - Statically generated pages; `app/page.tsx` composed of section components (`Hero`, `HowItWorks`, `Categories`, `Trust`, `BecomeLender`, `FAQ`, `Waitlist`, `Footer`)
-- `components/effects/` holds React Bits components (text animations, spotlight cards, magnet buttons), a shaders.com hero background, and uiverse buttons and loaders ported to React + Tailwind
+- `components/effects/`: **Paper Shaders** `MeshGradient` hero background (Apache-2.0), plus React Bits effects recreated in-repo: BlurText (pure CSS, so the headline is in the first paint), SpotlightCard, CountUp and Magnet. `components/ui/`: uiverse-style glow-border buttons, a segmented toggle and a dots loader.
+- **Shader budget:** a static CSS gradient in the same colours paints first. The shader loads when the browser is idle, and only on GPU-backed WebGL (not SwiftShader or llvmpipe software rendering), without Data Saver, and on devices with more than 2 GB of memory. It pauses while scrolled out of view and is capped at 1280×800 pixels. Mobile Lighthouse scores: performance 92–93, accessibility 100, best practices 100, SEO 100.
+- **Waitlist:** the form posts from the browser to `POST /v1/waitlist` through the typed `@sajha/api-client`, so `CORS_ORIGINS` must include the site's origin. A hidden honeypot field catches bots. Ops and Super Admins see the list and download the CSV in the admin panel (`/waitlist`).
 - `prefers-reduced-motion` is respected: shaders fall back to a static gradient, and animations are disabled
 - Performance budget: LCP < 2.5s on 4G. Shaders are lazy-loaded client components with a static poster first.
 - The waitlist form posts to `POST /v1/waitlist` (rate limited, with a honeypot field)
