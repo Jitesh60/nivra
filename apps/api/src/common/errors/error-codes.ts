@@ -51,6 +51,9 @@ export const ErrorCode = {
   LISTING_PHOTO_LIMIT: 'LISTING_PHOTO_LIMIT',
   CATEGORY_SLUG_TAKEN: 'CATEGORY_SLUG_TAKEN',
   CATEGORY_INACTIVE: 'CATEGORY_INACTIVE',
+
+  // discovery
+  FAVORITE_OWN_LISTING: 'FAVORITE_OWN_LISTING',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

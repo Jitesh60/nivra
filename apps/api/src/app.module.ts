@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { CategoriesModule } from './modules/categories/categories.module.js';
 import { DocumentsModule } from './modules/documents/documents.module.js';
 import { ListingsModule } from './modules/listings/listings.module.js';
+import { SearchModule } from './modules/search/search.module.js';
 import { MediaModule } from './modules/media/media.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { UserViewModule } from './modules/users/user-view.module.js';
@@ -48,6 +49,7 @@ import { RedisModule } from './redis/redis.module.js';
     DocumentsModule,
     CategoriesModule,
     ListingsModule,
+    SearchModule,
     AdminAuthModule,
     AdminModule,
     WaitlistModule,

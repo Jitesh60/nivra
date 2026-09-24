@@ -73,8 +73,7 @@ src/
     ├── documents/          # personal document vault + admin review                 (Phase 2a)
     ├── categories/         # admin-managed categories, public list                  (Phase 3a)
     ├── listings/           # CRUD, photos, blocked dates, required docs, moderation (Phase 3a)
-    ├── search/             # text + geo + date search                               (Phase 4)
-    ├── favorites/          # wishlist                                               (Phase 4)
+    ├── search/             # text + geo + date search, home feed, wishlist, views   (Phase 4a)
     ├── chat/               # conversations, messages, Socket.IO gateway              (Phase 5)
     ├── offers/             # offer / counter-offer                                   (Phase 5)
     ├── notifications/      # in-app + push/email/SMS fan-out                        (Phase 5)
@@ -164,7 +163,29 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 
 **Privacy:** the public `GET /v1/listings/:id` returns `approxLat`/`approxLng` rounded to 2 decimals (~1 km) and `area_label`, never the pin or the address. Listings of a suspended or banned lender aren't public.
 
-### 3.4 Later tables (summary)
+### 3.4 Phase 4 tables and search (built in Phase 4a)
+
+| Table / column | Purpose | Key fields |
+|---|---|---|
+| `listings.search_vector` | Full-text search | `tsvector`, GIN index. Set by the `listings_sync_derived` trigger (which also keeps `location` in sync): title (A), brand + category name (B), description (C), `english` configuration. Renaming a category re-indexes its listings (`categories_refresh_listing_search` trigger) |
+| `favorites` | Wishlist | PK `(user_id, listing_id)`, `created_at` |
+| `listing_views` | "Popular this week" | PK `(listing_id, viewer_key, day)`: one row per viewer per day. `viewer_key` is the user id, or for guests an HMAC of IP + user agent + day, so no raw IP is stored. Pruning after 30 days arrives with the Phase 5 jobs |
+
+**Search** (`src/modules/search`): one parameterised SQL query built from `Prisma.sql` fragments, never concatenated strings.
+- Scope: LIVE listings of ACTIVE lenders.
+- Keywords: `search_vector @@ websearch_to_tsquery('english', q)`.
+- Radius: `ST_DWithin(location, point, r)` on the GIST index.
+- Dates: no overlapping `availability_blocks`, days within `min_days`–`max_days`, and `start ≥ today + advance_notice_days`.
+- Verified lenders: an approved, unexpired document, the same rule as the ID badge.
+- Paging uses a keyset cursor over `(sort value, id)`, so infinite scroll never repeats or skips.
+- Cards are then loaded by id with Prisma.
+- Distances are rounded to 0.5 km (under 1 km → 0.5, shown as "< 1 km") so the exact pin can't be triangulated.
+
+**Pricing** (`src/modules/listings/pricing.ts`, pure): rental days are inclusive; rent = price × days, less the weekly discount from 7 days on; the borrower fee is ₹0 for now; the total adds the refundable deposit. `GET /v1/listings/:id/quote` uses it, and so will bookings in Phase 6.
+
+**Optional sign-in** (`OptionalJwtGuard`): public routes accept an optional Bearer token to personalise (saved flags; views keyed by user). With no header the caller is a guest. An invalid header is 401, so the app refreshes rather than silently browsing signed out.
+
+### 3.5 Later tables (summary)
 
 | Table | Key fields |
 |---|---|
@@ -290,6 +311,7 @@ sequenceDiagram
 | `LISTING_PHOTO_LIMIT` | 409 | More than 8 photos |
 | `CATEGORY_SLUG_TAKEN` | 409 | Another category uses this slug |
 | `CATEGORY_INACTIVE` | 400 | The category doesn't exist or is hidden |
+| `FAVORITE_OWN_LISTING` | 400 | Saving your own listing to your wishlist |
 
 ### 4.2 Admins — email + password + TOTP 2FA
 

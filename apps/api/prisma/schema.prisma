@@ -41,6 +41,7 @@ model User {
   profile       Profile?
   documents     UserDocument[]
   listings      Listing[]
+  favorites     Favorite[]
 
   @@map("users")
 }
@@ -354,6 +355,9 @@ model Listing {
   lat               Float?
   lng               Float?
   location          Unsupported("geography")?
+  /// Full-text search: title (A), brand and category (B), description (C).
+  /// Kept in sync by a trigger (see the migrations).
+  searchVector      Unsupported("tsvector")?  @map("search_vector")
   /// Public, e.g. "Kothrud, Pune".
   areaLabel         String?                   @map("area_label")
   /// AES-256-GCM (ADDRESS_ENC_KEY); shared with a borrower only after a confirmed booking.
@@ -375,11 +379,14 @@ model Listing {
   photos       ListingPhoto[]
   requiredDocs ListingRequiredDoc[]
   blocks       AvailabilityBlock[]
+  favorites    Favorite[]
+  views        ListingView[]
 
   @@index([lenderId])
   @@index([status, createdAt])
   @@index([categoryId, status])
   @@index([location], map: "listings_location_gist", type: Gist)
+  @@index([searchVector], map: "listings_search_vector_gin", type: Gin)
   @@map("listings")
 }
 
@@ -438,4 +445,35 @@ model AvailabilityBlock {
 
   @@index([listingId, startsOn])
   @@map("availability_blocks")
+}
+
+// ─── Phase 4: discovery ──────────────────────────────────────────────────────
+
+/// A listing a user saved to their wishlist.
+model Favorite {
+  userId    String   @map("user_id") @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@index([listingId, createdAt])
+  @@map("favorites")
+}
+
+/// One row per viewer per listing per day ("Popular this week"). `viewerKey`
+/// is the user id, or for guests a salted hash of IP + user agent + day, so no
+/// raw IP is stored.
+model ListingView {
+  listingId String   @map("listing_id") @db.Uuid
+  viewerKey String   @map("viewer_key")
+  day       DateTime @db.Date
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, viewerKey, day])
+  @@index([day, listingId])
+  @@map("listing_views")
 }

@@ -530,6 +530,44 @@
         ]
       }
     },
+    "/v1/listings": {
+      "get": {
+        "operationId": "PublicListingsController_cards_v1",
+        "parameters": [
+          {
+            "name": "ids",
+            "required": true,
+            "in": "query",
+            "description": "Up to 20 listing ids, comma-separated",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListingCardDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cards for up to 20 live listings, in the order given (recently viewed)",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
     "/v1/listings/{id}": {
       "get": {
         "operationId": "PublicListingsController_get_v1",
@@ -555,7 +593,58 @@
             }
           }
         },
-        "summary": "A live listing (public; approximate location only)",
+        "summary": "A live listing (public; approximate location only). Counts a view for “Popular”.",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/v1/listings/{id}/quote": {
+      "get": {
+        "operationId": "PublicListingsController_quote_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-02",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-05",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Price breakdown for dates, and whether the item is free then",
         "tags": [
           "listings"
         ]
@@ -1890,6 +1979,325 @@
         "summary": "Rename, change slug or icon, or hide/show a category",
         "tags": [
           "admin · categories"
+        ]
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "operationId": "SearchController_find_v1",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Pickup day",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-02",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "Return day (inclusive)",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-05",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 18.5074,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 73.8077,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Keywords (stemmed: \"tents\" finds \"tent\")",
+            "schema": {
+              "example": "trekking tent",
+              "type": "string"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 25,
+              "default": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "minPricePaise",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxPricePaise",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "condition",
+            "required": false,
+            "in": "query",
+            "description": "Repeat or comma-separate",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "NEW",
+                  "LIKE_NEW",
+                  "GOOD",
+                  "FAIR"
+                ]
+              }
+            }
+          },
+          {
+            "name": "verifiedLendersOnly",
+            "required": false,
+            "in": "query",
+            "description": "Only lenders with an approved ID",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Default: relevance with keywords, else distance with a location, else newest",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "distance",
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "From the previous page’s nextCursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 30,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPageDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search live listings by keywords, area, dates and filters (public; saved flags when signed in)",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/v1/home": {
+      "get": {
+        "operationId": "SearchController_home_v1",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Pickup day",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-02",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "Return day (inclusive)",
+            "schema": {
+              "format": "date",
+              "example": "2026-10-05",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 18.5074,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 73.8077,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Home feed: categories, near you, popular this week, newest (public)",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/v1/me/favorites": {
+      "get": {
+        "operationId": "FavoritesController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListingCardDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Saved listings, newest first (taken-down ones marked unavailable)",
+        "tags": [
+          "me · wishlist"
+        ]
+      }
+    },
+    "/v1/me/favorites/{listingId}": {
+      "put": {
+        "operationId": "FavoritesController_save_v1",
+        "parameters": [
+          {
+            "name": "listingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save a listing (idempotent)",
+        "tags": [
+          "me · wishlist"
+        ]
+      },
+      "delete": {
+        "operationId": "FavoritesController_remove_v1",
+        "parameters": [
+          {
+            "name": "listingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · wishlist"
         ]
       }
     },
@@ -3250,6 +3658,99 @@
           "icon"
         ]
       },
+      "CardLenderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "idVerified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "idVerified"
+        ]
+      },
+      "ListingCardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryDto"
+          },
+          "thumbUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cover photo, card size"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "weeklyDiscountPct": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "areaLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceKm": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rounded to 0.5 km; under 1 km is reported as 0.5 (\"< 1 km\")"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/CardLenderDto"
+          },
+          "saved": {
+            "type": "boolean",
+            "description": "In the signed-in user’s wishlist"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Still live (wishlists keep items that were taken down)"
+          },
+          "rentPaise": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rent for the searched dates"
+          },
+          "days": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "pricePerDayPaise",
+          "weeklyDiscountPct",
+          "depositPaise",
+          "lender",
+          "saved",
+          "available"
+        ]
+      },
       "ListingPhotoDto": {
         "type": "object",
         "properties": {
@@ -3444,6 +3945,14 @@
           },
           "lender": {
             "$ref": "#/components/schemas/LenderSummaryDto"
+          },
+          "saved": {
+            "type": "boolean",
+            "description": "In the signed-in user’s wishlist"
+          },
+          "favoriteCount": {
+            "type": "number",
+            "description": "How many people saved it"
           }
         },
         "required": [
@@ -3463,7 +3972,65 @@
           "blocks",
           "approxLat",
           "approxLng",
-          "lender"
+          "lender",
+          "saved",
+          "favoriteCount"
+        ]
+      },
+      "QuoteDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number",
+            "description": "Inclusive: pickup day to return day"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "rentBeforeDiscountPaise": {
+            "type": "number"
+          },
+          "weeklyDiscountPaise": {
+            "type": "number"
+          },
+          "rentPaise": {
+            "type": "number"
+          },
+          "feePaise": {
+            "type": "number",
+            "description": "Borrower service fee (₹0 for now)"
+          },
+          "depositPaise": {
+            "type": "number",
+            "description": "Refundable"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "BLOCKED",
+              "TOO_SHORT",
+              "TOO_LONG",
+              "NOT_ENOUGH_NOTICE"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "days",
+          "pricePerDayPaise",
+          "rentBeforeDiscountPaise",
+          "weeklyDiscountPaise",
+          "rentPaise",
+          "feePaise",
+          "depositPaise",
+          "totalPaise",
+          "available"
         ]
       },
       "MyListingDto": {
@@ -4503,6 +5070,73 @@
             "description": "Hidden from the apps when false; existing listings stay"
           }
         }
+      },
+      "SearchPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingCardDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "distance",
+              "relevance",
+              "price_asc",
+              "price_desc",
+              "newest"
+            ],
+            "description": "The sort that was applied"
+          }
+        },
+        "required": [
+          "items",
+          "sort"
+        ]
+      },
+      "HomeDto": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryDto"
+            }
+          },
+          "nearYou": {
+            "description": "Closest within 10 km (needs lat/lng)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingCardDto"
+            }
+          },
+          "popularThisWeek": {
+            "description": "Most viewed and saved in the last 7 days",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingCardDto"
+            }
+          },
+          "newest": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingCardDto"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "nearYou",
+          "popularThisWeek",
+          "newest"
+        ]
       },
       "DocumentDto": {
         "type": "object",

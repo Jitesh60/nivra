@@ -82,12 +82,16 @@ export class ListingPresenter {
     };
   }
 
-  public(l: PublicListingRow): PublicListingDto {
+  public(
+    l: PublicListingRow,
+    extras: { saved: boolean; favoriteCount: number } = { saved: false, favoriteCount: 0 },
+  ): PublicListingDto {
     return {
       ...this.base(l),
       approxLat: approximate(l.lat!),
       approxLng: approximate(l.lng!),
       lender: this.lender(l.lender),
+      ...extras,
     };
   }
 
