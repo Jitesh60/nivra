@@ -47,6 +47,8 @@ export async function createTestApp(): Promise<TestApp> {
     S3_PRIVATE_BUCKET: 'sajha-private-docs',
     S3_PUBLIC_BASE_URL: `${inject('s3Endpoint')}/sajha-public-media`,
     S3_PRIVATE_SSE: 'none',
+    // Tests run booking jobs directly (BookingWorker.process) instead of waiting for delays.
+    JOBS_WORKER: 'false',
     ...TEST_ENV,
   });
 

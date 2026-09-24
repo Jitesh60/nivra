@@ -29,6 +29,7 @@ export async function liveListing(
     maxDays: number;
     advanceNoticeDays: number;
     blocks: { startsOn: Date; endsOn: Date }[];
+    requiredDocs: ('GOVERNMENT_ID' | 'COLLEGE_OR_EMPLOYEE_ID' | 'ADDRESS_PROOF' | 'OTHER')[];
   }> = {},
 ): Promise<string> {
   const prisma = app.get(PrismaService);
@@ -51,6 +52,14 @@ export async function liveListing(
       status: fields.status ?? 'LIVE',
       publishedAt: new Date(),
       blocks: fields.blocks ? { create: fields.blocks } : undefined,
+      requiredDocs: fields.requiredDocs
+        ? {
+            create: fields.requiredDocs.map((docType) => ({
+              docType,
+              note: docType === 'OTHER' ? 'Trek permit' : null,
+            })),
+          }
+        : undefined,
     },
   });
   return listing.id;

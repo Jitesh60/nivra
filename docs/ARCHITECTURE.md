@@ -76,10 +76,9 @@ src/
     ├── search/             # text + geo + date search, home feed, wishlist, views   (Phase 4a)
     ├── chat/               # conversations, messages, offers, masking, /ws gateway (Phase 5a)
     ├── realtime/           # RealtimeService (emit, presence), Redis Socket.IO adapter (Phase 5a)
-    ├── notifications/      # device tokens, push when away (in-app centre: Phase 6) (Phase 5a)
+    ├── notifications/      # device tokens, push when away, in-app notifications    (Phase 5a, 6a)
     ├── safety/             # blocks, reports, admin reports + audited transcripts  (Phase 5a)
-    ├── bookings/           # booking state machine                                  (Phase 6)
-    ├── booking-documents/  # booking-scoped document sharing                       (Phase 6)
+    ├── bookings/           # state machine, requests, document sharing, timers (BullMQ) (Phase 6a)
     ├── payments/           # Razorpay orders, webhooks, refunds, ledger             (Phase 7)
     ├── payouts/            # Razorpay Route linked accounts, transfers              (Phase 7)
     ├── handover/           # handover/return codes, condition reports               (Phase 8)
@@ -193,9 +192,10 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `conversations` | listingId, borrowerId, lenderId, lastMessageAt; unique(listingId, borrowerId) |
 | `messages` | conversationId, senderId, type (TEXT/IMAGE/OFFER/SYSTEM), body, maskedBody, imageKey, readAt |
 | `offers` | messageId, startDate, endDate, pricePerDayPaise, status (PENDING/ACCEPTED/COUNTERED/DECLINED/EXPIRED), parentOfferId |
-| `bookings` | listingId, borrowerId, lenderId, `startsOn`/`endsOn` (dates, inclusive), days, pricePerDayPaise, rentPaise, feePaise, depositPaise, totalPaise, status, handoverCodeHash, returnCodeHash, expiresAt, cancelledBy, cancelReason |
-| `booking_document_shares` | bookingId, userDocumentId, requiredDocId, status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
-| `document_access_logs` | shareId, viewerId, viewerType, ip, createdAt |
+| `bookings` (6a) | listingId, borrowerId, lenderId, conversationId, offerId (unique, when made from an offer), source (REQUEST/OFFER), `startsOn`/`endsOn` (dates, inclusive), days, pricePerDayPaise, rentPaise, feePaise, depositPaise, totalPaise, status, expiresAt (deadline of the current step), declineReason, cancelledBy (BORROWER/LENDER/ADMIN), cancelledById, cancelReason, closedAt; handover code hashes come in Phase 8 |
+| `booking_events` (6a) | bookingId, type (REQUESTED/ACCEPTED/DECLINED/EXPIRED/CANCELLED/DOCS_SUBMITTED/DOCS_APPROVED/DOCS_REJECTED), fromStatus, toStatus, actorType (USER/ADMIN/SYSTEM), actorId, note, createdAt; append-only |
+| `booking_document_shares` (6a) | bookingId, requiredDocId, userDocumentId (set null if the vault copy is deleted), docType, label, verified (Sajha had approved it), frontKey/backKey (the booking's own copies), status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
+| `document_access_logs` (6a) | shareId, viewerId, viewerType, ip, createdAt |
 | `payments` | bookingId, razorpayOrderId, razorpayPaymentId, amountPaise, status, raw |
 | `ledger_entries` | bookingId, type (RENT/FEE/DEPOSIT_HOLD/DEPOSIT_REFUND/DEPOSIT_CAPTURE/LATE_FEE/PAYOUT/REFUND), amountPaise, direction, externalRef |
 | `payout_accounts` | userId, razorpayLinkedAccountId, status |
@@ -203,7 +203,7 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `reviews` | bookingId, authorId, subjectId, rating, comment, publishedAt |
 | `disputes` | bookingId, openedBy, reason, status, resolution, capturePaise, resolvedBy |
 | `reports` | reporterId, targetType, targetId, reason, status |
-| `notifications` | userId, type, payload, readAt |
+| `notifications` (6a) | userId, type (e.g. `booking.requested`), title, body, data (`{bookingId}`), readAt, createdAt |
 | `device_tokens` | userId, sessionId, fcmToken, platform |
 
 **Double-booking guard** (raw SQL in a migration; bookings, like availability blocks, are whole days):
@@ -212,8 +212,10 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 ALTER TABLE bookings ADD CONSTRAINT bookings_no_overlap
   EXCLUDE USING gist (listing_id WITH =, daterange(starts_on, ends_on, '[]') WITH &&)
-  WHERE (status IN ('AWAITING_PAYMENT','CONFIRMED','ACTIVE','RETURNED'));
+  WHERE (status IN ('AWAITING_PAYMENT','CONFIRMED','ACTIVE','RETURNED','DISPUTED'));
 ```
+
+A partial unique index (`bookings_one_open`) also allows only one booking in progress per borrower and listing.
 
 ## 4. Authentication & authorization
 
@@ -392,9 +394,18 @@ stateDiagram-v2
   COMPLETED --> [*]
 ```
 
-- Transitions live in **one `BookingStateMachine` service**. Each transition runs inside a DB transaction with `SELECT … FOR UPDATE`, writes a `booking_events` row, and emits domain events (notifications, sockets, ledger).
-- Timers (expiry, reminders, claim window) are **BullMQ delayed jobs**, and the job re-checks the state before acting (idempotent).
-- The date range is held by the exclusion constraint from `AWAITING_PAYMENT` onward. Another borrower can't pay for overlapping dates.
+- Transitions live in **one `BookingStateMachine` service** (`modules/bookings/booking-state-machine.ts`). Each transition runs inside a DB transaction with `SELECT … FOR UPDATE`, checks the pure rules in `booking-rules.ts`, updates the booking and writes a `booking_events` row. After the commit it schedules the next timer, posts a SYSTEM note in the booking's chat, emits `booking:updated` to both people and sends notifications. Failures after the commit are logged, never thrown.
+- **As built in Phase 6:**
+  - "Accepted" is an event, not a status: accepting moves straight to `AWAITING_DOCS` or `AWAITING_PAYMENT`.
+  - An offer accepted in chat creates the booking already accepted, inside the offer's transaction.
+  - Cancelling before payment is allowed for the borrower (any step), the lender (after accepting; it counts against them) and admins. The PRD refund tiers are `refundFor()`, applied from Phase 7.
+  - The detail DTO carries `can: {accept, decline, cancel, shareDocs, reviewDocs}` from the same rules, so the apps don't repeat them.
+- **Timers** are **BullMQ delayed jobs** on the `bookings` queue, and each job re-checks the state before acting (idempotent):
+  - Deadlines: lender reply 24 h, sharing documents 24 h, reviewing them 24 h, payment hold 2 h. Each is configurable (`BOOKING_*_TTL_MIN`), and none runs past the end of the first rental day.
+  - A `sweep-expired` job runs every 5 minutes and catches lost jobs.
+  - The worker runs inside the API process unless `JOBS_WORKER=false`.
+- The date range is held by the exclusion constraint from `AWAITING_PAYMENT` onward. Another borrower can't pay for overlapping dates; accepting or approving into a held range fails with `BOOKING_DATES_TAKEN`.
+- **Availability** is the lender's `availability_blocks` plus held bookings (`bookings/availability.ts`). Bookings aren't written into `availability_blocks`, because the lender's editor replaces that table wholesale. Held dates are used by search (`NOT EXISTS` on held bookings), the quote endpoint, the public listing's `blocks`, chat offers and new requests.
 
 ## 6. Payments & payouts (Razorpay)
 
@@ -474,9 +485,18 @@ Locally and in e2e tests, storage is SeaweedFS's S3 API (`infra/docker-compose.y
 
 **Viewing your own document / admin review:** `GET /v1/me/documents/:id/view?side=` and `GET /v1/admin/documents/:id/view?side=` return a 5-minute presigned GET (`no-store`, inline) and write `document.view` / `admin.document.view` to `audit_logs`. Document list responses never contain storage keys or URLs.
 
-**Viewing a shared document:** a lender calls `GET /v1/bookings/:id/documents/:shareId/view`. The API checks that the viewer is the booking's lender, that the booking state is between `AWAITING_DOCS` and `RETURNED`, and that `accessExpiresAt` hasn't passed. It then writes a `document_access_logs` row and returns a **5-minute presigned GET URL**. The app shows the document in an in-app viewer with a watermark ("Shared with <lender> for booking #123") and screenshot blocking on Android (`FLAG_SECURE`).
+**Sharing documents for a booking (Phase 6a):** `POST /v1/bookings/:id/documents {shares: [{requiredDocId, userDocumentId}]}`.
+- The borrower picks one vault document per document the listing asks for. It must match the type, be live (not rejected, expired or deleted), and belong to them.
+- The files are **copied** to `bookings/{bookingId}/` in the private bucket, so deleting from the vault doesn't affect the booking and purging is clean.
+- The share records whether Sajha had verified the document, and writes `user.booking.documents.share` to the audit log.
 
-**Purge job:** a daily BullMQ job purges booking-scoped copies and revokes shares 30 days after the booking closes, unless a dispute is open.
+**Viewing a shared document:** a lender calls `GET /v1/bookings/:id/documents/:shareId/view?side=`.
+- The API checks that the viewer is the booking's lender, that the booking state is between `AWAITING_DOCS` and `RETURNED`, and that `accessExpiresAt` hasn't passed (otherwise 410 `DOCUMENT_ACCESS_ENDED`).
+- It then writes a `document_access_logs` row and a `booking.document.view` audit entry, and returns a **5-minute presigned GET URL** plus the watermark text ("Shared with Asha Patil for booking #4F2A9C · 24 Sept, 9:10 pm").
+- The borrower sees each view (who and when) on the booking.
+- The app shows the document in an in-app viewer with that watermark and screenshot blocking on Android (`FLAG_SECURE`) (Phase 6b).
+
+**Purge job:** closing a booking ends access (`accessExpiresAt = closedAt`). A daily BullMQ job (`purge-shares`, 03:00 IST) deletes the copies `SHARE_RETENTION_DAYS` (30) after the booking closed, unless it's disputed.
 
 ## 9. Mobile app architecture (`apps/mobile`)
 

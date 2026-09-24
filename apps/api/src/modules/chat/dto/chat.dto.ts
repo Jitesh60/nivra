@@ -108,6 +108,13 @@ export class ConversationDto {
   pendingOffer: OfferDto | null;
   @ApiPropertyOptional({ type: OfferDto, nullable: true, description: 'The agreed deal, if any' })
   acceptedOffer: OfferDto | null;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'The booking in progress for this chat, if any',
+  })
+  openBookingId: string | null;
 }
 
 export class ConversationPageDto {
@@ -129,6 +136,7 @@ export class MessagePageDto {
 export class UnreadDto {
   @ApiProperty({ description: 'Conversations with unread messages' }) conversations: number;
   @ApiProperty() messages: number;
+  @ApiProperty({ description: 'Unread in-app notifications (the bell)' }) notifications: number;
 }
 
 export class ListConversationsQueryDto {

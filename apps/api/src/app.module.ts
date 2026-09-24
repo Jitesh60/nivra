@@ -20,6 +20,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
+import { BookingsModule } from './modules/bookings/bookings.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
@@ -63,6 +64,7 @@ import { RedisModule } from './redis/redis.module.js';
     NotificationsModule,
     SafetyModule,
     ChatModule,
+    BookingsModule,
   ],
 })
 export class AppModule {}

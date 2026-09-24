@@ -23,6 +23,8 @@ import {
   publicListingInclude,
 } from './listing-presenter.js';
 import { addDays, LISTING_RULES as R, todayUtc } from './listing-rules.js';
+import { heldRanges } from '../bookings/availability.js';
+import { OPEN_STATUSES } from '../bookings/booking-rules.js';
 
 /** Statuses a lender can still edit. */
 const EDITABLE: ListingStatus[] = ['DRAFT', 'PENDING', 'LIVE', 'PAUSED', 'REJECTED'];
@@ -269,6 +271,16 @@ export class ListingsService {
 
   async delete(userId: string, id: string, client: ClientInfo) {
     const listing = await this.getMine(userId, id);
+    const open = await this.prisma.booking.count({
+      where: { listingId: listing.id, status: { in: [...OPEN_STATUSES] } },
+    });
+    if (open > 0) {
+      throw new AppException(
+        ErrorCode.LISTING_HAS_OPEN_BOOKINGS,
+        'This item has bookings in progress. Pause it instead, or finish those bookings first.',
+        HttpStatus.CONFLICT,
+      );
+    }
     await this.removeListing(listing.id);
     await this.log('USER', userId, 'user.listing.delete', id, {}, client);
   }
@@ -291,6 +303,11 @@ export class ListingsService {
     });
     if (!listing) throw notFound();
     return listing;
+  }
+
+  /** Dates held by bookings (unavailable to everyone else). */
+  heldRanges(id: string) {
+    return heldRanges(this.prisma, id);
   }
 
   // ── Admin ──

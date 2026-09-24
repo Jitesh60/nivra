@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { StorageService } from '../../providers/storage/storage.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { OPEN_STATUSES } from '../bookings/booking-rules.js';
 import { processAvatar } from '../media/image-pipeline.js';
 import { invalid, UploadsService } from '../media/uploads.service.js';
 import { ListingsService } from '../listings/listings.service.js';
@@ -99,6 +100,19 @@ export class UsersService {
    * phone number is freed, so signing in again creates a brand-new account.
    */
   async deleteAccount(userId: string, client: ClientInfo): Promise<void> {
+    const openBookings = await this.prisma.booking.count({
+      where: {
+        OR: [{ borrowerId: userId }, { lenderId: userId }],
+        status: { in: [...OPEN_STATUSES] },
+      },
+    });
+    if (openBookings > 0) {
+      throw new AppException(
+        ErrorCode.ACCOUNT_HAS_OPEN_BOOKINGS,
+        'You have bookings in progress. Cancel or finish them before deleting your account.',
+        HttpStatus.CONFLICT,
+      );
+    }
     const [profile, documents] = await Promise.all([
       this.prisma.profile.findUnique({ where: { userId }, select: { avatarKey: true } }),
       this.prisma.userDocument.findMany({

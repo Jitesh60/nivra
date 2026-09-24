@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { StorageService } from '../../providers/storage/storage.service.js';
+import { OPEN_STATUSES } from '../bookings/booking-rules.js';
 import { ParticipantPresenter } from '../safety/participants.js';
 import { userViewInclude } from '../users/user-view.js';
 import type { ConversationDto, MessageDto, OfferDto } from './dto/chat.dto.js';
@@ -26,6 +27,12 @@ export const conversationInclude = () =>
     borrower: { include: userViewInclude() },
     lender: { include: userViewInclude() },
     offers: { where: { status: { in: ['PENDING', 'ACCEPTED'] } } },
+    bookings: {
+      where: { status: { in: [...OPEN_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+      take: 1,
+      select: { id: true },
+    },
   }) satisfies Prisma.ConversationInclude;
 
 export type ConversationRow = Prisma.ConversationGetPayload<{
@@ -119,6 +126,7 @@ export class ChatPresenter {
       canMessage: !extras.blockedByMe && !extras.blockedByThem,
       pendingOffer: pending ? this.offer(pending, viewerId, now) : null,
       acceptedOffer: accepted ? this.offer(accepted, viewerId, now) : null,
+      openBookingId: c.bookings[0]?.id ?? null,
     };
   }
 }

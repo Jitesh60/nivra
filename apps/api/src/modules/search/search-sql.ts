@@ -2,6 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { Prisma } from '../../generated/prisma/client.js';
+import { notHeldBetween } from '../bookings/availability.js';
 import type { SearchSort } from './dto/search.dto.js';
 
 /**
@@ -58,13 +59,14 @@ export function tsQuery(q: string): Prisma.Sql {
   return Prisma.sql`websearch_to_tsquery('english', ${q})`;
 }
 
-/** Free for the whole [start, end] stay, and within the listing's rules. */
+/** Free for the whole [start, end] stay (no lender block, no held booking), within the listing's rules. */
 export function availableBetween(start: string, end: string, days: number): Prisma.Sql {
   return Prisma.sql`
     NOT EXISTS (
       SELECT 1 FROM availability_blocks b
       WHERE b.listing_id = l.id AND b.starts_on <= ${end}::date AND b.ends_on >= ${start}::date
     )
+    AND ${notHeldBetween(start, end)}
     AND ${days}::int BETWEEN l.min_days AND l.max_days
     AND ${start}::date >= current_date + l.advance_notice_days`;
 }

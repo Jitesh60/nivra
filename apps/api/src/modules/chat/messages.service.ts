@@ -145,8 +145,16 @@ export class MessagesService {
     });
   }
 
-  /** Sends [message] to both people (each sees their own version) and pushes if they're away. */
-  async broadcast(c: Participants, message: MessageRow): Promise<void> {
+  /**
+   * Sends [message] to both people (each sees their own version) and pushes if
+   * they're away, unless [opts.push] is false (e.g. booking updates, which send
+   * their own notification).
+   */
+  async broadcast(
+    c: Participants,
+    message: MessageRow,
+    opts: { push: boolean } = { push: true },
+  ): Promise<void> {
     const recipientId = otherParty(c, message.senderId);
     const [forSender, forRecipient] = await Promise.all([
       this.presenter.message(message, message.senderId),
@@ -154,6 +162,7 @@ export class MessagesService {
     ]);
     this.realtime.toUser(message.senderId, ChatEvent.MESSAGE_NEW, forSender);
     this.realtime.toUser(recipientId, ChatEvent.MESSAGE_NEW, forRecipient);
+    if (!opts.push) return;
 
     const sender = await this.prisma.user.findUnique({
       where: { id: message.senderId },
