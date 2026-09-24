@@ -39,6 +39,11 @@ android {
         versionName = flutter.versionName
     }
 
+    // The flavours name the app with resValue, which AGP 9 turns off by default.
+    buildFeatures {
+        resValues = true
+    }
+
     // One install per environment: `flutter run --flavor dev --dart-define-from-file=config/dev.json`
     flavorDimensions += "env"
     productFlavors {
