@@ -15,12 +15,12 @@ This doc explains **how** we'll build what the [PRD](./PRD.md) describes: stack 
 | ORM | **Prisma** | Typed client and migrations. Raw SQL is used for PostGIS and exclusion constraints inside migrations. |
 | Cache / queues | **Redis** + **BullMQ** | OTP rate limits, cooldowns, background jobs (expiry, reminders, purges), Socket.IO adapter |
 | Realtime | **Socket.IO** (NestJS gateway) | Chat, typing indicators, booking status updates |
-| Storage | S3-compatible: **AWS S3 (ap-south-1)** in production, **MinIO** locally | Listing photos (public bucket via CDN) and documents (private, encrypted bucket) |
+| Storage | S3-compatible: **AWS S3 (ap-south-1)** in production, **SeaweedFS** (S3-compatible) locally | Listing photos (public bucket via CDN) and documents (private, encrypted bucket) |
 | Validation | `class-validator` + `class-transformer` DTOs | Native to NestJS and generates Swagger schemas |
 | Auth | `@nestjs/jwt`, `argon2`, `otplib` (TOTP) | See ARCHITECTURE §4 |
 | Docs | `@nestjs/swagger` → OpenAPI 3 at `/docs` | Single API contract; generates the TypeScript client |
 | Logging / errors | `nestjs-pino`, Sentry | Structured logs with request IDs |
-| Tests | Jest, Supertest, Testcontainers (Postgres + Redis) | Real database in e2e tests |
+| Tests | Vitest, Supertest, Testcontainers (Postgres + Redis) | Real database in e2e tests |
 
 ### 1.2 Mobile — `apps/mobile`
 | Concern | Choice |
@@ -57,7 +57,7 @@ Next.js (App Router, static generation) · Tailwind CSS · **React Bits** · **s
 | Maps / geocoding | Google Maps Platform | — |
 | Error monitoring | Sentry | — |
 
-> All providers sit behind interfaces (`SmsProvider`, `EmailProvider`, `PaymentProvider`, `StorageProvider`). Local development and tests use **console/Mailpit/MinIO fakes**, so no real SMS, email or payment calls are needed to develop.
+> All providers sit behind interfaces (`SmsProvider`, `EmailProvider`, `PaymentProvider`, `StorageProvider`). Local development and tests use **console/Mailpit/SeaweedFS fakes**, so no real SMS, email or payment calls are needed to develop.
 
 ## 2. About the UI effect libraries (important)
 
@@ -90,7 +90,7 @@ sajha/
 │   ├── eslint-config/
 │   └── tsconfig/
 ├── infra/
-│   └── docker-compose.yml   # postgis, redis, minio, mailpit
+│   └── docker-compose.yml   # postgis, redis, seaweedfs (s3), mailpit
 ├── docs/             # PRD, PLAN, ARCHITECTURE, PHASES
 ├── .github/workflows/ # CI
 ├── package.json      # pnpm workspaces
@@ -131,8 +131,8 @@ Branch protection on `main` (recommended to enable in GitHub settings): require 
 
 | Layer | Tool | Scope |
 |---|---|---|
-| API unit | Jest | Services, guards, OTP logic, state machine, fee calculation |
-| API e2e | Jest + Supertest + Testcontainers | Real Postgres + Redis; every endpoint's happy path and main failure cases |
+| API unit | Vitest | Services, guards, OTP logic, state machine, fee calculation |
+| API e2e | Vitest + Supertest + Testcontainers | Real Postgres + Redis; every endpoint's happy path and main failure cases |
 | Mobile | `flutter_test`, `mocktail` | Widgets (auth screens), Riverpod notifiers, repositories |
 | Mobile integration | `integration_test` | Auth flow against a local API |
 | Admin / web | Playwright | Login + 2FA; landing page renders; waitlist submit |
@@ -142,7 +142,7 @@ Branch protection on `main` (recommended to enable in GitHub settings): require 
 
 | Env | Purpose | Infra |
 |---|---|---|
-| **local** | Development | `docker compose up` (PostGIS, Redis, MinIO, Mailpit); fake SMS logs the OTP to the console; Razorpay test mode |
+| **local** | Development | `docker compose up` (PostGIS, Redis, SeaweedFS, Mailpit); fake SMS logs the OTP to the console; Razorpay test mode |
 | **staging** | QA and demos | Managed Postgres + Redis, S3 bucket, Razorpay test mode, real SMS/email to allow-listed numbers |
 | **production** | Live | Managed Postgres (with PITR backups), Redis, S3 + CloudFront, Razorpay live |
 

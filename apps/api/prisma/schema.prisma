@@ -1,0 +1,14 @@
+// Sajha database schema. Models are added phase by phase (see docs/ARCHITECTURE.md §3).
+// Raw SQL (PostGIS columns, exclusion constraints) lives in the migration files.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "esm"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis, btree_gist, citext]
+}

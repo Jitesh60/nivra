@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+/* Sajha brand scales (brand-*, accent-*, ink-*), radii and fonts. Generated from packages/design-tokens. */
+@import '@sajha/design-tokens/theme.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* shadcn/ui semantic tokens, mapped onto the Sajha palette. */
+:root {
+  --radius: 0.625rem;
+  --background: var(--color-ink-50);
+  --foreground: var(--color-ink-950);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink-950);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink-950);
+  --primary: var(--color-brand-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-ink-100);
+  --secondary-foreground: var(--color-ink-900);
+  --muted: var(--color-ink-100);
+  --muted-foreground: var(--color-ink-500);
+  --accent: var(--color-brand-50);
+  --accent-foreground: var(--color-brand-900);
+  --destructive: var(--color-danger);
+  --border: var(--color-ink-200);
+  --input: var(--color-ink-200);
+  --ring: var(--color-brand-500);
+}
+
+.dark {
+  --background: var(--color-ink-950);
+  --foreground: var(--color-ink-50);
+  --card: var(--color-ink-900);
+  --card-foreground: var(--color-ink-50);
+  --popover: var(--color-ink-900);
+  --popover-foreground: var(--color-ink-50);
+  --primary: var(--color-brand-400);
+  --primary-foreground: var(--color-ink-950);
+  --secondary: var(--color-ink-800);
+  --secondary-foreground: var(--color-ink-50);
+  --muted: var(--color-ink-800);
+  --muted-foreground: var(--color-ink-400);
+  --accent: var(--color-ink-800);
+  --accent-foreground: var(--color-ink-50);
+  --destructive: var(--color-danger);
+  --border: var(--color-ink-800);
+  --input: var(--color-ink-700);
+  --ring: var(--color-brand-400);
+}
+
+@theme inline {
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-jetbrains);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
