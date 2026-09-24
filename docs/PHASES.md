@@ -81,7 +81,7 @@ flowchart LR
 **Branch:** `phase/1a-auth-backend` · Design: [ARCHITECTURE §4](./ARCHITECTURE.md#4-authentication--authorization)
 
 **Scope**
-- Prisma models: `User`, `Session`, `OtpChallenge`, `AdminUser`, `AdminSession`, `AuditLog`
+- Prisma models: `User`, `AdminUser`, `AdminRecoveryCode`, `Session` + `RefreshToken` (shared by both realms), `OtpChallenge`, `AuditLog`
 - `providers/sms` (`Msg91SmsProvider`, `ConsoleSmsProvider`), `providers/email` (`ResendEmailProvider`, `MailpitEmailProvider`) plus email OTP template
 - `otp` module: create and verify challenges, HMAC hashing, TTL, attempt limits, cooldown, Redis rate limits
 - `auth` module: phone OTP login/signup, email OTP verify, JWT access token, rotating refresh token with reuse detection, logout, logout-all
@@ -101,7 +101,7 @@ flowchart LR
 - [ ] A suspended user can't log in or refresh
 - [ ] Admin: a correct password without 2FA gives no tokens; first login forces TOTP setup; 5 wrong passwords → locked out for 15 minutes; OPS can't reach Super Admin endpoints (`403`)
 - [ ] OTP codes, tokens and phone numbers never appear in logs
-- [ ] Unit tests for the OTP service, token service and guards; e2e tests for every endpoint above; coverage of the auth modules ≥ 80%
+- [ ] Unit tests for the OTP service, token service and guards; e2e tests for every endpoint above; coverage of the auth modules ≥ 80% (`pnpm --filter @sajha/api test:cov` enforces it in CI)
 
 **Final commit:** `feat(auth-api): phone & email OTP, JWT refresh rotation, admin auth with TOTP & RBAC`
 

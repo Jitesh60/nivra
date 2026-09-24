@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import type { ErrorCode } from './error-codes.js';
 
 /**
  * Throw this for any expected error. It is rendered as
@@ -7,7 +8,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
  */
 export class AppException extends HttpException {
   constructor(
-    readonly code: string,
+    readonly code: ErrorCode | string,
     message: string,
     status: HttpStatus = HttpStatus.BAD_REQUEST,
     readonly details?: unknown,

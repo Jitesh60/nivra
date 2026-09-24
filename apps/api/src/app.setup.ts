@@ -13,6 +13,12 @@ import type { Env } from './config/env.js';
 export function configureApp(app: INestApplication): INestApplication {
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
+  // Behind a load balancer the client IP arrives in X-Forwarded-For. Only trust
+  // private-network proxies so callers can't spoof their IP (OTP limits use it).
+  (app.getHttpAdapter().getInstance() as { set: (k: string, v: string) => void }).set(
+    'trust proxy',
+    'loopback, linklocal, uniquelocal',
+  );
   app.use(helmet());
   app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

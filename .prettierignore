@@ -8,3 +8,5 @@ pnpm-lock.yaml
 apps/mobile
 packages/design-tokens/dist
 *.md
+apps/api/src/generated
+**/next-env.d.ts

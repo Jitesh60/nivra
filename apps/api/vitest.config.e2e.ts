@@ -13,5 +13,12 @@ export default defineConfig({
     hookTimeout: 180_000,
     testTimeout: 30_000,
     fileParallelism: false,
+    // `pnpm test:cov` — auth/session modules must stay ≥ 80% covered (docs/PHASES.md 1a).
+    coverage: {
+      provider: 'v8',
+      include: ['src/modules/**/*.ts'],
+      exclude: ['**/*.spec.ts', '**/dto/**'],
+      thresholds: { lines: 80, statements: 80, functions: 80, branches: 75 },
+    },
   },
 });
