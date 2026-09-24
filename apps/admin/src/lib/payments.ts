@@ -47,6 +47,7 @@ export const REFUND_KIND_LABEL: Record<string, string> = {
   CANCELLATION: 'Cancellation',
   LATE_PAYMENT: 'Late payment',
   MANUAL: 'Goodwill (manual)',
+  DEPOSIT_RETURN: 'Deposit back',
 };
 
 export const REFUND_STATUS_LABEL: Record<string, string> = {

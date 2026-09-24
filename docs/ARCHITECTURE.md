@@ -635,7 +635,7 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 
 ## 10. Admin architecture (`apps/admin`)
 
-- App Router with route groups: `(auth)/login` (`/login`, `/login/setup`, `/login/verify`, `/login/recovery-codes`) and `(dashboard)` (`/`, `/users`, `/users/[id]`, `/listings`, `/listings/[id]`, `/documents`, `/documents/[id]`, `/categories`, `/bookings`, `/bookings/[id]`, `/reports`, `/reports/[id]`, `/conversations/[id]`, `/waitlist`, `/admins`, `/account`, `/account/password`), plus the `/logout`, `/waitlist/export` and `/documents/[id]/image` route handlers.
+- App Router with route groups: `(auth)/login` (`/login`, `/login/setup`, `/login/verify`, `/login/recovery-codes`) and `(dashboard)` (`/`, `/users`, `/users/[id]`, `/listings`, `/listings/[id]`, `/documents`, `/documents/[id]`, `/categories`, `/bookings`, `/bookings/[id]`, `/reports`, `/reports/[id]`, `/disputes`, `/disputes/[id]`, `/conversations/[id]`, `/waitlist`, `/admins`, `/account`, `/account/password`), plus the `/logout`, `/waitlist/export`, `/documents/[id]/image`, `/bookings/[id]/photos/[n]` and `/disputes/[id]/photos/[n]` route handlers.
 - **Cookies** (all `httpOnly`, `SameSite=Strict`, `Secure` in production): `sajha_admin_at` (access token, lives as long as the token), `sajha_admin_rt` (refresh token, 12 hours), `sajha_admin_mfa` (5-minute token between the password and 2FA steps), `sajha_admin_rc` (recovery codes, held for one page view).
 - **`proxy.ts`** (Next.js 16's renamed Middleware) runs before every page. With no session it redirects to `/login?next=…`. If the access cookie has expired but the refresh cookie is present, it refreshes with the API, rotates both cookies and lets the request continue, so pages never see an expired token. A signed-in admin opening `/login` goes to the dashboard.
 - **Reads** happen in Server Components and **writes** in Server Functions (`'use server'` actions with `useActionState`). Both use the typed `@sajha/api-client`, so paths, bodies and responses are checked at compile time against the API's OpenAPI document. A 401 from the API goes to `/logout?reason=expired`, which clears the cookies. A disabled account or a pending password change redirects accordingly.
@@ -667,6 +667,12 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
     - **Refund** is a goodwill refund with an amount (up to what's left) and a reason. Sajha pays for it, and the API audits it as `admin.payment.refund`.
   - `/payments/payouts` lists transfers by status, with **Retry** on failed ones (`admin.transfer.retry`).
   - `/payments/ledger` shows the balance per account, a Balanced badge and reconciliation checks: unbalanced transactions, captured payments with no ledger entry, and failed refunds and payouts.
+- **Disputes** (Phase 8c). Every role can read; SUPER_ADMIN/OPS settle.
+  - `/disputes` has Open and Settled tabs.
+  - `/disputes/[id]` puts everything needed for a decision on one page: the claim and evidence, the borrower's reply, handover and return photos side by side per person, the last 10 chat messages (`TranscriptList`, shared with `/conversations/[id]`, and logged by the API), the timeline and the deposit maths.
+  - The decision form previews the split (lender gets the late fee plus the amount kept, the borrower gets the rest back) before a confirm step. `POST /v1/admin/disputes/:id/resolve` completes the booking, moves the money and audits `admin.dispute.resolve`.
+  - Photos come through the `/bookings/[id]/photos/[n]` and `/disputes/[id]/photos/[n]` route handlers (`src/lib/photo-proxy.ts`). They read the API's short-lived signed links and stream the bytes with `no-store`, like document images.
+  - `/bookings/[id]` gains a Rental card and the condition photos.
 - **2FA setup** asks the API for a secret exactly once per page visit (each call replaces the secret), shows the QR code plus the key for manual entry, then shows the recovery codes once with copy and download buttons.
 
 ## 11. Marketing site architecture (`apps/web`)

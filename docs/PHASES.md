@@ -721,6 +721,27 @@ Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mob
     - reporting a person
   - An opt-in live test covers handover and return with real codes and photos against the API. The chat offer in the live contract test now uses a random date, so reruns don't collide.
 
+### 8c — Admin
+**Branch:** `phase/8c-rental-admin`
+
+- **Disputes** in the nav for every role. Settling is SUPER_ADMIN/OPS only, as the API enforces.
+  - `/disputes`: Open and Settled tabs, with the listing, the reason, whether the borrower has replied, and the claim against the deposit.
+  - `/disputes/[id]`, the workspace:
+    - the lender's claim and evidence photos, and the borrower's reply and photos
+    - **condition photos side by side**, handover next to return for each person
+    - the **last 10 chat messages** (the logged transcript, shared with `/conversations/[id]`), with a link to the full conversation
+    - the booking timeline
+    - the deposit, late fee, claim and the most the lender can keep
+  - **The decision:** the amount the lender keeps (quick picks: nothing, what they asked, the most allowed) and a note both people see. What the lender gets and what the borrower gets back are shown before a confirm step. After settling, the page shows the decision, who made it and a link to the payment.
+- **Photos** are streamed by the `/bookings/[id]/photos/[n]` and `/disputes/[id]/photos/[n]` route handlers (add `?thumb=1` for the thumbnail). They read the signed link from the API, fetch the bytes on the server and return them with `no-store`, so storage URLs never reach the browser.
+- **Booking detail** gains a Rental card (handed over, due back, returned, late fee, claim window, completed and deposit kept, or no-show) with a link to the dispute, plus the condition photos. The new timeline events have labels. The cancel form only shows while the API says the booking can be cancelled (before handover).
+- **Payments:** the `DEPOSIT_RETURN` refund reads "Deposit back".
+- **Tests** (`e2e/disputes.spec.ts`), with a full rental run through the API (pay, handover and return with codes and photos, a chat message, the lender's ₹800 claim and the borrower's reply):
+  - Support can read the dispute but not settle it.
+  - Ops sees the claim, reply and condition photos. Photos stream with `no-store`, and an out-of-range photo returns 404. Ops reads the chat excerpt, is refused more than the maximum, and keeps ₹600. The booking completes with the rental card and no cancel option, the borrower's ₹400 "Deposit back" refund is listed, and the ledger stays balanced.
+  - The e2e helper now sends each app user's OTP requests from its own test IP (`X-Forwarded-For`, trusted from loopback), so the growing suite stays under the per-IP OTP limit.
+  - Payouts being released after a claim window that runs out without a dispute is covered by the API e2e suite: it needs the 24-hour window to pass.
+
 ## Phase 9 — Launch hardening & release
 **Branch:** `phase/9-launch`
 
