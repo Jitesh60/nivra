@@ -376,7 +376,9 @@ export class BookingsService {
         ? (['REQUESTED', 'AWAITING_DOCS'] as const)
         : query.tab === 'AWAITING_PAYMENT'
           ? (['AWAITING_PAYMENT'] as const)
-          : (['DECLINED', 'EXPIRED', 'CANCELLED', 'COMPLETED'] as const);
+          : query.tab === 'CONFIRMED'
+            ? (['CONFIRMED', 'ACTIVE', 'RETURNED', 'DISPUTED'] as const)
+            : (['DECLINED', 'EXPIRED', 'CANCELLED', 'COMPLETED'] as const);
     const q = query.q?.trim();
     const person = q
       ? {

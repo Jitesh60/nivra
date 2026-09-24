@@ -43,6 +43,7 @@ export const BOOKING_EVENT_TYPES = [
   'DOCS_SUBMITTED',
   'DOCS_APPROVED',
   'DOCS_REJECTED',
+  'PAID',
 ] as const;
 
 const DOC_TYPES = [
@@ -158,6 +159,24 @@ export class BookingActionsDto {
   @ApiProperty({ description: 'Borrower: share documents now' }) shareDocs: boolean;
   @ApiProperty({ description: 'Lender: approve or reject shared documents now' })
   reviewDocs: boolean;
+  @ApiProperty({ description: 'Borrower: pay now (POST /bookings/:id/pay)' }) pay: boolean;
+}
+
+export class BookingRefundDto {
+  @ApiProperty() amountPaise: number;
+  @ApiProperty({ enum: ['CANCELLATION', 'LATE_PAYMENT', 'MANUAL'] }) kind: string;
+  @ApiProperty({ enum: ['PENDING', 'PROCESSED', 'FAILED'] }) status: string;
+  @ApiProperty() createdAt: Date;
+}
+
+export class BookingPaymentDto {
+  @ApiProperty({ enum: ['CREATED', 'CAPTURED', 'FAILED', 'PARTIALLY_REFUNDED', 'REFUNDED'] })
+  status: string;
+  @ApiProperty() amountPaise: number;
+  @ApiPropertyOptional({ type: String, nullable: true }) method: string | null;
+  @ApiPropertyOptional({ type: Date, nullable: true }) paidAt: Date | null;
+  @ApiProperty({ description: 'Refunded so far (processed or on the way)' }) refundedPaise: number;
+  @ApiProperty({ type: [BookingRefundDto] }) refunds: BookingRefundDto[];
 }
 
 export class BookingDto {
@@ -226,10 +245,37 @@ export class SharedDocumentDto {
 }
 
 export class BookingDetailDto extends BookingDto {
+  @ApiPropertyOptional({
+    type: BookingPaymentDto,
+    nullable: true,
+    description: 'The payment, once one was made (or the latest attempt)',
+  })
+  payment: BookingPaymentDto | null;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Exact pickup address: the borrower sees it once the booking is confirmed',
+  })
+  pickupAddress: string | null;
   @ApiProperty({ type: [BookingRequiredDocDto] }) requiredDocs: BookingRequiredDocDto[];
   @ApiProperty({ type: [SharedDocumentDto] }) sharedDocuments: SharedDocumentDto[];
   @ApiProperty({ type: [BookingEventDto], description: 'Oldest first' }) events: BookingEventDto[];
   @ApiProperty({ type: BookingActionsDto }) can: BookingActionsDto;
+}
+
+export class CancelPreviewDto {
+  @ApiProperty({ description: 'Refunded to the borrower if cancelled now' }) refundPaise: number;
+  @ApiProperty() rentPaise: number;
+  @ApiProperty() feePaise: number;
+  @ApiProperty() depositPaise: number;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    enum: ['FULL', 'HALF_RENT', 'DEPOSIT_ONLY'],
+    description: 'Null when nothing was paid',
+  })
+  tier: string | null;
+  @ApiProperty({ description: 'One line for the app to show' }) summary: string;
 }
 
 export class DocumentViewUrlDto {
@@ -311,13 +357,14 @@ export class AdminBookingDetailDto extends AdminBookingDto {
 
 export class AdminListBookingsQueryDto {
   @ApiPropertyOptional({
-    enum: ['OPEN', 'AWAITING_PAYMENT', 'CLOSED'],
+    enum: ['OPEN', 'AWAITING_PAYMENT', 'CONFIRMED', 'CLOSED'],
     default: 'OPEN',
-    description: 'OPEN: requested or waiting for documents; CLOSED: declined, expired, cancelled',
+    description:
+      'OPEN: requested or waiting for documents; CONFIRMED: paid (until returned); CLOSED: declined, expired, cancelled, completed',
   })
   @IsOptional()
-  @IsIn(['OPEN', 'AWAITING_PAYMENT', 'CLOSED'])
-  tab: 'OPEN' | 'AWAITING_PAYMENT' | 'CLOSED' = 'OPEN';
+  @IsIn(['OPEN', 'AWAITING_PAYMENT', 'CONFIRMED', 'CLOSED'])
+  tab: 'OPEN' | 'AWAITING_PAYMENT' | 'CONFIRMED' | 'CLOSED' = 'OPEN';
 
   @ApiPropertyOptional({ description: 'Listing title, or a borrower’s or lender’s name or phone' })
   @IsOptional()

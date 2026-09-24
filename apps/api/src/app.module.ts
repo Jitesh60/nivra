@@ -21,10 +21,12 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
 import { BookingsModule } from './modules/bookings/bookings.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { SafetyModule } from './modules/safety/safety.module.js';
+import { PaymentsProviderModule } from './providers/payments/payments.module.js';
 import { PushModule } from './providers/push/push.module.js';
 import { SmsModule } from './providers/sms/sms.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -45,6 +47,7 @@ import { RedisModule } from './redis/redis.module.js';
     SmsModule,
     EmailModule,
     PushModule,
+    PaymentsProviderModule,
     RealtimeModule,
     StorageModule,
     UserViewModule,
@@ -65,6 +68,7 @@ import { RedisModule } from './redis/redis.module.js';
     SafetyModule,
     ChatModule,
     BookingsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

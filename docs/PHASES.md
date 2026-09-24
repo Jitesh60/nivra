@@ -518,12 +518,84 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
   - Support viewing a request without being able to cancel
 
 ## Phase 7 — Payments & payouts
-**Branch:** `phase/7-payments`
+Delivered in three parts, each with its own PR and green CI: **7a API → 7b Mobile → 7c Admin**.
 
-- **API:** Razorpay orders, client verify, webhooks (signature and idempotency), ledger, refunds, cancellations with the refund policy, Route linked-account onboarding for lenders, on-hold transfers, deposit hold and refund
-- **Mobile:** checkout (`razorpay_flutter`), payment status screens, lender payout setup, earnings screen
-- **Admin:** payments, refunds, payouts, ledger and reconciliation view; manual refund (Super Admin/Ops)
-- **Done when:** in Razorpay test mode, pay → CONFIRMED via webhook; cancellation refunds follow the policy; the ledger balances
+**Done when:** in test mode, pay → CONFIRMED via the webhook, cancellation refunds follow the policy, and the ledger balances.
+
+**Decisions**
+- **Razorpay** sits behind a `PaymentProvider`:
+  - `RazorpayProvider` covers orders with auto-capture, signature checks, refunds, and Route (linked accounts and transfers).
+  - `FakePaymentProvider` is for development, tests and CI. It uses the same id shapes and the same HMAC signatures. A dev-only endpoint plays the checkout sheet and sends a signed webhook.
+  - Staging and production must use Razorpay with real keys.
+- **One payment** covers rent + fee + refundable deposit. The deposit is held in the ledger and refunded after the return (Phase 8) or on cancellation.
+- **Confirmation:**
+  - **The webhook is the source of truth.** The app's verify call (checkout signature) confirms at once, and both paths are idempotent: payment rows are locked, and each webhook event is stored once.
+  - **A payment that arrives after the hold expired** (or after cancellation) is refunded in full automatically.
+  - **Once a booking is CONFIRMED,** the borrower sees the exact pickup address and the chat stops masking contact details.
+- **Cancelling a paid booking** (until handover):
+  - **Borrower:** by the PRD tiers.
+    - More than 48 h before pickup: everything back.
+    - 24–48 h: half the rent and the deposit.
+    - Under 24 h: the deposit only.
+    - The lender is paid their share of any rent kept.
+  - **Lender or Sajha:** everything back, and a lender cancellation counts against them.
+  - `GET /v1/bookings/:id/cancel-preview` shows the refund first.
+- **Payouts (Route):**
+  - Lenders set up a linked account (bank account, IFSC, PAN; only the last 4 digits are kept).
+  - At confirmation, rent less the 10% commission is transferred **on hold**. It's released after the return (Phase 8) and reversed on cancellation.
+  - Without an active account, earnings wait (AWAITING_ACCOUNT) and go out when it activates.
+- **Ledger:**
+  - Double entry: every movement is a transaction whose debits equal its credits.
+  - A deferred database trigger rejects an unbalanced transaction, and another makes the ledger append-only.
+  - Accounts: GATEWAY, DEPOSIT_HELD, LENDER_PAYABLE, PLATFORM_REVENUE, GOODWILL (admin refunds).
+- **Failures:** a provider call that fails is recorded (FAILED, with the reason), retried by a 5-minute sweep up to 5 times, and shown to admins. Admins can retry a failed transfer.
+
+### 7a — API
+**Branch:** `phase/7a-payments-api`
+
+- **Schema** (migration `20260925120000_payments`): `payments`, `refunds`, `payout_accounts`, `transfers`, `ledger_entries` (with the balance and append-only triggers), `webhook_events`, and the booking event `PAID`.
+- **Endpoints:**
+  - Checkout and verify:
+    - `POST /v1/bookings/:id/pay` (checkout: order, key and prefill)
+    - `POST /v1/payments/verify`
+    - `POST /v1/payments/webhook` (raw-body HMAC)
+  - Borrower and lender:
+    - `GET /v1/bookings/:id/cancel-preview`
+    - `GET` / `PUT /v1/me/payout-account`
+    - `GET /v1/me/earnings`
+  - Development only: `POST /v1/dev/payments/:orderId/checkout`
+  - Admin:
+    - `/v1/admin/payments` (list, detail, refund)
+    - `/v1/admin/payouts`, `/v1/admin/transfers/:id/retry`
+    - `/v1/admin/ledger/summary`
+- **The booking gains** `payment`, `pickupAddress` and `can.pay`. The admin bookings list gains a Confirmed tab.
+- **Done when:** e2e with the fake provider covers:
+  - verify first, then the webhook (and a duplicate)
+  - the webhook alone, and bad signatures
+  - a failed payment tried again
+  - a late payment refunded
+  - chat unmasking
+  - each cancellation tier, plus lender and admin cancellations
+  - transfers reversed, and the kept share paid
+  - a failed refund retried by the sweep
+  - payout setup, activation by webhook, and earnings
+  - admin refunds (goodwill), retrying a transfer, and a balanced ledger
+
+  Unit tests cover the postings and the signature scheme. A manual run on local infra went pay → webhook → confirmed → a transfer on hold → a 24–48 h cancellation → half the rent refunded, the transfer reversed and the kept share paid, with the ledger balanced.
+
+### 7b — Mobile
+**Branch:** `phase/7b-payments-mobile`
+
+- **Pay** on a booking waiting for payment. It uses Razorpay checkout (`razorpay_flutter`), or a test sheet with the fake provider, then waits on a processing screen for the confirmation.
+- **Confirmed booking:** the pickup address, the payment and refunds, and cancel with a refund preview.
+- **Payouts:** a lender payout setup screen (bank, IFSC, PAN) and an Earnings screen.
+
+### 7c — Admin
+**Branch:** `phase/7c-payments-admin`
+
+- **Payments:** a list and detail (refunds, transfers, the booking's ledger lines), with a goodwill refund (Super Admin and Ops).
+- **Payouts:** a list by status, with retry.
+- **Ledger:** balances, a "Balanced" check and reconciliation counts.
 
 ## Phase 8 — Handover, return, reviews & disputes
 **Branch:** `phase/8-handover-reviews-disputes`

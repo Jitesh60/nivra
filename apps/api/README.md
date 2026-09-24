@@ -89,6 +89,24 @@ pnpm dev                          # http://localhost:3000 (watch mode)
   - To watch an expiry locally, start the API with `BOOKING_PAYMENT_TTL_MIN=1`.
 - Design: [docs/ARCHITECTURE.md §5](../../docs/ARCHITECTURE.md#5-booking-lifecycle) and §8.
 
+## Payments & payouts (Phase 7a)
+
+- **Locally** everything runs on the fake Razorpay (`PAYMENT_PROVIDER=fake`):
+  - `POST /v1/bookings/:id/pay` returns an order.
+  - `POST /v1/dev/payments/:orderId/checkout {outcome: success|failure, webhook: now|later|never}` plays the checkout sheet. It returns what Razorpay's checkout would (`paymentId`, `signature`) and sends the signed webhook.
+- **Razorpay test mode:**
+  1. Set `PAYMENT_PROVIDER=razorpay`, `RAZORPAY_KEY_ID` (`rzp_test_…`) and `RAZORPAY_KEY_SECRET`.
+  2. Add a webhook in the Dashboard pointing at `https://<api>/v1/payments/webhook` with the events `payment.captured`, `payment.failed`, `refund.processed`, `refund.failed`, `transfer.failed` and `account.*`. Put its secret in `RAZORPAY_WEBHOOK_SECRET`.
+  3. **Route** must be enabled on the account for lender payouts.
+- **Endpoints:**
+  - `POST /v1/payments/verify`
+  - `GET /v1/bookings/:id/cancel-preview`
+  - `GET` / `PUT /v1/me/payout-account`
+  - `GET /v1/me/earnings`
+  - Admin: `/v1/admin/payments`, `/v1/admin/payouts`, `/v1/admin/ledger/summary`
+- A `payments` job (BullMQ, every 5 minutes) retries failed refunds and transfers and refunds any cancelled paid booking that was missed.
+- Design: [docs/ARCHITECTURE.md §6](../../docs/ARCHITECTURE.md#6-payments--payouts-razorpay).
+
 ## Tests
 
 | Command | What |

@@ -31,6 +31,15 @@ export const HELD_STATUSES = [
   'DISPUTED',
 ] as const satisfies readonly BookingStatus[];
 
+/** Paid for: the borrower sees the exact address, and the chat is no longer masked. */
+export const PAID_STATUSES = [
+  'CONFIRMED',
+  'ACTIVE',
+  'RETURNED',
+  'COMPLETED',
+  'DISPUTED',
+] as const satisfies readonly BookingStatus[];
+
 /** The lender can see shared documents while the booking is in one of these. */
 export const DOCUMENT_ACCESS_STATUSES = [
   'AWAITING_DOCS',
@@ -47,7 +56,14 @@ export const isHeld = (s: BookingStatus) => (HELD_STATUSES as readonly string[])
 export type Actor = BookingParty | 'SYSTEM';
 
 export type BookingAction =
-  'accept' | 'decline' | 'cancel' | 'submitDocs' | 'approveDocs' | 'rejectDocs' | 'expire';
+  | 'accept'
+  | 'decline'
+  | 'cancel'
+  | 'submitDocs'
+  | 'approveDocs'
+  | 'rejectDocs'
+  | 'confirmPayment'
+  | 'expire';
 
 export interface BookingState {
   status: BookingStatus;
@@ -59,7 +75,7 @@ export interface BookingState {
 
 /**
  * Where [action] by [actor] takes the booking, or null if it isn't allowed.
- * Payment (Phase 7) and handover (Phase 8) add their own transitions.
+ * Handover (Phase 8) adds its own transitions.
  */
 export function nextStatus(
   action: BookingAction,
@@ -74,14 +90,17 @@ export function nextStatus(
       return actor === 'LENDER' && b.status === 'REQUESTED' ? 'DECLINED' : null;
     case 'cancel':
       if (actor === 'ADMIN') return isOpen(b.status) ? 'CANCELLED' : null;
+      // A paid booking can be cancelled until handover; the refund follows the policy.
       if (actor === 'BORROWER') {
-        return ['REQUESTED', 'AWAITING_DOCS', 'AWAITING_PAYMENT'].includes(b.status)
+        return ['REQUESTED', 'AWAITING_DOCS', 'AWAITING_PAYMENT', 'CONFIRMED'].includes(b.status)
           ? 'CANCELLED'
           : null;
       }
       // The lender declines a request instead; after accepting, they can cancel.
       if (actor === 'LENDER') {
-        return ['AWAITING_DOCS', 'AWAITING_PAYMENT'].includes(b.status) ? 'CANCELLED' : null;
+        return ['AWAITING_DOCS', 'AWAITING_PAYMENT', 'CONFIRMED'].includes(b.status)
+          ? 'CANCELLED'
+          : null;
       }
       return null;
     case 'submitDocs':
@@ -96,6 +115,8 @@ export function nextStatus(
       return actor === 'LENDER' && b.status === 'AWAITING_DOCS' && b.docsSubmitted
         ? 'DECLINED'
         : null;
+    case 'confirmPayment':
+      return actor === 'SYSTEM' && b.status === 'AWAITING_PAYMENT' ? 'CONFIRMED' : null;
     case 'expire':
       return actor === 'SYSTEM' &&
         ['REQUESTED', 'AWAITING_DOCS', 'AWAITING_PAYMENT'].includes(b.status)
@@ -113,6 +134,7 @@ export function allowedActions(party: 'BORROWER' | 'LENDER', b: BookingState) {
     cancel: can('cancel'),
     shareDocs: can('submitDocs'),
     reviewDocs: can('approveDocs'),
+    pay: party === 'BORROWER' && b.status === 'AWAITING_PAYMENT',
   };
 }
 

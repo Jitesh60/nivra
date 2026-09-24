@@ -1,11 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { decrypt } from '../../common/crypto/crypto.js';
+import type { Env } from '../../config/env.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { StorageService } from '../../providers/storage/storage.service.js';
 import { ParticipantPresenter } from '../safety/participants.js';
 import { userViewInclude } from '../users/user-view.js';
-import { allowedActions, type BookingState, docTypesFor, isOpen } from './booking-rules.js';
+import {
+  allowedActions,
+  type BookingState,
+  docTypesFor,
+  isOpen,
+  PAID_STATUSES,
+} from './booking-rules.js';
 import type {
   AdminBookingDetailDto,
+  BookingPaymentDto,
   AdminBookingDto,
   BookingDetailDto,
   BookingDto,
@@ -21,6 +31,7 @@ export const bookingInclude = () =>
         areaLabel: true,
         photos: { orderBy: { sortOrder: 'asc' }, take: 1, select: { thumbKey: true } },
         requiredDocs: { orderBy: { docType: 'asc' } },
+        exactAddressEnc: true,
       },
     },
     borrower: { include: userViewInclude() },
@@ -32,6 +43,10 @@ export const bookingDetailInclude = () =>
   ({
     ...bookingInclude(),
     events: { orderBy: { createdAt: 'asc' } },
+    payments: {
+      orderBy: { createdAt: 'desc' },
+      include: { refunds: { orderBy: { createdAt: 'asc' } } },
+    },
     shares: {
       orderBy: { createdAt: 'asc' },
       include: { accessLogs: { orderBy: { createdAt: 'asc' } } },
@@ -61,10 +76,15 @@ export const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
 @Injectable()
 export class BookingPresenter {
+  private readonly addressKey: Buffer;
+
   constructor(
     private readonly storage: StorageService,
     private readonly participants: ParticipantPresenter,
-  ) {}
+    config: ConfigService<Env, true>,
+  ) {
+    this.addressKey = Buffer.from(config.get('ADDRESS_ENC_KEY', { infer: true }), 'base64');
+  }
 
   summary(b: BookingRow, viewerId: string): BookingDto {
     const isBorrower = b.borrowerId === viewerId;
@@ -98,6 +118,14 @@ export class BookingPresenter {
     const lenderName = b.lender.name;
     return {
       ...this.summary(b, viewerId),
+      payment: this.payment(b),
+      // The exact address is for the borrower, once they've paid.
+      pickupAddress:
+        isBorrower &&
+        (PAID_STATUSES as readonly string[]).includes(b.status) &&
+        b.listing.exactAddressEnc
+          ? decrypt(b.listing.exactAddressEnc, this.addressKey)
+          : null,
       requiredDocs: this.requiredDocs(b),
       sharedDocuments: b.shares.map((s) => ({
         id: s.id,
@@ -204,6 +232,27 @@ export class BookingPresenter {
         at: e.createdAt,
       })),
       cancellable: isOpen(b.status),
+    };
+  }
+
+  /** The payment that counts: a captured one if any, else the latest attempt. */
+  payment(b: BookingDetailRow): BookingPaymentDto | null {
+    const p =
+      b.payments.find((x) => x.status !== 'CREATED' && x.status !== 'FAILED') ?? b.payments[0];
+    if (!p) return null;
+    const refunds = p.refunds.filter((r) => r.status !== 'FAILED');
+    return {
+      status: p.status,
+      amountPaise: p.amountPaise,
+      method: p.method,
+      paidAt: p.capturedAt,
+      refundedPaise: refunds.reduce((s, r) => s + r.amountPaise, 0),
+      refunds: p.refunds.map((r) => ({
+        amountPaise: r.amountPaise,
+        kind: r.kind,
+        status: r.status,
+        createdAt: r.createdAt,
+      })),
     };
   }
 

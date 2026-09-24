@@ -51,11 +51,19 @@ describe('booking transitions', () => {
     expect(nextStatus('cancel', 'LENDER', state('REQUESTED'))).toBeNull();
     expect(nextStatus('cancel', 'LENDER', state('AWAITING_DOCS'))).toBe('CANCELLED');
     expect(nextStatus('cancel', 'LENDER', state('AWAITING_PAYMENT'))).toBe('CANCELLED');
-    // Paid bookings are cancelled with a refund (Phase 7); only Sajha can here.
-    expect(nextStatus('cancel', 'BORROWER', state('CONFIRMED'))).toBeNull();
+    // Paid bookings can be cancelled until handover (refunded by the policy).
+    expect(nextStatus('cancel', 'BORROWER', state('CONFIRMED'))).toBe('CANCELLED');
+    expect(nextStatus('cancel', 'LENDER', state('CONFIRMED'))).toBe('CANCELLED');
     expect(nextStatus('cancel', 'ADMIN', state('CONFIRMED'))).toBe('CANCELLED');
+    expect(nextStatus('cancel', 'BORROWER', state('ACTIVE'))).toBeNull();
     expect(nextStatus('cancel', 'ADMIN', state('EXPIRED'))).toBeNull();
     expect(nextStatus('cancel', 'SYSTEM', state('REQUESTED'))).toBeNull();
+  });
+
+  it('only the system confirms a payment, and only while it’s awaited', () => {
+    expect(nextStatus('confirmPayment', 'SYSTEM', state('AWAITING_PAYMENT'))).toBe('CONFIRMED');
+    expect(nextStatus('confirmPayment', 'SYSTEM', state('EXPIRED'))).toBeNull();
+    expect(nextStatus('confirmPayment', 'BORROWER', state('AWAITING_PAYMENT'))).toBeNull();
   });
 
   it('only the system expires, and only the waiting steps', () => {
@@ -73,7 +81,10 @@ describe('booking transitions', () => {
       cancel: false,
       shareDocs: false,
       reviewDocs: false,
+      pay: false,
     });
+    expect(allowedActions('BORROWER', state('AWAITING_PAYMENT')).pay).toBe(true);
+    expect(allowedActions('LENDER', state('AWAITING_PAYMENT')).pay).toBe(false);
     expect(allowedActions('BORROWER', state('AWAITING_DOCS', true))).toMatchObject({
       shareDocs: true,
       cancel: true,

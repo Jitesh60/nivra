@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { inject } from 'vitest';
+import type { FakePaymentProvider } from '../src/providers/payments/fake-payment.provider.js';
 import { InMemoryPushProvider } from './helpers/in-memory-push.js';
 import { InMemorySmsProvider } from './helpers/in-memory-sms.js';
 
@@ -8,6 +9,8 @@ export interface TestApp {
   app: INestApplication;
   sms: InMemorySmsProvider;
   push: InMemoryPushProvider;
+  /** The fake Razorpay (PAYMENT_PROVIDER=fake): records calls, can fail on demand. */
+  payments: FakePaymentProvider;
 }
 
 /** Test-only secrets. */
@@ -49,6 +52,7 @@ export async function createTestApp(): Promise<TestApp> {
     S3_PRIVATE_SSE: 'none',
     // Tests run booking jobs directly (BookingWorker.process) instead of waiting for delays.
     JOBS_WORKER: 'false',
+    PAYMENT_PROVIDER: 'fake',
     ...TEST_ENV,
   });
 
@@ -56,6 +60,7 @@ export async function createTestApp(): Promise<TestApp> {
   const { configureApp } = await import('../src/app.setup.js');
   const { SmsProvider } = await import('../src/providers/sms/sms.provider.js');
   const { PushProvider } = await import('../src/providers/push/push.provider.js');
+  const { PaymentProvider } = await import('../src/providers/payments/payment.provider.js');
 
   const sms = new InMemorySmsProvider();
   const push = new InMemoryPushProvider();
@@ -65,7 +70,8 @@ export async function createTestApp(): Promise<TestApp> {
     .overrideProvider(PushProvider)
     .useValue(push)
     .compile();
-  const app = configureApp(moduleRef.createNestApplication({ logger: false }));
+  const app = configureApp(moduleRef.createNestApplication({ logger: false, rawBody: true }));
   await app.init();
-  return { app, sms, push };
+  const payments = app.get(PaymentProvider) as FakePaymentProvider;
+  return { app, sms, push, payments };
 }

@@ -5,6 +5,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RateLimiter } from '../../redis/rate-limiter.js';
 import { assertVerified } from '../auth/verified.guard.js';
+import { PAID_STATUSES } from '../bookings/booking-rules.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { BlocksService } from '../safety/blocks.service.js';
 import { ChatPresenter, type ConversationRow, conversationInclude } from './chat-presenter.js';
@@ -161,6 +162,14 @@ export class ConversationsService {
   }
 
   /** Keeps the inbox order and preview current. */
+  /** Contact details show once a booking in this chat has been paid for. */
+  async revealed(conversationId: string): Promise<boolean> {
+    const paid = await this.prisma.booking.count({
+      where: { conversationId, status: { in: [...PAID_STATUSES] } },
+    });
+    return paid > 0;
+  }
+
   async touch(conversationId: string, preview: string, at: Date): Promise<void> {
     await this.prisma.conversation.update({
       where: { id: conversationId },
