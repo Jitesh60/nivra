@@ -179,3 +179,40 @@ export function seedAdmin(role: 'OPS' | 'SUPPORT', run: number, tag = 'docs') {
   );
   return admin;
 }
+
+/** Opens (or returns) the borrower's chat about a listing. */
+export function startConversation(user: AppUser, listingId: string) {
+  return call<{ id: string }>('POST', '/conversations', user.token, { listingId });
+}
+
+export function sendMessage(user: AppUser, conversationId: string, body: string) {
+  return call<{ id: string; body: string; masked: boolean }>(
+    'POST',
+    `/conversations/${conversationId}/messages`,
+    user.token,
+    { type: 'TEXT', body, clientId: `e2e-${Date.now()}-${Math.random()}` },
+  );
+}
+
+/** The chat as [user] sees it, newest first. */
+export async function chatMessages(user: AppUser, conversationId: string) {
+  const page = await call<{ items: { id: string; body: string | null; masked: boolean }[] }>(
+    'GET',
+    `/conversations/${conversationId}/messages`,
+    user.token,
+  );
+  return page.items;
+}
+
+export function report(
+  user: AppUser,
+  body: {
+    targetType: 'USER' | 'LISTING' | 'MESSAGE';
+    targetId: string;
+    reason: string;
+    note?: string;
+    conversationId?: string;
+  },
+) {
+  return call<{ id: string; status: string }>('POST', '/reports', user.token, body);
+}

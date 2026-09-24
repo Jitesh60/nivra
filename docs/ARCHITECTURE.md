@@ -545,7 +545,7 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 
 ## 10. Admin architecture (`apps/admin`)
 
-- App Router with route groups: `(auth)/login` (`/login`, `/login/setup`, `/login/verify`, `/login/recovery-codes`) and `(dashboard)` (`/`, `/users`, `/users/[id]`, `/listings`, `/listings/[id]`, `/documents`, `/documents/[id]`, `/categories`, `/waitlist`, `/admins`, `/account`, `/account/password`), plus the `/logout`, `/waitlist/export` and `/documents/[id]/image` route handlers.
+- App Router with route groups: `(auth)/login` (`/login`, `/login/setup`, `/login/verify`, `/login/recovery-codes`) and `(dashboard)` (`/`, `/users`, `/users/[id]`, `/listings`, `/listings/[id]`, `/documents`, `/documents/[id]`, `/categories`, `/reports`, `/reports/[id]`, `/conversations/[id]`, `/waitlist`, `/admins`, `/account`, `/account/password`), plus the `/logout`, `/waitlist/export` and `/documents/[id]/image` route handlers.
 - **Cookies** (all `httpOnly`, `SameSite=Strict`, `Secure` in production): `sajha_admin_at` (access token, lives as long as the token), `sajha_admin_rt` (refresh token, 12 hours), `sajha_admin_mfa` (5-minute token between the password and 2FA steps), `sajha_admin_rc` (recovery codes, held for one page view).
 - **`proxy.ts`** (Next.js 16's renamed Middleware) runs before every page. With no session it redirects to `/login?next=…`. If the access cookie has expired but the refresh cookie is present, it refreshes with the API, rotates both cookies and lets the request continue, so pages never see an expired token. A signed-in admin opening `/login` goes to the dashboard.
 - **Reads** happen in Server Components and **writes** in Server Functions (`'use server'` actions with `useActionState`). Both use the typed `@sajha/api-client`, so paths, bodies and responses are checked at compile time against the API's OpenAPI document. A 401 from the API goes to `/logout?reason=expired`, which clears the cookies. A disabled account or a pending password change redirects accordingly.
@@ -557,6 +557,11 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - SUPER_ADMIN/OPS can approve, reject or unpublish (common reasons plus free text, shown to the lender) and move the listing to another category.
 - **Categories** (`/categories`, SUPER_ADMIN/OPS): create (the slug is suggested from the name), edit, hide/show and move up/down, with a listing count per category.
 - **User detail** (`/users/[id]`): profile, Phone/Email/ID badges, documents (linked to review), listings (linked to moderation), active device count and an activity trail. The trail includes audit entries about the user's documents. Suspend, ban and reactivate (SUPER_ADMIN, OPS) each need a reason and a confirm click. Suspend and ban revoke every session.
+- **Reports** (Phase 5c):
+  - `/reports` has Open, Actioned and Dismissed tabs with keyset paging. Every role can read.
+  - `/reports/[id]` shows the reporter, reason, note and target, with links to the user or listing page for action. For a message it shows the original text next to the masked version the other person saw.
+  - `/conversations/[id]` is a read-only transcript with original bodies, under a "This view is logged" banner. The API writes `admin.conversation.view` on every page read.
+  - SUPER_ADMIN/OPS close a report as Actioned or Dismissed with a note, which is kept on the report.
 - **2FA setup** asks the API for a secret exactly once per page visit (each call replaces the secret), shows the QR code plus the key for manual entry, then shows the recovery codes once with copy and download buttons.
 
 ## 11. Marketing site architecture (`apps/web`)
