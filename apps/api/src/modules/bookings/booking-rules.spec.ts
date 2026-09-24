@@ -1,6 +1,12 @@
 import {
   allowedActions,
+  claimUntil,
   deadlineFor,
+  handoverOpensAt,
+  lateDaysFor,
+  lateFeeFor,
+  maxKeepable,
+  rentalEnd,
   docTypesFor,
   isHeld,
   isOpen,
@@ -82,6 +88,12 @@ describe('booking transitions', () => {
       shareDocs: false,
       reviewDocs: false,
       pay: false,
+      handover: false,
+      return: false,
+      noShow: false,
+      dispute: false,
+      showCode: false,
+      addPhotos: false,
     });
     expect(allowedActions('BORROWER', state('AWAITING_PAYMENT')).pay).toBe(true);
     expect(allowedActions('LENDER', state('AWAITING_PAYMENT')).pay).toBe(false);
@@ -169,5 +181,114 @@ describe('which documents satisfy a request', () => {
     expect(satisfies('ADDRESS_PROOF', 'PAN')).toBe(false);
     expect(satisfies('OTHER', 'OTHER')).toBe(true);
     expect(docTypesFor('OTHER')).toBe('ANY');
+  });
+});
+
+describe('the rental', () => {
+  // A booking for 12–14 Oct (IST): starts 11 Oct 18:30 UTC, due 14 Oct 18:30 UTC.
+  const rental = (status: Parameters<typeof nextStatus>[2]['status'], returnedAt?: Date) => ({
+    ...state(status),
+    startsOn: day('2026-10-12'),
+    endsOn: day('2026-10-14'),
+    returnedAt: returnedAt ?? null,
+  });
+  const at = (iso: string) => new Date(iso);
+
+  it('dates: due at midnight IST after the last day; handover opens the day before', () => {
+    expect(rentalEnd(day('2026-10-14'))).toEqual(at('2026-10-14T18:30:00Z'));
+    expect(handoverOpensAt(day('2026-10-12'))).toEqual(at('2026-10-10T18:30:00Z'));
+    expect(claimUntil(at('2026-10-14T10:00:00Z'))).toEqual(at('2026-10-15T10:00:00Z'));
+  });
+
+  it('the lender hands over from the day before until the end date', () => {
+    const b = rental('CONFIRMED');
+    expect(nextStatus('handOver', 'LENDER', b, at('2026-10-10T18:00:00Z'))).toBeNull();
+    expect(nextStatus('handOver', 'LENDER', b, at('2026-10-11T09:00:00Z'))).toBe('ACTIVE');
+    expect(nextStatus('handOver', 'LENDER', b, at('2026-10-14T18:30:00Z'))).toBeNull();
+    expect(nextStatus('handOver', 'BORROWER', b, at('2026-10-12T09:00:00Z'))).toBeNull();
+    // Without the dates, nothing time-dependent is allowed.
+    expect(nextStatus('handOver', 'LENDER', state('CONFIRMED'))).toBeNull();
+  });
+
+  it('no-show from the first day; nobody cancels once it has changed hands', () => {
+    const b = rental('CONFIRMED');
+    expect(nextStatus('noShow', 'LENDER', b, at('2026-10-11T18:00:00Z'))).toBeNull();
+    expect(nextStatus('noShow', 'LENDER', b, at('2026-10-11T18:30:00Z'))).toBe('CANCELLED');
+    expect(nextStatus('noShow', 'BORROWER', b, at('2026-10-12T09:00:00Z'))).toBeNull();
+    for (const s of ['ACTIVE', 'RETURNED', 'DISPUTED'] as const) {
+      expect(nextStatus('cancel', 'ADMIN', rental(s))).toBeNull();
+      expect(nextStatus('cancel', 'BORROWER', rental(s))).toBeNull();
+    }
+  });
+
+  it('return, claim window, completion and disputes', () => {
+    const returned = at('2026-10-14T12:00:00Z');
+    expect(nextStatus('markReturned', 'BORROWER', rental('ACTIVE'))).toBe('RETURNED');
+    expect(nextStatus('markReturned', 'LENDER', rental('ACTIVE'))).toBeNull();
+    const r = rental('RETURNED', returned);
+    expect(nextStatus('openDispute', 'LENDER', r, at('2026-10-15T11:59:00Z'))).toBe('DISPUTED');
+    expect(nextStatus('openDispute', 'LENDER', r, at('2026-10-15T12:00:00Z'))).toBeNull();
+    expect(nextStatus('openDispute', 'BORROWER', r, at('2026-10-14T13:00:00Z'))).toBeNull();
+    expect(nextStatus('complete', 'SYSTEM', r)).toBe('COMPLETED');
+    expect(nextStatus('complete', 'LENDER', r)).toBeNull();
+    expect(nextStatus('resolveDispute', 'ADMIN', rental('DISPUTED'))).toBe('COMPLETED');
+    expect(nextStatus('resolveDispute', 'LENDER', rental('DISPUTED'))).toBeNull();
+    // Not returned: only once 2 days overdue.
+    const out = rental('ACTIVE');
+    expect(nextStatus('openDispute', 'LENDER', out, at('2026-10-16T18:00:00Z'))).toBeNull();
+    expect(nextStatus('openDispute', 'LENDER', out, at('2026-10-16T18:30:00Z'))).toBe('DISPUTED');
+  });
+
+  it('the claim window is the returned booking’s deadline', () => {
+    const w = { requestMin: 60, docsMin: 60, paymentMin: 60 };
+    const now = at('2026-10-14T12:00:00Z');
+    expect(deadlineFor({ ...rental('RETURNED'), startsOn: day('2026-10-12') }, now, w)).toEqual(
+      at('2026-10-15T12:00:00Z'),
+    );
+    expect(deadlineFor({ ...rental('ACTIVE'), startsOn: day('2026-10-12') }, now, w)).toBeNull();
+  });
+
+  it('late days count started days; the fee is capped at the deposit', () => {
+    const end = day('2026-10-14');
+    expect(lateDaysFor(end, at('2026-10-14T18:29:00Z'))).toBe(0);
+    expect(lateDaysFor(end, at('2026-10-14T18:31:00Z'))).toBe(1);
+    expect(lateDaysFor(end, at('2026-10-15T18:30:00Z'))).toBe(1);
+    expect(lateDaysFor(end, at('2026-10-15T18:31:00Z'))).toBe(2);
+    expect(lateFeeFor(2, 15_000, 100_000)).toBe(30_000);
+    expect(lateFeeFor(9, 15_000, 100_000)).toBe(100_000);
+    expect(maxKeepable(100_000, 30_000)).toBe(70_000);
+    expect(maxKeepable(100_000, 100_000)).toBe(0);
+  });
+
+  it('`can` flags during the rental', () => {
+    const now = at('2026-10-12T09:00:00Z');
+    expect(allowedActions('LENDER', rental('CONFIRMED'), now)).toMatchObject({
+      handover: true,
+      noShow: true,
+      showCode: false,
+      cancel: true,
+    });
+    expect(allowedActions('BORROWER', rental('CONFIRMED'), now)).toMatchObject({
+      showCode: true,
+      handover: false,
+    });
+    expect(allowedActions('BORROWER', rental('ACTIVE'), now)).toMatchObject({
+      return: true,
+      addPhotos: true,
+      cancel: false,
+    });
+    expect(allowedActions('LENDER', rental('ACTIVE'), now)).toMatchObject({
+      showCode: true,
+      dispute: false,
+    });
+    const r = rental('RETURNED', at('2026-10-14T12:00:00Z'));
+    expect(allowedActions('LENDER', r, at('2026-10-14T13:00:00Z'))).toMatchObject({
+      dispute: true,
+      addPhotos: true,
+    });
+    expect(allowedActions('LENDER', r, at('2026-10-16T13:00:00Z'))).toMatchObject({
+      dispute: false,
+      addPhotos: false,
+    });
   });
 });

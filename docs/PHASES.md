@@ -641,12 +641,54 @@ Delivered in three parts, each with its own PR and green CI: **7a API → 7b Mob
   3. Support is read-only.
 
 ## Phase 8 — Handover, return, reviews & disputes
-**Branch:** `phase/8-handover-reviews-disputes`
+Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mobile → 8c Admin**.
 
 - **API:** handover and return codes (QR + 6-digit OTP), condition reports, rental reminders, late fees, claim window, payout release and deposit refund on COMPLETED, `reviews` (double-blind), `disputes`, `reports`
 - **Mobile:** handover/return screens (show QR, scan QR, photo capture), late-return banner, rate and review screen, raise a dispute with evidence, report listing
 - **Admin:** dispute workspace (timeline, condition photos side by side, chat excerpt, decision with a deposit capture amount), reports queue
 - **Done when:** a full rental runs end to end in test mode: request → pay → handover → return → review → payout released and deposit refunded; a disputed rental is resolved by an admin with a partial capture
+
+**Decisions** (confirmed with the product owner):
+- **Deposit kept after a dispute:** it goes to the lender, as an unheld transfer. The rest is refunded.
+- **No-show:** from the first rental day the lender marks it. It's treated as a borrower cancellation under 24 h: the deposit comes back and the lender keeps their rent share.
+- **Codes:** scanned by camera QR, with a typed 6-digit fallback.
+
+**Defaults:**
+- The borrower shows the handover code and the lender confirms it with at least 2 photos, from the day before the start. At return it's the other way round.
+- Late fee: 1× the daily rate per started day, capped at the deposit.
+- Claim window: 24 h. A lender can report "not returned" from 2 days overdue.
+- Reviews: within 14 days, published when both have written one or after 7 days.
+- Admins can't cancel after handover.
+
+### 8a — API
+**Branch:** `phase/8a-rental-api`
+
+- **What's built:**
+  - `modules/rentals/`:
+    - `HandoverService`: codes, handover, return, photos, no-show
+    - `DisputesService`: open, respond, admin list/get/resolve
+    - `ReviewsService`: double-blind, averages, public lists
+    - `RemindersService`
+    - the hourly `rentals` worker
+  - New transitions in `booking-rules.ts`: `handOver`, `markReturned`, `noShow`, `openDispute`, `complete`, `resolveDispute`.
+  - Completion runs on the returned booking's deadline, through the existing expiry job.
+  - `PaymentsService.settle` on COMPLETED: post the kept deposit (`DEPOSIT_KEPT`), release the held rent, transfer the kept deposit, refund the rest (`DEPOSIT_RETURN`); idempotent and re-run by the sweep.
+  - Ratings on profiles, listings, search cards and the lender summary.
+  - `SmsProvider.sendOverdue`.
+- **Migration `20260926090000_rentals`:**
+  - `condition_reports`, `disputes`, `reviews`
+  - the rental columns on bookings, ratings on profiles and listings, and `transfers.from_deposit`
+  - checks on ratings, amounts and photo counts
+- **Tests:**
+  - Unit: the rental rules (windows, late days and fees across IST edges, `can` flags) and the settlement ledger.
+  - e2e (`test/rentals.e2e-spec.ts`, 11 tests):
+    - handover: codes, too early, photos required, lockout
+    - no-show
+    - late return → claim window → completion: rent released, late fee to the lender, deposit less the fee refunded, ledger balanced
+    - reviews: double-blind, the 7-day publish, averages
+    - disputes: validation, the borrower's reply, Support 403, an Ops partial keep of ₹600 of ₹1,000; a closed window; "not returned"
+    - reminders: once a day, and overdue by SMS
+- **Checks:** 143 e2e tests pass, with 92.1% statement and 79.8% branch coverage.
 
 ## Phase 9 — Launch hardening & release
 **Branch:** `phase/9-launch`

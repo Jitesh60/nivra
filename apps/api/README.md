@@ -107,6 +107,22 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - A `payments` job (BullMQ, every 5 minutes) retries failed refunds and transfers and refunds any cancelled paid booking that was missed.
 - Design: [docs/ARCHITECTURE.md §6](../../docs/ARCHITECTURE.md#6-payments--payouts-razorpay).
 
+## Handover, return, disputes & reviews (Phase 8a)
+
+- **Handover:** the borrower shows the code from `GET /v1/bookings/:id/code`. The lender then sends `POST /v1/bookings/:id/handover {code, photoKeys}`, with 2–6 uploads of purpose `CONDITION_PHOTO`.
+- **Return:** the other way round (`POST …/return`). A late return costs 1× the daily rate per day, taken from the deposit.
+- **Other endpoints:**
+  - `POST …/photos` (more condition photos)
+  - `POST …/no-show`
+  - `POST …/dispute` and `POST …/dispute/response`
+  - `POST …/review`
+  - Public: `GET /v1/users/:id/reviews`, `GET /v1/listings/:id/reviews`
+  - Admin: `GET /v1/admin/disputes[/:id]` and `POST /v1/admin/disputes/:id/resolve` (Super Admin, Ops)
+- **After the return:** the lender has 24 h to report a problem. Then (or after an admin's decision) the booking completes: the held rent is released, the lender gets any deposit they keep, and the rest is refunded.
+- **Jobs:** an hourly `rentals` job sends reminders (pickup, return, due today, overdue) and publishes one-sided reviews after 7 days.
+- **Overdue SMS** need `MSG91_OVERDUE_TEMPLATE_ID` (a DLT template with `##item##` and `##days##`) when `SMS_PROVIDER=msg91`; without it they're skipped.
+- Design: [docs/ARCHITECTURE.md §5](../../docs/ARCHITECTURE.md#5-booking-lifecycle).
+
 ## Tests
 
 | Command | What |

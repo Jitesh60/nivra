@@ -70,6 +70,9 @@ export async function processListingPhoto(bytes: Buffer): Promise<ListingPhotoVa
 /** Chat photos: the same sizes as listing photos (kept in the private bucket). */
 export const processChatImage = processListingPhoto;
 
+/** Condition photos and dispute evidence: the same sizes, private, no EXIF. */
+export const processConditionPhoto = processListingPhoto;
+
 /** Readable JPEG, longest side at most 2400 px (enough to read small print on an ID). */
 export function processDocument(bytes: Buffer): Promise<Buffer> {
   return load(bytes)

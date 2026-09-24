@@ -99,6 +99,8 @@ export class ListingPresenter {
       approxLat: approximate(l.lat!),
       approxLng: approximate(l.lng!),
       lender: this.lender(l.lender),
+      ratingAvg: l.ratingAvg,
+      ratingCount: l.ratingCount,
       ...extras,
     };
   }
@@ -142,6 +144,8 @@ export class ListingPresenter {
       emailVerified: u.emailVerified,
       idVerified: u.idVerified,
       memberSince: u.createdAt,
+      ratingAvg: user.profile?.ratingAvg ?? null,
+      ratingCount: user.profile?.ratingCount ?? 0,
     };
   }
 

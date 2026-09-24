@@ -1,6 +1,7 @@
 import {
   capturePostings,
   commissionOn,
+  depositKeepPostings,
   goodwillPostings,
   isBalanced,
   type Line,
@@ -78,6 +79,24 @@ describe('ledger postings', () => {
     expect(balances(paid, out, back).LENDER_PAYABLE).toBe(40_500);
     // Credit-minus-debit: money leaving the gateway is a credit to it.
     expect(balances(goodwill)).toEqual({ GOODWILL: -5_000, GATEWAY: 5_000 });
+  });
+
+  it('after the rental: rent released, part of the deposit kept, the rest refunded', () => {
+    // ₹450 rent, ₹1,000 deposit; the lender keeps ₹300 of it (late fee + damage).
+    const paid = capturePostings(booking, BPS);
+    const rent = transferPostings(40_500);
+    const keep = depositKeepPostings(30_000);
+    const keptOut = transferPostings(30_000);
+    const back = refundPostings(
+      { rentPaise: 0, feePaise: 0, depositPaise: 70_000 },
+      booking.rentPaise,
+      BPS,
+    );
+    for (const t of [keep, keptOut, back]) expect(isBalanced(t)).toBe(true);
+    const net = balances(paid, rent, keep, keptOut, back);
+    // Everything owed has left: only Sajha's commission stays in the gateway.
+    expect(net).toMatchObject({ DEPOSIT_HELD: 0, LENDER_PAYABLE: 0, PLATFORM_REVENUE: 4_500 });
+    expect(net.GATEWAY).toBe(-4_500);
   });
 
   it('refuses nothing it shouldn’t: zero parts are left out', () => {

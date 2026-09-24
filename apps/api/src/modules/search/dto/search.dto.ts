@@ -154,6 +154,9 @@ export class ListingCardDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Rent for the searched dates' })
   rentPaise: number | null;
   @ApiPropertyOptional({ type: Number, nullable: true }) days: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Borrowers’ average rating' })
+  ratingAvg: number | null;
+  @ApiProperty() ratingCount: number;
 }
 
 export class SearchPageDto {

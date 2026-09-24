@@ -73,6 +73,18 @@ export function transferPostings(amountPaise: number): Line[] {
   ];
 }
 
+/**
+ * After the rental, the lender keeps part of the deposit (a late fee, or what
+ * an admin awarded in a dispute). No commission: it's compensation, not rent.
+ * It then leaves as a transfer (`transferPostings`).
+ */
+export function depositKeepPostings(amountPaise: number): Line[] {
+  return [
+    { account: 'DEPOSIT_HELD', debitPaise: amountPaise },
+    { account: 'LENDER_PAYABLE', creditPaise: amountPaise },
+  ];
+}
+
 /** A transfer comes back (the booking was cancelled before the return). */
 export function reversalPostings(amountPaise: number): Line[] {
   return [

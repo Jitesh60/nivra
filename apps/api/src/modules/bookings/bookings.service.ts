@@ -337,6 +337,23 @@ export class BookingsService {
   /** Expires the booking if its current step has timed out (called by its delayed job). */
   async expireIfDue(id: string, now = new Date()): Promise<boolean> {
     try {
+      // A returned booking's timer is the claim window: it completes instead.
+      const current = await this.prisma.booking.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (current?.status === 'RETURNED') {
+        const done = await this.machine.transition(
+          id,
+          'complete',
+          { party: 'SYSTEM', id: null },
+          {
+            patch: { completedAt: now },
+            onlyIf: (b) => b.status === 'RETURNED' && b.expiresAt !== null && b.expiresAt <= now,
+          },
+        );
+        return done !== null;
+      }
       const t = await this.machine.transition(
         id,
         'expire',
@@ -356,10 +373,10 @@ export class BookingsService {
     }
   }
 
-  /** Safety net for lost delayed jobs: expires everything past its deadline. */
+  /** Safety net for lost delayed jobs: expires (or completes) everything past its deadline. */
   async expireDue(now = new Date()): Promise<number> {
     const due = await this.prisma.booking.findMany({
-      where: { status: { in: [...EXPIRABLE] }, expiresAt: { lte: now } },
+      where: { status: { in: [...EXPIRABLE, 'RETURNED'] }, expiresAt: { lte: now } },
       select: { id: true },
       take: 500,
     });

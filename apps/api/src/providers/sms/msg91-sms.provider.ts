@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SmsProvider } from './sms.provider.js';
 
 export interface Msg91Options {
   authKey: string;
   templateId: string;
+  /** DLT template with `##item##` and `##days##`; overdue SMS are skipped without one. */
+  overdueTemplateId?: string;
   fetch?: typeof fetch;
 }
 
@@ -19,15 +21,29 @@ export class Msg91SmsProvider extends SmsProvider {
     super();
   }
 
+  private readonly logger = new Logger('SMS');
+
   async sendOtp(phone: string, code: string): Promise<void> {
+    await this.flow(this.options.templateId, { mobiles: phone.replace(/^\+/, ''), otp: code });
+  }
+
+  async sendOverdue(phone: string, item: string, daysLate: number): Promise<void> {
+    if (!this.options.overdueTemplateId) {
+      this.logger.warn('MSG91_OVERDUE_TEMPLATE_ID is not set; overdue SMS skipped');
+      return;
+    }
+    await this.flow(this.options.overdueTemplateId, {
+      mobiles: phone.replace(/^\+/, ''),
+      item: item.slice(0, 30),
+      days: String(daysLate),
+    });
+  }
+
+  private async flow(templateId: string, recipient: Record<string, string>): Promise<void> {
     const res = await (this.options.fetch ?? fetch)(Msg91SmsProvider.url, {
       method: 'POST',
       headers: { authkey: this.options.authKey, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        template_id: this.options.templateId,
-        short_url: '0',
-        recipients: [{ mobiles: phone.replace(/^\+/, ''), otp: code }],
-      }),
+      body: JSON.stringify({ template_id: templateId, short_url: '0', recipients: [recipient] }),
       signal: AbortSignal.timeout(10_000),
     });
     const body = (await res.json().catch(() => ({}))) as { type?: string; message?: string };

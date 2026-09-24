@@ -160,6 +160,80 @@ export class PayoutsService {
     }
   }
 
+  /**
+   * The rental is complete: held rent transfers settle to the lender. One not
+   * sent yet (no payout account) goes out unheld when it is.
+   */
+  async release(bookingId: string): Promise<void> {
+    const rent = await this.prisma.transfer.findMany({
+      where: {
+        bookingId,
+        fromDeposit: false,
+        onHold: true,
+        status: { in: ['ON_HOLD', 'AWAITING_ACCOUNT', 'FAILED'] },
+      },
+    });
+    for (const t of rent) {
+      if (t.status !== 'ON_HOLD' || !t.providerTransferId) {
+        await this.prisma.transfer.update({ where: { id: t.id }, data: { onHold: false } });
+        continue;
+      }
+      try {
+        await this.provider.releaseTransfer(t.providerTransferId);
+      } catch (err) {
+        // Stays ON_HOLD; the payments sweep tries again.
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Releasing transfer ${t.id} failed: ${message}`);
+        await this.prisma.transfer.update({
+          where: { id: t.id },
+          data: { failureReason: `Release failed: ${message}`.slice(0, 500) },
+        });
+        continue;
+      }
+      await this.prisma.transfer.updateMany({
+        where: { id: t.id, status: 'ON_HOLD' },
+        data: { status: 'RELEASED', failureReason: null },
+      });
+    }
+  }
+
+  /** Pays the lender the deposit they keep (once per booking). */
+  async sendKept(bookingId: string, amountPaise: number): Promise<void> {
+    if (amountPaise <= 0) return;
+    const b = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: {
+        payments: {
+          where: { status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUNDED'] } },
+          take: 1,
+        },
+        transfers: { where: { fromDeposit: true } },
+      },
+    });
+    const payment = b.payments[0];
+    if (!payment) return;
+    let kept = b.transfers[0];
+    if (!kept) {
+      try {
+        kept = await this.prisma.transfer.create({
+          data: {
+            bookingId,
+            lenderId: b.lenderId,
+            paymentId: payment.id,
+            amountPaise,
+            onHold: false,
+            fromDeposit: true,
+            status: 'AWAITING_ACCOUNT',
+          },
+        });
+      } catch {
+        // Created meanwhile (transfers_one_from_deposit): that one is sent.
+        return;
+      }
+    }
+    if (kept.status === 'AWAITING_ACCOUNT') await this.send(kept.id);
+  }
+
   /** Sends a transfer if the lender's account is active (first try or a retry). */
   async send(transferId: string): Promise<Transfer> {
     const t = await this.prisma.transfer.findUniqueOrThrow({
