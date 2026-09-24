@@ -20,6 +20,7 @@ import {
   documentTitle,
   STATUS_LABEL,
 } from '@/lib/documents';
+import { LISTING_STATUS_LABEL, rupees } from '@/lib/listings';
 import { canSee, NAV } from '@/lib/roles';
 import { StatusActions } from './status-actions';
 
@@ -37,6 +38,12 @@ const ACTION_LABEL: Record<string, string> = {
   'admin.user.suspend': 'Admin suspended the account',
   'admin.user.ban': 'Admin banned the account',
   'admin.user.reactivate': 'Admin reactivated the account',
+  'user.listing.publish': 'Published a listing',
+  'user.listing.delete': 'Deleted a listing',
+  'admin.listing.approve': 'Admin approved a listing',
+  'admin.listing.reject': 'Admin sent a listing back',
+  'admin.listing.unpublish': 'Admin unpublished a listing',
+  'admin.listing.category': 'Admin moved a listing to another category',
 };
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
@@ -58,7 +65,7 @@ export default async function UserDetailPage({ params }: PageProps<'/users/[id]'
       },
     ),
   ]);
-  const { user, documents, activeSessions, activity } = detail;
+  const { user, documents, listings, activeSessions, activity } = detail;
   const canReview = canSee(
     NAV.find((i) => i.href === '/documents')!,
     me.role,
@@ -147,6 +154,45 @@ export default async function UserDetailPage({ params }: PageProps<'/users/[id]'
                         )}
                       </TableCell>
                       <TableCell>{dateTime.format(new Date(doc.createdAt))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-lg font-semibold">Listings</h2>
+            <div className="rounded-lg border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Listing</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {listings.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                        No listings.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {listings.map((l) => (
+                    <TableRow key={l.id} data-testid="user-listing-row">
+                      <TableCell>
+                        <Link href={`/listings/${l.id}`} className="text-primary hover:underline">
+                          {l.title}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{LISTING_STATUS_LABEL[l.status]}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {rupees(l.pricePerDayPaise)}/day
+                      </TableCell>
+                      <TableCell>{dateOnly.format(new Date(l.createdAt))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

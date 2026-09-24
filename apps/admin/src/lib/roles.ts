@@ -16,11 +16,16 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { href: '/', label: 'Overview' },
   { href: '/users', label: 'Users' },
+  { href: '/listings', label: 'Listings' },
   { href: '/documents', label: 'Documents', roles: ['SUPER_ADMIN', 'OPS'] },
+  { href: '/categories', label: 'Categories', roles: ['SUPER_ADMIN', 'OPS'] },
   { href: '/waitlist', label: 'Waitlist', roles: ['SUPER_ADMIN', 'OPS'] },
   { href: '/admins', label: 'Admins', roles: ['SUPER_ADMIN'] },
   { href: '/account', label: 'My account' },
 ];
+
+/** Roles that can approve, reject or unpublish listings (mirrors the API). */
+export const MODERATORS: AdminRole[] = ['SUPER_ADMIN', 'OPS'];
 
 export function canSee(item: { roles?: AdminRole[] }, role: AdminRole): boolean {
   return !item.roles || item.roles.includes(role);

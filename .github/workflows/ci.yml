@@ -68,6 +68,13 @@ jobs:
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+      # Email OTPs (the listings suite verifies a lender's email through the API).
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ['1025:1025']
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: 1
+          MP_SMTP_AUTH_ALLOW_INSECURE: 1
     env:
       DATABASE_URL: postgresql://sajha:sajha@localhost:5432/sajha?schema=public
       REDIS_URL: redis://localhost:6379
