@@ -625,6 +625,21 @@ Delivered in three parts, each with its own PR and green CI: **7a API → 7b Mob
 - **Payouts:** a list by status, with retry.
 - **Ledger:** balances, a "Balanced" check and reconciliation counts.
 
+**As built:**
+- **Nav:** a **Payments** item for every role, with Payments · Payouts · Ledger tabs. Refund and Retry are for Super Admin and Ops only.
+- **Payment detail:**
+  - the charge breakdown and what's left to refund
+  - refunds (kind, reason, who, status)
+  - payouts to the lender, with Retry on a failed one
+  - the booking's ledger lines
+- **Goodwill refund:** an amount up to what's left, with a reason, after a confirm step.
+- **Bookings:** a **Paid** tab (confirmed onwards), "Paid (confirmed)" in the timeline, and a link from each booking to its payment. For that link, the admin payments search now also accepts a booking id (API).
+- **Ledger page:** balances per account, the Balanced badge, and checks for unbalanced transactions, captured payments with no ledger entry, and failed refunds and payouts.
+- **Playwright** (`e2e/payments.spec.ts`, 3 tests):
+  1. Paid through the test checkout: Ops sees the payment, the lender's share waiting for a bank account, 4 ledger lines, a balanced ledger and the payout listed.
+  2. Ops refunds ₹150 after an amount that's too large is refused, and the ledger stays balanced.
+  3. Support is read-only.
+
 ## Phase 8 — Handover, return, reviews & disputes
 **Branch:** `phase/8-handover-reviews-disputes`
 

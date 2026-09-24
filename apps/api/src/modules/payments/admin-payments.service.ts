@@ -19,6 +19,8 @@ import type {
 import { LedgerService } from './ledger.service.js';
 import { RefundsService } from './refunds.service.js';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const paymentInclude = {
   booking: {
     select: {
@@ -57,6 +59,7 @@ export class AdminPaymentsService {
               OR: [
                 { orderId: q },
                 { paymentId: q },
+                ...(UUID.test(q) ? [{ bookingId: q }] : []),
                 { booking: { listing: { title: { contains: q, mode: 'insensitive' } } } },
                 { booking: { borrower: { name: { contains: q, mode: 'insensitive' } } } },
                 { booking: { borrower: { phone: { contains: q.replace(/\s+/g, '') } } } },

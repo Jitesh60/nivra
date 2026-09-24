@@ -94,7 +94,7 @@ export class AdminPaymentsQueryDto {
   status?: (typeof PAYMENT_STATUSES)[number];
 
   @ApiPropertyOptional({
-    description: 'Listing title, borrower name or phone, order or payment id',
+    description: 'Listing title, borrower name or phone, order or payment id, or booking id',
   })
   @IsOptional()
   @IsString()

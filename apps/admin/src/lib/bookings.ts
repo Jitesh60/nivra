@@ -2,13 +2,14 @@ import type { Schemas } from '@sajha/api-client';
 
 export type AdminBooking = Schemas['AdminBookingDto'];
 export type AdminBookingDetail = Schemas['AdminBookingDetailDto'];
-export type BookingTab = 'OPEN' | 'AWAITING_PAYMENT' | 'CLOSED';
+export type BookingTab = 'OPEN' | 'AWAITING_PAYMENT' | 'CONFIRMED' | 'CLOSED';
 
-export const BOOKING_TABS: BookingTab[] = ['OPEN', 'AWAITING_PAYMENT', 'CLOSED'];
+export const BOOKING_TABS: BookingTab[] = ['OPEN', 'AWAITING_PAYMENT', 'CONFIRMED', 'CLOSED'];
 
 export const BOOKING_TAB_LABEL: Record<BookingTab, string> = {
   OPEN: 'Open',
   AWAITING_PAYMENT: 'Awaiting payment',
+  CONFIRMED: 'Paid',
   CLOSED: 'Closed',
 };
 
@@ -35,6 +36,7 @@ export const BOOKING_EVENT_LABEL: Record<string, string> = {
   DOCS_SUBMITTED: 'Documents shared',
   DOCS_APPROVED: 'Documents approved',
   DOCS_REJECTED: 'Documents not accepted',
+  PAID: 'Paid (confirmed)',
 };
 
 export const PARTY_LABEL: Record<string, string> = {

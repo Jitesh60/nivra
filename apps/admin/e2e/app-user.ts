@@ -93,6 +93,8 @@ export async function verifyEmail(user: AppUser): Promise<void> {
 export interface ListingInput {
   title: string;
   categorySlug?: string;
+  /** Ask borrowers for a government ID (default true). */
+  requireId?: boolean;
 }
 
 /** Creates a listing with one photo and a required document, then publishes it. */
@@ -117,9 +119,11 @@ export async function publishListing(
   });
   const key = await upload(user.token, 'LISTING_PHOTO');
   await call('POST', `/me/listings/${listing.id}/photos`, user.token, { key });
-  await call('PUT', `/me/listings/${listing.id}/required-docs`, user.token, {
-    items: [{ docType: 'GOVERNMENT_ID' }],
-  });
+  if (input.requireId ?? true) {
+    await call('PUT', `/me/listings/${listing.id}/required-docs`, user.token, {
+      items: [{ docType: 'GOVERNMENT_ID' }],
+    });
+  }
   const result = await call<{ listing: { status: string }; inReview: boolean }>(
     'POST',
     `/me/listings/${listing.id}/publish`,
@@ -258,4 +262,30 @@ export async function viewSharedDocument(user: AppUser, id: string) {
     `/bookings/${id}/documents/${booking.sharedDocuments[0]!.id}/view`,
     user.token,
   );
+}
+
+/**
+ * Pays for a booking waiting for payment, as the app does against the fake
+ * provider: open the order, play the checkout (the signed webhook arrives at
+ * once), then report it.
+ */
+export async function payBooking(user: AppUser, id: string): Promise<string> {
+  const order = await call<{ orderId: string; provider: string }>(
+    'POST',
+    `/bookings/${id}/pay`,
+    user.token,
+  );
+  if (order.provider !== 'fake') throw new Error('Run the API with PAYMENT_PROVIDER=fake');
+  const paid = await call<{ paymentId: string; signature: string }>(
+    'POST',
+    `/dev/payments/${order.orderId}/checkout`,
+    user.token,
+    { outcome: 'success', webhook: 'now' },
+  );
+  const result = await call<{ status: string }>('POST', '/payments/verify', user.token, {
+    orderId: order.orderId,
+    paymentId: paid.paymentId,
+    signature: paid.signature,
+  });
+  return result.status;
 }
