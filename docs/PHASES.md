@@ -155,10 +155,10 @@ flowchart LR
 7. **My account**: change password, active sessions
 
 **Technical scope**
-- Route handlers `app/api/auth/*` that set and clear httpOnly cookies and refresh tokens server-side
+- Server Functions for login, 2FA and admin actions set and clear httpOnly cookies; `proxy.ts` refreshes tokens before pages render; `/logout` route handler
 - `proxy.ts` (Next.js 16's renamed Middleware) protects `(dashboard)` routes
 - `@sajha/api-client` generated from the API's OpenAPI spec
-- shadcn/ui forms with React Hook Form + Zod, and TanStack Table for lists
+- shadcn/ui forms (`useActionState` + server-side validation from the API) and server-rendered tables
 
 **Acceptance criteria**
 - [ ] A seeded Super Admin logs in, sets up TOTP, and reaches the dashboard

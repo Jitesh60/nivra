@@ -1,0 +1,29 @@
+{
+  "name": "@sajha/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed client for the Sajha API, generated from apps/api's OpenAPI document.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "openapi.json"
+  ],
+  "scripts": {
+    "build": "openapi-typescript openapi.json -o src/schema.d.ts && tsc -p tsconfig.json && cp src/schema.d.ts dist/schema.d.ts",
+    "typecheck": "openapi-typescript openapi.json -o src/schema.d.ts && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@sajha/tsconfig": "workspace:*",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3"
+  }
+}

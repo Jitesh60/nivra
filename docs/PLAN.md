@@ -42,7 +42,7 @@ This doc explains **how** we'll build what the [PRD](./PRD.md) describes: stack 
 | Tests | `flutter_test` widget tests, `integration_test`, `mocktail` |
 
 ### 1.3 Admin — `apps/admin`
-Next.js (App Router) · TypeScript · Tailwind CSS · **shadcn/ui** · TanStack Query and TanStack Table · React Hook Form + Zod · a typed API client generated from OpenAPI · Playwright smoke tests.
+Next.js (App Router) · TypeScript · Tailwind CSS · **shadcn/ui** · Server Components for reads and Server Functions for writes · **`@sajha/api-client`** (types generated from the API's OpenAPI document with `openapi-typescript`, calls through `openapi-fetch`) · Playwright end-to-end tests. TanStack Query/Table get added when a screen needs client-side caching or large interactive tables.
 
 ### 1.4 Marketing website — `apps/web`
 Next.js (App Router, static generation) · Tailwind CSS · **React Bits** · **shaders.com** components · **uiverse.io** components · Motion (Framer Motion) · next-seo/metadata · Playwright smoke tests. Deployed on Vercel or a similar host.

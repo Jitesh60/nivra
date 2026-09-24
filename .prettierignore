@@ -10,3 +10,6 @@ packages/design-tokens/dist
 *.md
 apps/api/src/generated
 **/next-env.d.ts
+packages/api-client/openapi.json
+packages/api-client/src/schema.d.ts
+apps/admin/e2e/.state.json
