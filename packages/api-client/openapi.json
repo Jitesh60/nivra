@@ -5199,7 +5199,7 @@
             "name": "q",
             "required": false,
             "in": "query",
-            "description": "Listing title, borrower name or phone, order or payment id",
+            "description": "Listing title, borrower name or phone, order or payment id, or booking id",
             "schema": {
               "type": "string"
             }

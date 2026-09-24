@@ -227,9 +227,13 @@ export default async function BookingPage({ params }: PageProps<'/bookings/[id]'
               {line('Service fee', rupees(b.feePaise))}
               {line('Refundable deposit', rupees(b.depositPaise))}
               {line('Total', rupees(b.totalPaise), true)}
-              <p className="mt-1 text-xs text-muted-foreground">
-                Nothing is charged until Phase 7.
-              </p>
+              <Link
+                href={`/payments?q=${b.id}`}
+                className="mt-1 text-xs text-primary hover:underline"
+                data-testid="booking-payments"
+              >
+                Payments and refunds →
+              </Link>
             </CardContent>
           </Card>
           {b.cancellable &&

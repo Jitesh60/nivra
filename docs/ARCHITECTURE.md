@@ -625,6 +625,12 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
     - the documents asked for and shared (status, verification, access end, purge, and every view with viewer, time and IP; no images)
     - the money
   - SUPER_ADMIN/OPS cancel with a common or custom reason after a confirm step. The API audits `admin.booking.cancel` and notifies both people.
+- **Payments** (Phase 7c). A layout adds Payments · Payouts · Ledger tabs. Every role can read; the actions are SUPER_ADMIN/OPS, as the API enforces.
+  - `/payments` has status tabs and a search by listing, borrower name or phone, order, payment or booking id. `/bookings` gains a Paid tab, and each booking links to its payment.
+  - `/payments/[id]` shows the charge breakdown, what's left to refund, the refunds, the payouts to the lender and the booking's ledger lines.
+    - **Refund** is a goodwill refund with an amount (up to what's left) and a reason. Sajha pays for it, and the API audits it as `admin.payment.refund`.
+  - `/payments/payouts` lists transfers by status, with **Retry** on failed ones (`admin.transfer.retry`).
+  - `/payments/ledger` shows the balance per account, a Balanced badge and reconciliation checks: unbalanced transactions, captured payments with no ledger entry, and failed refunds and payouts.
 - **2FA setup** asks the API for a secret exactly once per page visit (each call replaces the secret), shows the QR code plus the key for manual entry, then shows the recovery codes once with copy and download buttons.
 
 ## 11. Marketing site architecture (`apps/web`)

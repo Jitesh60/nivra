@@ -495,6 +495,12 @@ describe('Payments, refunds & payouts (e2e)', () => {
           borrowerName: 'Rahul Sharma',
         }),
       ]);
+      const byBooking = await http(app)
+        .get('/v1/admin/payments')
+        .query({ q: m.bookingId })
+        .set(bearer(support.accessToken))
+        .expect(200);
+      expect(byBooking.body.items.map((p: { orderId: string }) => p.orderId)).toEqual([m.orderId]);
       const id = list.body.items[0].id as string;
       const shown = await http(app)
         .get(`/v1/admin/payments/${id}`)
