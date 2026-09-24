@@ -1,0 +1,262 @@
+# Sajha — Delivery Phases
+
+We build Sajha in small, reviewable phases. Each phase is delivered in the order **Backend → Mobile → Admin (→ Web)**, and each (sub-)phase lives on its **own branch** and ends with a **commit, a push and a PR into `main`**. See [PLAN §5](./PLAN.md#5-git-workflow).
+
+Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.md)
+
+---
+
+## Roadmap
+
+| Phase | Name | Branch | Apps |
+|---|---|---|---|
+| 0 | Foundation | `phase/0-foundation` | all |
+| **1a** | **Auth — Backend** | `phase/1a-auth-backend` | api |
+| **1b** | **Auth — Mobile** | `phase/1b-auth-mobile` | mobile |
+| **1c** | **Auth — Admin** | `phase/1c-auth-admin` | admin |
+| **1d** | **Marketing website v1** | `phase/1d-marketing-web` | web, api (waitlist) |
+| 2 | Profiles & verification | `phase/2-profiles-verification` | api, mobile, admin |
+| 3 | Listings & categories | `phase/3-listings` | api, mobile, admin |
+| 4 | Discovery & search | `phase/4-discovery` | api, mobile |
+| 5 | Chat, offers & notifications | `phase/5-chat-offers` | api, mobile, admin |
+| 6 | Bookings & document sharing | `phase/6-bookings` | api, mobile, admin |
+| 7 | Payments & payouts | `phase/7-payments` | api, mobile, admin |
+| 8 | Handover, return, reviews & disputes | `phase/8-handover-reviews-disputes` | api, mobile, admin |
+| 9 | Launch hardening & release | `phase/9-launch` | all |
+
+Larger phases (3, 5, 6, 7, 8) may also be split into `-api`, `-mobile` and `-admin` sub-branches, like Phase 1, if the PR gets too big to review.
+
+```mermaid
+flowchart LR
+  P0[0 Foundation] --> P1a[1a Auth BE]
+  P1a --> P1b[1b Auth Mobile]
+  P1a --> P1c[1c Auth Admin]
+  P0 --> P1d[1d Marketing web]
+  P1b --> P2[2 Profiles & verification]
+  P1c --> P2
+  P2 --> P3[3 Listings]
+  P3 --> P4[4 Discovery]
+  P3 --> P5[5 Chat & offers]
+  P4 --> P6[6 Bookings & docs]
+  P5 --> P6
+  P6 --> P7[7 Payments]
+  P7 --> P8[8 Handover, reviews, disputes]
+  P8 --> P9[9 Launch]
+```
+
+## Definition of done (every phase)
+
+- [ ] All acceptance criteria for the phase are met
+- [ ] Lint, typecheck, tests and build are green locally and in CI
+- [ ] New endpoints are documented in Swagger; `.env.example` is updated
+- [ ] README or app README explains how to run the new work
+- [ ] **Final commit made** (Conventional Commit message)
+- [ ] **Branch pushed** with `git push -u origin phase/<…>` — **never to `main`**
+- [ ] **PR opened into `main`**, with a summary, run steps and the checked acceptance list
+- [ ] The next phase starts from `main` only after this PR is merged
+
+---
+
+## Phase 0 — Foundation
+**Branch:** `phase/0-foundation`
+
+**Scope**
+- Monorepo: pnpm workspaces, Turborepo, shared `tsconfig` and `eslint-config`, Prettier, Husky + lint-staged, `.editorconfig`, `.nvmrc`
+- `infra/docker-compose.yml`: PostGIS 16, Redis 7, MinIO (with buckets created on start), Mailpit
+- `apps/api`: NestJS skeleton, config module with env validation, Prisma set up with the first migration (extensions: `postgis`, `btree_gist`, `citext`), `/health` endpoint, pino logging, Swagger at `/docs`, global validation pipe and error filter, Jest + e2e setup with Testcontainers
+- `apps/mobile`: Flutter skeleton with flavors (dev/staging/prod), folder structure, Riverpod, go_router, dio client, theme from design tokens, one sample shader compiled and rendered
+- `apps/admin`, `apps/web`: Next.js skeletons with Tailwind; shadcn/ui initialised in admin
+- `packages/design-tokens`: colours, typography and radii → a Tailwind preset and a generated Dart theme file
+- GitHub Actions CI: JS job (lint, typecheck, test, build via Turbo) + Flutter job (analyze, test)
+- Start external account setup: MSG91 DLT templates, Resend domain, Razorpay test account, Firebase project
+
+**Acceptance criteria**
+- `docker compose -f infra/docker-compose.yml up -d` then `pnpm dev` starts the API at `:3000` (the `/health` check returns ok), admin at `:3001` and web at `:3002`
+- `flutter run --flavor dev` launches the app with a shader splash placeholder
+- `pnpm lint && pnpm test && pnpm build` pass; the CI workflow is green on the PR
+
+---
+
+## Phase 1a — Auth: Backend
+**Branch:** `phase/1a-auth-backend` · Design: [ARCHITECTURE §4](./ARCHITECTURE.md#4-authentication--authorization)
+
+**Scope**
+- Prisma models: `User`, `Session`, `OtpChallenge`, `AdminUser`, `AdminSession`, `AuditLog`
+- `providers/sms` (`Msg91SmsProvider`, `ConsoleSmsProvider`), `providers/email` (`ResendEmailProvider`, `MailpitEmailProvider`) plus email OTP template
+- `otp` module: create and verify challenges, HMAC hashing, TTL, attempt limits, cooldown, Redis rate limits
+- `auth` module: phone OTP login/signup, email OTP verify, JWT access token, rotating refresh token with reuse detection, logout, logout-all
+- `users` module: `GET/PATCH /v1/me`, sessions list and revoke, account deletion request
+- `admin-auth` module: login → mandatory TOTP setup/verify → tokens; recovery codes; lockout; `AdminJwtGuard` + `@Roles`
+- `admin` module (Phase 1 part): manage admin users (Super Admin only); read-only app-user list
+- `audit` module: log admin auth events and admin mutations
+- `seed:admin` CLI to create the first Super Admin
+- Swagger docs for every endpoint listed in ARCHITECTURE §4
+
+**Acceptance criteria**
+- [ ] Request OTP → the code appears in the console provider (dev) → verify returns tokens and `isNewUser: true` on first login and `false` afterwards
+- [ ] Wrong code 5 times → `OTP_TOO_MANY_ATTEMPTS`; expired → `OTP_EXPIRED`; request again within 30s → `OTP_COOLDOWN`; the 6th request in an hour → `OTP_RATE_LIMITED`
+- [ ] Email OTP sets `emailVerifiedAt`; an email already used by another user → `EMAIL_IN_USE`; the email arrives in Mailpit
+- [ ] Refresh rotates tokens; reusing an old refresh token → `REFRESH_REUSED` and the whole family is revoked
+- [ ] Logout invalidates the refresh token; logout-all kills every session
+- [ ] A suspended user can't log in or refresh
+- [ ] Admin: a correct password without 2FA gives no tokens; first login forces TOTP setup; 5 wrong passwords → locked out for 15 minutes; OPS can't reach Super Admin endpoints (`403`)
+- [ ] OTP codes, tokens and phone numbers never appear in logs
+- [ ] Unit tests for the OTP service, token service and guards; e2e tests for every endpoint above; coverage of the auth modules ≥ 80%
+
+**Final commit:** `feat(auth-api): phone & email OTP, JWT refresh rotation, admin auth with TOTP & RBAC`
+
+---
+
+## Phase 1b — Auth: Mobile
+**Branch:** `phase/1b-auth-mobile` (after 1a is merged)
+
+**Screens**
+1. **Splash**: animated shader background (GLSL aurora/gradient mesh) plus the logo animation; checks the stored session
+2. **Onboarding**: 3 slides (Borrow / Lend / Trust) with `flutter_animate` transitions; skip option
+3. **Phone entry**: fixed +91 prefix, 10-digit validation, terms and privacy consent checkbox, uiverse-style animated CTA
+4. **OTP**: 6-box input with auto-fill (Android SMS Retriever / iOS `oneTimeCode`), resend countdown (30s), error shake animation, attempts-left message
+5. **Profile setup** (new users only): name
+6. **Email entry → email OTP** (the same OTP widget); can be skipped for browsing, but it's required before listing or booking
+7. **Home placeholder** with the verified badges shown and a logout button
+8. **Settings → Active sessions** (list and revoke), **Logout**, **Logout all devices**, **Delete account**
+
+**Technical scope**
+- `features/auth` data, application and presentation layers; `AuthController` state machine
+- `flutter_secure_storage` for the refresh token; access token in memory
+- dio `RefreshInterceptor` (single-flight refresh, retries queued requests, logs out on failure)
+- go_router redirects: unknown → splash, unauthenticated → phone, needsProfile → profile setup
+- Maps API error codes to friendly messages
+- Stable device ID generated and persisted at first launch
+- `effects/`: reusable `ShaderBackground` widget, `AnimatedGradientButton`, `OtpField`, loading shimmer
+
+**Acceptance criteria**
+- [ ] A new user completes phone → OTP → name → email → email OTP and lands on Home with both badges
+- [ ] An existing user logs in with phone + OTP only
+- [ ] Killing and reopening the app keeps the user logged in; after the access token expires, requests refresh silently
+- [ ] A revoked session (from another device) sends the user to login on the next API call
+- [ ] Every API error code shows a clear message; OTP auto-fill works on an Android device
+- [ ] Shader background runs at 60fps on a mid-range Android device; reduced-motion settings disable animations
+- [ ] Widget tests for the phone, OTP and email screens; unit tests for `AuthController` and the refresh interceptor; `flutter analyze` is clean
+
+**Final commit:** `feat(mobile-auth): onboarding, phone & email OTP, session handling with shader UI`
+
+---
+
+## Phase 1c — Auth: Admin
+**Branch:** `phase/1c-auth-admin` (after 1a is merged)
+
+**Screens**
+1. **Login**: email + password (subtle shader/uiverse background on this screen only)
+2. **2FA setup** (first login): QR code, verify code, show and download recovery codes
+3. **2FA verify** (later logins), with a "use a recovery code" option
+4. **Dashboard shell**: sidebar (role-aware), top bar with the admin's name and role, logout
+5. **Admins** (Super Admin): list, invite (email + role → temporary password shown once), change role, disable
+6. **Users** (read-only): table of app users with search by phone or email, verification badges and created date
+7. **My account**: change password, active sessions
+
+**Technical scope**
+- Route handlers `app/api/auth/*` that set and clear httpOnly cookies and refresh tokens server-side
+- `middleware.ts` protects `(dashboard)` routes
+- `@sajha/api-client` generated from the API's OpenAPI spec
+- shadcn/ui forms with React Hook Form + Zod, and TanStack Table for lists
+
+**Acceptance criteria**
+- [ ] A seeded Super Admin logs in, sets up TOTP, and reaches the dashboard
+- [ ] No token is readable from JS (`document.cookie` doesn't contain it)
+- [ ] An OPS admin doesn't see the "Admins" nav item and gets a 403 page on direct URL access
+- [ ] The session survives a page reload; logout clears it
+- [ ] Playwright test: login → 2FA (using a TOTP generated from a test secret) → dashboard → logout
+
+**Final commit:** `feat(admin-auth): admin login with TOTP 2FA, RBAC shell, admin & user lists`
+
+---
+
+## Phase 1d — Marketing website v1
+**Branch:** `phase/1d-marketing-web` (can run in parallel with 1b/1c after Phase 0)
+
+**Scope**
+- Landing page sections from [PRD §9](./PRD.md#9-marketing-website): Hero, How it works (Borrower/Lender tabs), Categories, Why Sajha, Trust & safety, Become a lender (earnings calculator), FAQ, Waitlist/Download, Footer
+- **Effects:**
+  - **shaders.com**: animated hero background, with a static gradient poster fallback
+  - **React Bits**: split/blur text headline, spotlight or tilted category cards, animated counters, magnet CTA button
+  - **uiverse.io**: CTA buttons, toggles for the Borrower/Lender tab, loader on waitlist submit
+- Pages: `/`, `/how-it-works`, `/lend`, `/faq`, `/privacy`, `/terms`, `/contact`
+- SEO: metadata, Open Graph images, sitemap, robots.txt
+- API: `waitlist` module with `POST /v1/waitlist` (email, city, role, utm; rate limited, honeypot); admin CSV export endpoint
+
+**Acceptance criteria**
+- [ ] Lighthouse mobile scores: Performance ≥ 85, Accessibility ≥ 95, SEO ≥ 95
+- [ ] `prefers-reduced-motion` disables shaders and animations
+- [ ] The waitlist form saves to the DB and shows success, and a duplicate email shows a friendly message
+- [ ] Responsive from 360px to 1440px
+- [ ] Playwright smoke test: page loads, waitlist submits
+
+**Final commit:** `feat(web): marketing landing with shader hero, React Bits & uiverse effects, waitlist`
+
+---
+
+## Phase 2 — Profiles & verification
+**Branch:** `phase/2-profiles-verification`
+
+- **API:** `profiles` (bio, avatar via presigned upload, city and location), `documents` vault (upload ID documents to the private bucket, status PENDING/APPROVED/REJECTED), verified-ID badge, `VerifiedGuard`
+- **Mobile:** profile view and edit, avatar crop and upload, "My documents" vault (add, view, delete), masked-Aadhaar guidance, badge display
+- **Admin:** document review queue (view-only viewer, approve or reject with a reason, access logged), user detail page, suspend or ban user
+- **Done when:** a user uploads an ID, an admin approves it, and the ID badge shows in the app; every document view appears in the audit log
+
+## Phase 3 — Listings & categories
+**Branch:** `phase/3-listings`
+
+- **API:** `categories`, `listings` CRUD, `listing_photos` (presigned uploads plus a resize job), pricing (paise), deposit, min/max days, `availability_blocks`, `listing_required_docs`, listing status and moderation, exact address encrypted at rest
+- **Mobile:** create/edit listing wizard (photos → details → pricing → calendar → location → required docs → preview), "My listings", pause or unpause
+- **Admin:** category management, listing moderation queue, listing detail
+- **Done when:** a lender publishes a listing with required docs; it shows as LIVE after moderation (or immediately, per the chosen decision)
+
+## Phase 4 — Discovery & search
+**Branch:** `phase/4-discovery`
+
+- **API:** full-text search (`tsvector`), filters, PostGIS radius search, date-availability filter, sorting, cursor pagination, favourites
+- **Mobile:** home feed (categories, near you, popular), search with filters and a date picker, listing detail with a price breakdown for the chosen dates, lender mini-profile, wishlist
+- **Done when:** a borrower finds items within 5 km that are free on their dates, sorted by distance
+
+## Phase 5 — Chat, offers & notifications
+**Branch:** `phase/5-chat-offers`
+
+- **API:** `chat` (REST + Socket.IO gateway, Redis adapter), `offers` (offer, counter, accept, decline, expire), contact masking, `notifications` module (FCM, email), device tokens
+- **Mobile:** inbox, chat screen (text, image, offer cards, typing, read receipts), push notifications with deep links, report/block user
+- **Admin:** view a conversation from a report (read-only, logged)
+- **Done when:** two devices chat in realtime, negotiate an offer, and the accepted offer creates a booking request stub; phone numbers in chat are masked
+
+## Phase 6 — Bookings & document sharing
+**Branch:** `phase/6-bookings`
+
+- **API:** `bookings` state machine (REQUESTED → … → CONFIRMED, excluding payment capture), exclusion constraint, BullMQ expiry jobs, `booking-documents` (share from vault, lender approve or reject, time-boxed access, access logs, purge job), cancellation policy
+- **Mobile:** request to book, lender accept/decline, document request and submit flow, lender document viewer (watermarked, `FLAG_SECURE`), "My bookings" (borrowing and lending tabs) with a timeline
+- **Admin:** bookings list and detail with event timeline; cancel with a reason
+- **Done when:** a booking on a listing that requires documents goes through accept → borrower shares ID → lender approves → AWAITING_PAYMENT; overlapping requests can't both reach AWAITING_PAYMENT
+
+## Phase 7 — Payments & payouts
+**Branch:** `phase/7-payments`
+
+- **API:** Razorpay orders, client verify, webhooks (signature and idempotency), ledger, refunds, cancellations with the refund policy, Route linked-account onboarding for lenders, on-hold transfers, deposit hold and refund
+- **Mobile:** checkout (`razorpay_flutter`), payment status screens, lender payout setup, earnings screen
+- **Admin:** payments, refunds, payouts, ledger and reconciliation view; manual refund (Super Admin/Ops)
+- **Done when:** in Razorpay test mode, pay → CONFIRMED via webhook; cancellation refunds follow the policy; the ledger balances
+
+## Phase 8 — Handover, return, reviews & disputes
+**Branch:** `phase/8-handover-reviews-disputes`
+
+- **API:** handover and return codes (QR + 6-digit OTP), condition reports, rental reminders, late fees, claim window, payout release and deposit refund on COMPLETED, `reviews` (double-blind), `disputes`, `reports`
+- **Mobile:** handover/return screens (show QR, scan QR, photo capture), late-return banner, rate and review screen, raise a dispute with evidence, report listing
+- **Admin:** dispute workspace (timeline, condition photos side by side, chat excerpt, decision with a deposit capture amount), reports queue
+- **Done when:** a full rental runs end to end in test mode: request → pay → handover → return → review → payout released and deposit refunded; a disputed rental is resolved by an admin with a partial capture
+
+## Phase 9 — Launch hardening & release
+**Branch:** `phase/9-launch`
+
+- Admin analytics dashboard (signups, listings, bookings, GMV, disputes)
+- Notification preferences; email templates polished
+- Security review (OWASP ASVS L1 checklist), load test of the search and chat endpoints, backups and restore drill
+- Crash reporting (Sentry / Crashlytics), app store assets, privacy nutrition labels, Play Store Data Safety form, account-deletion URL
+- Production infrastructure, staging → production promotion, monitoring alerts
+- Marketing site: switch the waitlist to download links, blog/SEO pages
+- **Done when:** the apps are live on the Play Store (and the App Store), with production monitoring in place
