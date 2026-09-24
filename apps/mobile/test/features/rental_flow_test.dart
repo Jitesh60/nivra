@@ -21,9 +21,12 @@ void main() {
   String location(TestHarness h) =>
       h.container.read(routerProvider).state.uri.toString();
 
+  /// A booking date [fromToday] days from today in India, as the API counts.
   String iso(int fromToday) {
-    final now = DateTime.now();
-    return isoDate(DateTime(now.year, now.month, now.day + fromToday));
+    final ist = DateTime.now().toUtc().add(
+      const Duration(hours: 5, minutes: 30),
+    );
+    return isoDate(DateTime(ist.year, ist.month, ist.day + fromToday));
   }
 
   Future<void> go(WidgetTester tester, TestHarness h, String route) async {

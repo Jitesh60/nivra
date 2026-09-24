@@ -247,14 +247,22 @@ extension FakeRentalsApi on FakeSajhaApi {
     'qr': 'sajha://booking/${b.id}/$stage/$code',
   };
 
+  /// Midnight IST at the start of [day] (booking dates are Indian days,
+  /// whatever the machine's time zone).
+  DateTime _istMidnight(String day) => DateTime.parse('${day}T00:00:00+05:30');
+
+  /// Due back by midnight IST after the last day.
+  DateTime _dueAt(FakeBooking b) =>
+      _istMidnight(b.end).add(const Duration(days: 1));
+
   /// From the day before the start date.
   bool _handoverOpen(FakeBooking b) => !DateTime.now().isBefore(
-    DateTime.parse(b.start).subtract(const Duration(days: 1)),
+    _istMidnight(b.start).subtract(const Duration(days: 1)),
   );
 
   void _markReturned(FakeBooking b, String userId, List<String> keys) {
     final now = DateTime.now();
-    final due = DateTime.parse(b.end).add(const Duration(days: 1));
+    final due = _dueAt(b);
     final late = now.isAfter(due)
         ? (now.difference(due).inMinutes / (24 * 60)).ceil()
         : 0;
@@ -286,9 +294,7 @@ extension FakeRentalsApi on FakeSajhaApi {
       'COMPLETED',
       'DISPUTED',
     }.contains(b.status);
-    final due = DateTime.parse(b.end)
-        .add(const Duration(days: 1))
-        .subtract(const Duration(minutes: 330));
+    final due = _dueAt(b);
     final out = b.status == 'ACTIVE';
     final runningLate = out && DateTime.now().isAfter(due)
         ? (DateTime.now().difference(due).inMinutes / (24 * 60)).ceil()
@@ -355,7 +361,7 @@ extension FakeRentalsApi on FakeSajhaApi {
         'noShow':
             !borrower &&
             b.status == 'CONFIRMED' &&
-            !DateTime.now().isBefore(DateTime.parse(b.start)),
+            !DateTime.now().isBefore(_istMidnight(b.start)),
         'dispute':
             !borrower && (b.status == 'RETURNED' || (out && runningLate >= 3)),
         'showCode':
