@@ -24,16 +24,36 @@ abstract final class Routes {
   /// A listing's public page. `/item/`, not `/listings/`, which is the
   /// lender's own space.
   static const itemPattern = '/item/:id';
-  static String item(String id, {bool save = false, bool chat = false}) =>
+
+  /// [book]: a guest tapped "Request to book" for these dates; after
+  /// sign-in the item page opens the request again.
+  static String item(
+    String id, {
+    bool save = false,
+    bool chat = false,
+    ({String from, String to})? book,
+  }) =>
       '/item/$id${save
           ? '?save=1'
           : chat
           ? '?chat=1'
+          : book != null
+          ? '?book=1&from=${book.from}&to=${book.to}'
           : ''}';
 
   static const inbox = '/inbox';
   static const chatPattern = '/chat/:id';
   static String chat(String conversationId) => '/chat/$conversationId';
+
+  static const bookings = '/bookings';
+  static const bookingPattern = '/booking/:id';
+  static String booking(String id) => '/booking/$id';
+  static const bookingSharePattern = '/booking/:id/share';
+  static String bookingShare(String id) => '/booking/$id/share';
+
+  /// A document shared with the lender (args in `extra`).
+  static const bookingDocument = '/booking-document';
+  static const notifications = '/notifications';
 
   /// The sign-in screens.
   static const public = {onboarding, login, loginVerify};

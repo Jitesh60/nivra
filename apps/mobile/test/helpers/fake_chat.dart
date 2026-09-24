@@ -227,6 +227,9 @@ extension FakeChatApi on FakeSajhaApi {
           {
             'conversations': unread.length,
             'messages': unread.fold(0, (a, b) => a + b),
+            'notifications': notificationsFor(user.id)
+                .where((n) => n.readAt == null)
+                .length,
           },
         );
       case 'PUT /me/devices/push-token':
@@ -276,12 +279,23 @@ extension FakeChatApi on FakeSajhaApi {
           for (final a in c.offers.where((x) => x.status == 'ACCEPTED')) {
             a.status = 'SUPERSEDED';
           }
+          if (bookingState.bookings.values.any(
+            (b) => b.conversationId == c.id && b.open,
+          )) {
+            return _error(
+              409,
+              'BOOKING_OPEN_EXISTS',
+              'You already have a booking in progress for this item.',
+            );
+          }
           o.status = 'ACCEPTED';
           _announce(c, o);
+          final booking = _bookingFromOffer(c, o, user.id);
           _system(
             c,
             user.id,
-            'Offer accepted: ${o.start} – ${o.end} at ₹${o.price ~/ 100}/day. Booking opens soon.',
+            'Offer accepted: ${o.start} – ${o.end} at ₹${o.price ~/ 100}/day. '
+            '${booking.status == 'AWAITING_DOCS' ? 'Booking created: waiting for the borrower to share documents.' : 'Booking created: the dates are held for payment.'}',
           );
           return (200, _offerJson(o, c, user.id));
         case 'decline':
@@ -559,6 +573,7 @@ extension FakeChatApi on FakeSajhaApi {
       'acceptedOffer': accepted == null
           ? null
           : _offerJson(accepted, c, viewerId),
+      'openBookingId': _openBookingId(c),
     };
   }
 }

@@ -201,6 +201,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: SajhaSpacing.lg),
             const Divider(),
             ListTile(
+              key: const ValueKey('open-my-bookings'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_note_outlined),
+              title: const Text('My bookings'),
+              subtitle: const Text('Things you’re borrowing and lending'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push(Routes.bookings),
+            ),
+            ListTile(
               key: const ValueKey('open-documents'),
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.badge_outlined),

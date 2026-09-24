@@ -471,13 +471,32 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
 ### 6b — Mobile
 **Branch:** `phase/6b-bookings-mobile`
 
-- Request to book from the item page (confirm sheet with the breakdown and the documents asked for; guests sign in and come back).
-- "My bookings" with Borrowing and Lending tabs.
-- Booking detail with a countdown, the timeline and actions from `can`.
-- Sharing documents from the vault with a consent step, and the borrower's view log.
-- The lender's watermarked viewer with screen protection (`FLAG_SECURE` on Android).
-- The notifications bell.
-- "Open booking" from chat.
+- **Request to book** from the item page:
+  - A confirm sheet shows the breakdown and the documents asked for, and says "24 hours to reply".
+  - Guests sign in and come back to the same dates.
+  - An unverified email gets a prompt.
+- **My bookings:** Borrowing and Lending tabs, each with In progress and Past.
+- **Booking page:**
+  - status, next step and countdown
+  - price, documents and the timeline
+  - a chat link
+  - actions from the API's `can` flags: accept, decline (optional reason), share documents, approve, don't accept (reason), cancel (reason)
+- **Sharing documents:** pick a matching vault document per requirement (Sajha-verified ones first), or add one, then agree to share for this booking only. The borrower sees each time the lender opened it.
+- **Lender's viewer:** a 5-minute link, a watermark with the lender's name, the booking and the time, `FLAG_SECURE` on Android, and a blur while recording on iOS.
+- **Notifications:** a bell with a live unread badge. The list marks items read and opens the booking.
+- **Links in:** push taps and the chat's **Open booking** open the booking.
+- **Done when:**
+  - Widget tests cover:
+    - request → accept → share → approve (borrower)
+    - accept → secure view → approve (lender)
+    - decline and cancel
+    - guest `?book=1`
+    - the email prompt
+    - offer → Open booking
+    - the bell
+    - My bookings
+    - a booking push tap
+  - The live contract test requests, lists and cancels a booking on the real API and gets `booking:updated` over the socket.
 
 ### 6c — Admin
 **Branch:** `phase/6c-bookings-admin`

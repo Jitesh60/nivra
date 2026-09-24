@@ -11,6 +11,7 @@ import '../../../shared/widgets/verify_email_dialog.dart';
 import '../../../shared/widgets/verification_badges.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/data/models.dart';
+import '../../bookings/application/bookings_providers.dart';
 import '../../chat/application/inbox.dart';
 import '../../discovery/application/discovery_providers.dart';
 import '../../discovery/application/search_area.dart';
@@ -52,6 +53,13 @@ class HomeScreen extends ConsumerWidget {
             )
           else ...[
             const _InboxButton(),
+            const _BellButton(),
+            IconButton(
+              key: const ValueKey('open-bookings'),
+              tooltip: 'My bookings',
+              icon: const Icon(Icons.event_note_outlined),
+              onPressed: () => context.push(Routes.bookings),
+            ),
             IconButton(
               key: const ValueKey('open-wishlist'),
               tooltip: 'Wishlist',
@@ -447,6 +455,26 @@ class _InboxButton extends ConsumerWidget {
         isLabelVisible: unread > 0,
         label: Text('$unread', key: const ValueKey('inbox-badge')),
         child: const Icon(Icons.chat_bubble_outline),
+      ),
+    );
+  }
+}
+
+/// Booking news, with a badge for unread ones.
+class _BellButton extends ConsumerWidget {
+  const _BellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadNotificationsProvider).value ?? 0;
+    return IconButton(
+      key: const ValueKey('open-notifications'),
+      tooltip: unread == 0 ? 'Notifications' : 'Notifications, $unread unread',
+      onPressed: () => context.push(Routes.notifications),
+      icon: Badge(
+        isLabelVisible: unread > 0,
+        label: Text('$unread', key: const ValueKey('bell-badge')),
+        child: const Icon(Icons.notifications_none),
       ),
     );
   }
