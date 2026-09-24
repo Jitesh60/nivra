@@ -14,12 +14,19 @@ const JPEG = Buffer.from(
   'base64',
 );
 
-async function call<T>(method: string, path: string, token?: string, body?: unknown): Promise<T> {
+async function call<T>(
+  method: string,
+  path: string,
+  token?: string,
+  body?: unknown,
+  headers: Record<string, string> = {},
+): Promise<T> {
   const res = await fetch(`${API}/v1${path}`, {
     method,
     headers: {
       'content-type': 'application/json',
       ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -35,6 +42,15 @@ export interface AppUser {
   token: string;
 }
 
+/**
+ * Each app user asks for codes from their own phone's IP (a documentation
+ * range, sent as X-Forwarded-For, which the API trusts from loopback), so the
+ * suite stays under the per-IP OTP limit as it grows.
+ */
+const phoneIp = (phone: string) => ({
+  'x-forwarded-for': `198.51.100.${(Number(phone.slice(-6)) % 254) + 1}`,
+});
+
 /** Signs up a new app user with phone OTP and sets their name. */
 export async function createAppUser(name: string): Promise<AppUser> {
   const phone = `9${String(Date.now()).slice(-9)}`;
@@ -42,9 +58,8 @@ export async function createAppUser(name: string): Promise<AppUser> {
     'POST',
     '/auth/otp/request',
     undefined,
-    {
-      phone: `+91${phone}`,
-    },
+    { phone: `+91${phone}` },
+    phoneIp(phone),
   );
   const login = await call<{ accessToken: string; user: { id: string } }>(
     'POST',
@@ -86,6 +101,7 @@ export async function verifyEmail(user: AppUser): Promise<void> {
     '/auth/email/otp/request',
     user.token,
     { email: `lender.${user.phone.slice(3)}@example.com` },
+    phoneIp(user.phone),
   );
   await call('POST', '/auth/email/otp/verify', user.token, { challengeId, code: OTP });
 }
@@ -288,4 +304,47 @@ export async function payBooking(user: AppUser, id: string): Promise<string> {
     signature: paid.signature,
   });
   return result.status;
+}
+
+/** The code [user] shows at handover (borrower) or return (lender). */
+export function bookingCode(user: AppUser, id: string) {
+  return call<{ stage: 'HANDOVER' | 'RETURN'; code: string; qr: string }>(
+    'GET',
+    `/bookings/${id}/code`,
+    user.token,
+  );
+}
+
+/**
+ * Hands over (lender) or returns (borrower) with the other person's code and
+ * two condition photos.
+ */
+export async function confirmStage(
+  user: AppUser,
+  id: string,
+  stage: 'handover' | 'return',
+  code: string,
+  note?: string,
+) {
+  const photoKeys = [
+    await upload(user.token, 'CONDITION_PHOTO'),
+    await upload(user.token, 'CONDITION_PHOTO'),
+  ];
+  return bookingAction(user, id, stage, { code, photoKeys, ...(note ? { note } : {}) });
+}
+
+/** The lender reports a problem after the return, with one evidence photo. */
+export async function openDispute(
+  lender: AppUser,
+  id: string,
+  body: { reason: string; description: string; claimPaise: number },
+) {
+  const photoKeys = [await upload(lender.token, 'CONDITION_PHOTO')];
+  return bookingAction(lender, id, 'dispute', { ...body, photoKeys });
+}
+
+/** The borrower's one reply to the claim. */
+export async function respondToDispute(borrower: AppUser, id: string, note: string) {
+  const photoKeys = [await upload(borrower.token, 'CONDITION_PHOTO')];
+  return bookingAction(borrower, id, 'dispute/response', { note, photoKeys });
 }

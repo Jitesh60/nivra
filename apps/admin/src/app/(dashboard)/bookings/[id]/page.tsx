@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Forbidden } from '@/components/dashboard/forbidden';
+import { ConditionPhotos } from '@/components/dashboard/condition-photos';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,6 +143,17 @@ export default async function BookingPage({ params }: PageProps<'/bookings/[id]'
             </CardContent>
           </Card>
 
+          {b.conditionReports.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Condition photos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ConditionPhotos reports={b.conditionReports} base={`/bookings/${b.id}/photos`} />
+              </CardContent>
+            </Card>
+          )}
+
           {b.requiredDocs.length > 0 && (
             <Card>
               <CardHeader>
@@ -215,6 +227,62 @@ export default async function BookingPage({ params }: PageProps<'/bookings/[id]'
               {b.closedAt && <p>Closed {dateTime.format(new Date(b.closedAt))}</p>}
             </CardContent>
           </Card>
+          {b.rental && (
+            <Card data-testid="rental-card">
+              <CardHeader>
+                <CardTitle className="text-base">Rental</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-1 text-sm">
+                {b.rental.noShowAt ? (
+                  <p>Borrower didn’t show up ({dateTime.format(new Date(b.rental.noShowAt))})</p>
+                ) : (
+                  <>
+                    {line(
+                      'Handed over',
+                      b.rental.handedOverAt
+                        ? dateTime.format(new Date(b.rental.handedOverAt))
+                        : 'Not yet',
+                    )}
+                    {line('Due back by', dateTime.format(new Date(b.rental.dueAt)))}
+                    {line(
+                      'Returned',
+                      b.rental.returnedAt
+                        ? dateTime.format(new Date(b.rental.returnedAt))
+                        : b.rental.handedOverAt
+                          ? 'Not yet'
+                          : '—',
+                    )}
+                    {b.rental.lateDays > 0 &&
+                      line(
+                        `Late fee (${b.rental.lateDays} ${b.rental.lateDays === 1 ? 'day' : 'days'})`,
+                        rupees(b.rental.lateFeePaise),
+                      )}
+                    {b.rental.claimUntil &&
+                      !b.rental.completedAt &&
+                      line(
+                        'Lender can report until',
+                        dateTime.format(new Date(b.rental.claimUntil)),
+                      )}
+                    {b.rental.completedAt && (
+                      <>
+                        {line('Completed', dateTime.format(new Date(b.rental.completedAt)))}
+                        {line('Deposit kept by lender', rupees(b.rental.keptPaise))}
+                      </>
+                    )}
+                  </>
+                )}
+                {b.disputeId && (
+                  <Link
+                    href={`/disputes/${b.disputeId}`}
+                    className="mt-1 text-xs text-primary hover:underline"
+                    data-testid="booking-dispute"
+                  >
+                    Dispute →
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Money</CardTitle>

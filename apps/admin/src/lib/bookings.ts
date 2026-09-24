@@ -37,6 +37,12 @@ export const BOOKING_EVENT_LABEL: Record<string, string> = {
   DOCS_APPROVED: 'Documents approved',
   DOCS_REJECTED: 'Documents not accepted',
   PAID: 'Paid (confirmed)',
+  HANDED_OVER: 'Handed over',
+  RETURNED: 'Returned',
+  NO_SHOW: 'Borrower didn’t show up',
+  DISPUTED: 'Problem reported',
+  COMPLETED: 'Completed',
+  DISPUTE_RESOLVED: 'Dispute settled',
 };
 
 export const PARTY_LABEL: Record<string, string> = {

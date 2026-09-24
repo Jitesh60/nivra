@@ -21,6 +21,7 @@ pnpm --filter @sajha/api seed:admin -- --email you@sajha.app --name "Your Name"
 - `src/proxy.ts` sends signed-out visitors to `/login` and refreshes the access token before pages render.
 - Navigation per role: `src/lib/roles.ts`. The API enforces the same rules.
 - Document images are served by `src/app/(dashboard)/documents/[id]/image/route.ts`: it asks the API for a 5-minute signed URL (the API logs the view), fetches the bytes on the server and returns them with `Cache-Control: no-store`. The storage URL never reaches the browser.
+- Rental condition and dispute photos are served the same way by `bookings/[id]/photos/[n]` and `disputes/[id]/photos/[n]` (`src/lib/photo-proxy.ts`; add `?thumb=1` for the thumbnail).
 - UI components are in `src/components/ui` (shadcn/ui, see `components.json`). Add more with `pnpm dlx shadcn@latest add <component>`.
 
 ## Tests
@@ -41,6 +42,7 @@ Documents (`e2e/documents.spec.ts`): an app user uploads IDs through presigned U
 Reports (`e2e/reports.spec.ts`): two app users chat through the API; the lender's UPI ID and phone number are masked for the borrower, who reports the message and the listing. Ops finds the report, sees the original and masked text, reads the logged transcript and closes it as actioned. Support can read reports but can't close them.
 Bookings (`e2e/bookings.spec.ts`): a lender's listing that asks for an ID is approved by Ops. A borrower requests it, the lender accepts, the borrower shares a PAN, the lender opens it and approves it, and the booking awaits payment. Ops finds it by search and tab, sees the timeline and the document view log, and cancels it with a reason (it moves to Closed). Support can read a request but can't cancel it.
 Payments (`e2e/payments.spec.ts`): a borrower pays for a booking through the API's test checkout (the fake provider). Ops follows the booking to its payment and sees the lender's share waiting for a bank account and the four ledger lines. The ledger is balanced, and the payout is listed. Ops refunds ₹150 as goodwill after an amount that's too large is refused, and the ledger stays balanced. Support can read payments but can't refund them.
+Disputes (`e2e/disputes.spec.ts`): a rental runs through the API: payment, handover and return with codes and condition photos, a chat message, the lender's ₹800 claim and the borrower's reply. Support can read the dispute but not settle it. Ops compares the photos side by side (streamed with `no-store`), reads the chat excerpt, is refused more than the maximum, and keeps ₹600. The booking completes, the borrower's ₹400 "Deposit back" refund is listed, and the ledger stays balanced.
 
 ## API types
 
