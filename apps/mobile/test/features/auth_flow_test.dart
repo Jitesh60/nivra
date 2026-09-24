@@ -10,12 +10,17 @@ import '../helpers/fakes.dart';
 import '../helpers/pump_app.dart';
 
 void main() {
-  String location(TestHarness h) => h.container
-      .read(routerProvider)
-      .routerDelegate
-      .currentConfiguration
-      .uri
-      .path;
+  /// The page on top (pushed pages included).
+  String location(TestHarness h) =>
+      h.container.read(routerProvider).state.uri.path;
+
+  /// Returning guests land on home; sign-in is one tap away.
+  Future<void> openSignIn(WidgetTester tester, TestHarness h) async {
+    expect(location(h), Routes.home);
+    await tester.tap(find.byKey(const ValueKey('home-sign-in')));
+    await settle(tester);
+    expect(location(h), Routes.login);
+  }
 
   Future<void> signInWithPhone(
     WidgetTester tester, {
@@ -75,7 +80,7 @@ void main() {
     final h = TestHarness(prefs: FakeAppPrefs(seen: true));
     h.api.seedSession(phone: '+919876543210');
     await h.start(tester);
-    expect(location(h), Routes.login);
+    await openSignIn(tester, h);
 
     await signInWithPhone(tester);
     expect(location(h), Routes.home);
@@ -86,6 +91,7 @@ void main() {
   ) async {
     final h = TestHarness(prefs: FakeAppPrefs(seen: true));
     await h.start(tester);
+    await openSignIn(tester, h);
     await enterText(tester, 'phone-input', '9876543210');
     await tester.tap(find.byKey(const ValueKey('consent')));
     await settle(tester, 2);
@@ -104,6 +110,7 @@ void main() {
   testWidgets('resend is locked for 30 seconds', (tester) async {
     final h = TestHarness(prefs: FakeAppPrefs(seen: true));
     await h.start(tester);
+    await openSignIn(tester, h);
     await enterText(tester, 'phone-input', '9876543210');
     await tester.tap(find.byKey(const ValueKey('consent')));
     await settle(tester, 2);
@@ -125,6 +132,7 @@ void main() {
   ) async {
     final h = TestHarness(prefs: FakeAppPrefs(seen: true));
     await h.start(tester);
+    await openSignIn(tester, h);
     await signInWithPhone(tester);
     await enterText(tester, 'name-input', 'Priya');
     await tapText(tester, 'Continue');
@@ -250,6 +258,7 @@ void main() {
   ) async {
     final h = TestHarness(prefs: FakeAppPrefs(seen: true));
     await h.start(tester);
+    await openSignIn(tester, h);
     expect(
       find.text('Indian mobile numbers start with 6, 7, 8 or 9'),
       findsNothing,

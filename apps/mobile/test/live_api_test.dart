@@ -16,6 +16,9 @@ import 'package:sajha/core/network/auth_interceptor.dart';
 import 'package:sajha/core/network/token_manager.dart';
 import 'package:sajha/core/network/upload_client.dart';
 import 'package:sajha/features/auth/data/auth_repository.dart';
+import 'package:sajha/features/discovery/application/search_area.dart';
+import 'package:sajha/features/discovery/data/discovery_repository.dart';
+import 'package:sajha/features/discovery/data/models.dart';
 import 'package:sajha/features/documents/data/documents_repository.dart';
 import 'package:sajha/features/documents/data/models.dart';
 import 'package:sajha/features/listings/data/listings_repository.dart';
@@ -179,9 +182,79 @@ void main() {
     await listings.delete(draft.id);
     expect(await listings.mine(), isEmpty);
 
+    // Wishlist, signed in: save someone else's live listing, then remove it.
+    final discovery = DiscoveryRepository(api);
+    expect(await discovery.wishlist(), isEmpty);
+    final anyLive = (await discovery.search(const SearchFilters())).items;
+    if (anyLive.isNotEmpty) {
+      final id = anyLive.first.id;
+      await discovery.save(id);
+      await discovery.save(id); // idempotent
+      final saved = await discovery.wishlist();
+      expect(saved.single.id, id);
+      expect(saved.single.saved, isTrue);
+      expect((await discovery.listing(id)).saved, isTrue);
+      await discovery.unsave(id);
+      expect(await discovery.wishlist(), isEmpty);
+    }
+    await expectLater(
+      discovery.save(draft.id), // deleted: not saveable
+      throwsA(isA<ApiException>().having((e) => e.status, 'status', 404)),
+    );
+
     // Delete the account so the test leaves nothing behind.
     await repo.deleteAccount();
     expect(storage.refreshToken, isNull);
     await expectLater(tokens.refresh(), completion(isNull));
+  }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
+
+  test('guests browse: home, search, a listing and its quote', () async {
+    final discovery = DiscoveryRepository(
+      Dio(BaseOptions(baseUrl: '$liveUrl/v1')),
+    );
+    const pune = SearchArea(
+      lat: 18.5074,
+      lng: 73.8077,
+      label: 'Current location',
+      radiusKm: 25,
+    );
+    final home = await discovery.home(area: pune);
+    expect(home.categories, isNotEmpty);
+
+    final nearby = await discovery.search(const SearchFilters(), area: pune);
+    expect(nearby.sort, SearchSort.distance);
+    for (final c in nearby.items) {
+      expect(c.distanceKm, lessThanOrEqualTo(25));
+      expect(c.saved, isFalse); // guests have no wishlist
+    }
+
+    final everywhere = await discovery.search(
+      const SearchFilters(sort: SearchSort.newest),
+    );
+    if (everywhere.items.isEmpty) return; // Nothing live on this server yet.
+    final card = everywhere.items.first;
+    final detail = await discovery.listing(card.id);
+    expect(detail.title, card.title);
+    expect(detail.photos, isNotEmpty);
+
+    final start = DateTime.now().add(
+      Duration(days: detail.advanceNoticeDays + 1),
+    );
+    final days = detail.minDays.clamp(1, 7);
+    final quote = await discovery.quote(
+      card.id,
+      listing.BlockedRange(start, start.add(Duration(days: days - 1))),
+    );
+    expect(quote.days, days);
+    expect(
+      quote.totalPaise,
+      quote.rentPaise + quote.feePaise + quote.depositPaise,
+    );
+
+    final cards = await discovery.cards([
+      card.id,
+      '00000000-0000-4000-8000-000000000000', // unknown: skipped
+    ]);
+    expect(cards.map((c) => c.id), [card.id]);
   }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
 }

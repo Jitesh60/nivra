@@ -480,9 +480,11 @@ lib/
 │   ├── profile/                  # ProfileRepository, ProfileScreen (photo, name, city, bio, badges)   (Phase 2b)
 │   ├── documents/                # DocumentsRepository, My documents, add flow, viewer                  (Phase 2b)
 │   ├── listings/                 # ListingsRepository, ListingEditor + 7-step wizard, My listings,     (Phase 3b)
-│   │                             #   ListingDetailView (reused for the public page in Phase 4)
+│   │                             #   ListingDetailView (also the public item page)
+│   ├── discovery/                # DiscoveryRepository, SearchArea, saved/recent state; search,       (Phase 4b)
+│   │                             #   filters, item page with quote, wishlist, area picker
 │   ├── home/ settings/
-│   ├── search/ chat/ bookings/ ...   # later phases
+│   ├── chat/ bookings/ ...       # later phases
 └── shared/widgets/               # buttons, inputs, OTP field, loaders
 shaders/                          # GLSL fragment shaders (declared in pubspec `shaders:`)
 ```
@@ -496,6 +498,17 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - publishes when it's a draft
 
   The draft remembers the listing id and the uploaded photos after each step, so a retry never creates a duplicate. The pickup map (`flutter_map`, tile URL from `MAP_TILE_URL`) only moves the pin on the lender's own gestures or "Use my location". Tests switch tiles off and fake the location.
+- **Guest browsing** (Phase 4b): signed-out users who have seen onboarding may open the browse routes (`/home`, `/search`, `/area`, `/item/:id`); `authRedirect` sends everything else to sign-in.
+  - Actions that need an account call `requireSignIn(returnTo)`. It stores where the guest was and replaces the stack with the login screen, rather than pushing it, so the router's redirects always see the sign-in pages.
+  - Once signed in (after the name and email steps for new users), `authRedirect` sends the user to `returnTo`. For a save, that's `/item/:id?save=1`, and the page finishes the save.
+  - When the auth state changes, go_router re-checks the bottom page of the stack, so the router checks the page on top instead. Otherwise a page pushed over home, such as settings, would stay open after sign-out.
+- **Discovery state** (Phase 4b):
+  - **Search area:** `searchAreaProvider` (GPS or map, 1–25 km), saved in `AppPrefs`.
+  - **Recently viewed:** the last 20 ids, on the device.
+  - **Saves:** kept by `savedListingsProvider`, which overlays saves and removals made this session on what cards and pages loaded, so every heart agrees. It resets on sign-in and sign-out.
+  - **Refetching:** feeds watch `signedInProvider`, so `saved` flags are refetched when that changes.
+  - **Errors:** API errors in these providers aren't retried automatically; screens offer "Try again".
+  - **Tests:** the date-range picker is behind `dateRangeChooserProvider` so tests can answer it.
 - **ID badge:** `AppUser.idVerified` comes from `/me`. The documents screen re-reads `/me` after each load, so an approval or a deletion shows up in the badge without a restart.
 - Environments are selected with `--dart-define-from-file=config/<env>.json` (`ENV`, `API_BASE_URL`). Android has `dev`/`staging`/`prod` product flavors (separate app IDs `com.sajha.app[.dev|.staging]`); matching iOS schemes are added when the iOS build is set up on a Mac.
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/effects/gradient_button.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/router/sign_in_return.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../application/auth_controller.dart';
 import '../data/auth_repository.dart';
@@ -60,8 +61,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   }
 
   void _later() {
+    final returnTo = ref.read(signInReturnProvider);
+    ref.read(signInReturnProvider.notifier).clear();
     ref.read(authControllerProvider.notifier).skipEmail();
-    context.go(Routes.home);
+    context.go(returnTo ?? Routes.home);
   }
 
   @override

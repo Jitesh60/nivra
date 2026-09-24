@@ -78,8 +78,13 @@ void main() {
     expect(find.text('Approved'), findsOneWidget);
     h.container.read(routerProvider).pop();
     await settle(tester);
-    expect(find.text('ID verified'), findsOneWidget);
+    // Fully verified: home drops the verification prompt; the profile shows it.
     expect(find.byKey(const ValueKey('add-id')), findsNothing);
+    h.container.read(routerProvider).push(Routes.profile);
+    await settle(tester);
+    expect(find.text('ID verified'), findsOneWidget);
+    h.container.read(routerProvider).pop();
+    await settle(tester);
 
     // The same type can't be added twice while it's live.
     h.container.read(routerProvider).push(Routes.documents);

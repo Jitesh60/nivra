@@ -319,3 +319,18 @@ String formatRupees(int paise) {
       ? '₹$grouped'
       : '₹$grouped.${rest.toString().padLeft(2, '0')}';
 }
+
+/// "< 1 km", "2.5 km", "12 km". Distances come rounded to 0.5 km.
+String formatDistance(double km) {
+  if (km < 1) return '< 1 km';
+  return km == km.roundToDouble()
+      ? '${km.toInt()} km'
+      : '${km.toStringAsFixed(1)} km';
+}
+
+/// Rounds like the API does (0.5 km steps; under 1 km becomes 0.5), so an
+/// approximate pin never gives away more than a search result would.
+double roundDistanceKm(double meters) {
+  if (meters < 1000) return 0.5;
+  return (meters / 500).round() / 2;
+}

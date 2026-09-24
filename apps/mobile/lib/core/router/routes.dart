@@ -17,7 +17,23 @@ abstract final class Routes {
   static const newListing = '/listings/new';
   static const editListing = '/listings/edit';
   static const listingPreview = '/listings/preview';
+  static const search = '/search';
+  static const areaPicker = '/area';
+  static const wishlist = '/wishlist';
 
-  /// Reachable without signing in.
+  /// A listing's public page. `/item/`, not `/listings/`, which is the
+  /// lender's own space.
+  static const itemPattern = '/item/:id';
+  static String item(String id, {bool save = false}) =>
+      '/item/$id${save ? '?save=1' : ''}';
+
+  /// The sign-in screens.
   static const public = {onboarding, login, loginVerify};
+
+  /// What guests can browse once they've seen onboarding.
+  static bool isBrowse(String location) =>
+      location == home ||
+      location == search ||
+      location == areaPicker ||
+      location.startsWith('/item/');
 }

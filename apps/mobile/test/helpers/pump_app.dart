@@ -13,6 +13,7 @@ import 'package:sajha/core/network/api_client.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
 import 'package:sajha/features/splash/presentation/splash_screen.dart';
+import 'package:sajha/shared/widgets/date_range_chooser.dart';
 
 import 'fake_api.dart';
 import 'fakes.dart';
@@ -37,6 +38,12 @@ class TestHarness {
   final FakeLocationService location;
   late ProviderContainer container;
 
+  /// What the next date-range pick returns; null means cancelled.
+  DateTimeRange? nextDates;
+
+  /// What the last date-range pick allowed, to check blocked days.
+  bool Function(DateTime day)? lastSelectable;
+
   List<Override> get overrides => [
     appConfigProvider.overrideWithValue(
       const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://api.test'),
@@ -48,6 +55,16 @@ class TestHarness {
     photoPickerProvider.overrideWithValue(picker),
     locationServiceProvider.overrideWithValue(location),
     mapTilesEnabledProvider.overrideWithValue(false),
+    dateRangeChooserProvider.overrideWithValue((
+      context, {
+      required first,
+      required last,
+      initial,
+      selectable,
+    }) async {
+      lastSelectable = selectable;
+      return nextDates;
+    }),
   ];
 
   /// Boots the whole app and lets the splash finish.
@@ -85,10 +102,16 @@ Future<void> tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   if (finder.evaluate().isEmpty) {
     // Not built yet: lists build lazily, so scroll the visible list to it.
+    // Vertical lists only: feeds hold horizontal card rows too.
     await tester.scrollUntilVisible(
       finder,
       200,
-      scrollable: find.byType(Scrollable).hitTestable().last,
+      scrollable: find
+          .byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+          )
+          .hitTestable()
+          .last,
     );
   }
   await tester.ensureVisible(finder);
