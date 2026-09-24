@@ -1,0 +1,13 @@
+{
+  "identities": [
+    {
+      "name": "sajha",
+      "credentials": [{ "accessKey": "sajha", "secretKey": "sajha-s3-secret" }],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    },
+    {
+      "name": "anonymous",
+      "actions": ["Read:sajha-public-media"]
+    }
+  ]
+}

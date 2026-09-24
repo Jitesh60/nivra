@@ -62,9 +62,9 @@ flowchart LR
 
 **Scope**
 - Monorepo: pnpm workspaces, Turborepo, shared `tsconfig` and `eslint-config`, Prettier, Husky + lint-staged, `.editorconfig`, `.nvmrc`
-- `infra/docker-compose.yml`: PostGIS 16, Redis 7, MinIO (with buckets created on start), Mailpit
-- `apps/api`: NestJS skeleton, config module with env validation, Prisma set up with the first migration (extensions: `postgis`, `btree_gist`, `citext`), `/health` endpoint, pino logging, Swagger at `/docs`, global validation pipe and error filter, Jest + e2e setup with Testcontainers
-- `apps/mobile`: Flutter skeleton with flavors (dev/staging/prod), folder structure, Riverpod, go_router, dio client, theme from design tokens, one sample shader compiled and rendered
+- `infra/docker-compose.yml`: PostGIS 16, Redis 7, SeaweedFS as local S3 (buckets created on start), Mailpit
+- `apps/api`: NestJS skeleton, config module with env validation, Prisma set up with the first migration (extensions: `postgis`, `btree_gist`, `citext`), `/health` endpoint, pino logging, Swagger at `/docs`, global validation pipe and error filter, Vitest unit + e2e setup with Testcontainers
+- `apps/mobile`: Flutter skeleton with Android flavors (dev/staging/prod) and `config/<env>.json` build config, folder structure, Riverpod, go_router, dio client, theme from design tokens, one sample shader compiled and rendered
 - `apps/admin`, `apps/web`: Next.js skeletons with Tailwind; shadcn/ui initialised in admin
 - `packages/design-tokens`: colours, typography and radii → a Tailwind preset and a generated Dart theme file
 - GitHub Actions CI: JS job (lint, typecheck, test, build via Turbo) + Flutter job (analyze, test)
@@ -72,7 +72,7 @@ flowchart LR
 
 **Acceptance criteria**
 - `docker compose -f infra/docker-compose.yml up -d` then `pnpm dev` starts the API at `:3000` (the `/health` check returns ok), admin at `:3001` and web at `:3002`
-- `flutter run --flavor dev` launches the app with a shader splash placeholder
+- `flutter run --flavor dev --dart-define-from-file=config/dev.json` launches the app with a shader splash placeholder
 - `pnpm lint && pnpm test && pnpm build` pass; the CI workflow is green on the PR
 
 ---
@@ -156,7 +156,7 @@ flowchart LR
 
 **Technical scope**
 - Route handlers `app/api/auth/*` that set and clear httpOnly cookies and refresh tokens server-side
-- `middleware.ts` protects `(dashboard)` routes
+- `proxy.ts` (Next.js 16's renamed Middleware) protects `(dashboard)` routes
 - `@sajha/api-client` generated from the API's OpenAPI spec
 - shadcn/ui forms with React Hook Form + Zod, and TanStack Table for lists
 

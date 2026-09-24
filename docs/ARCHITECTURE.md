@@ -22,7 +22,7 @@ flowchart LR
   subgraph Data
     PG[(PostgreSQL + PostGIS)]
     RD[(Redis)]
-    S3[(S3 / MinIO<br/>public-media + private-docs)]
+    S3[(S3 / SeaweedFS locally<br/>public-media + private-docs)]
   end
 
   subgraph External
@@ -471,12 +471,12 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 
 - **Auth state** is a Riverpod `AsyncNotifier<AuthState>` (`unknown | unauthenticated | needsProfile | authenticated`). The go_router `redirect` reads it.
 - The **RefreshInterceptor** queues concurrent 401s, refreshes once, retries the queued requests, and logs out on refresh failure.
-- Environments are selected with `--dart-define=ENV=dev|staging|prod` and flavors for Android/iOS app IDs.
+- Environments are selected with `--dart-define-from-file=config/<env>.json` (`ENV`, `API_BASE_URL`). Android has `dev`/`staging`/`prod` product flavors (separate app IDs `com.sajha.app[.dev|.staging]`); matching iOS schemes are added when the iOS build is set up on a Mac.
 
 ## 10. Admin architecture (`apps/admin`)
 
 - App Router with route groups: `(auth)/login`, `(auth)/2fa`, `(dashboard)/…`
-- `middleware.ts` redirects to `/login` without a valid session cookie
+- `proxy.ts` (Next.js 16 renamed Middleware to Proxy) redirects to `/login` without a valid session cookie
 - Route handlers under `app/api/*` proxy to the API, attach the admin bearer token from the httpOnly cookie, and handle refresh
 - Server components fetch through the generated `@sajha/api-client`; client mutations use TanStack Query
 - Navigation and actions are hidden or disabled by role (the API still enforces permissions)

@@ -1,0 +1,20 @@
+{
+  "name": "@sajha/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source of truth for Sajha colours, typography, radii and spacing. Generates a Tailwind v4 theme (web/admin) and a Dart theme file (mobile).",
+  "exports": {
+    ".": "./dist/tokens.js",
+    "./theme.css": "./dist/theme.css",
+    "./tokens.json": "./src/tokens.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test scripts/*.test.mjs"
+  }
+}

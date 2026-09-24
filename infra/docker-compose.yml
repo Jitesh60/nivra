@@ -1,0 +1,84 @@
+# Local development infrastructure for Sajha.
+#   pnpm infra:up    -> start
+#   pnpm infra:down  -> stop (add -v to wipe volumes)
+name: sajha
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: sajha
+      POSTGRES_PASSWORD: sajha
+      POSTGRES_DB: sajha
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sajha -d sajha']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # S3-compatible object storage (SeaweedFS). Stands in for AWS S3 locally.
+  # S3 API: http://localhost:9000  (access key: sajha / secret: sajha-s3-secret)
+  s3:
+    image: chrislusf/seaweedfs:latest
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=256
+    ports:
+      - '9000:8333'
+    volumes:
+      - s3data:/data
+      - ./s3/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/status || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Creates the buckets once storage is healthy, then exits.
+  s3-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: sajha
+      AWS_SECRET_ACCESS_KEY: sajha-s3-secret
+      AWS_DEFAULT_REGION: ap-south-1
+    entrypoint: >
+      /bin/sh -c "
+      for b in sajha-public-media sajha-private-docs; do
+        aws --endpoint-url http://s3:8333 s3api head-bucket --bucket $$b 2>/dev/null ||
+        aws --endpoint-url http://s3:8333 s3api create-bucket --bucket $$b;
+      done && echo 'buckets ready'
+      "
+
+  # Catches every outgoing email (email OTPs) — UI at http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:

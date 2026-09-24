@@ -1,0 +1,17 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - '!apps/mobile'
+
+# pnpm 10 blocks dependency install scripts unless listed here.
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - prisma
+  - esbuild
+ignoredBuiltDependencies:
+  - '@scarf/scarf'
+  - sharp
+  - unrs-resolver
+  - cpu-features
+  - protobufjs
+  - ssh2

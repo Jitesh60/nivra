@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+/* Sajha brand scales (brand-*, accent-*, ink-*), radii and fonts. Generated from packages/design-tokens. */
+@import '@sajha/design-tokens/theme.css';
+
+@theme inline {
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-bricolage);
+}
+
+body {
+  @apply bg-ink-950 text-ink-50;
+}
