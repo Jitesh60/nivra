@@ -428,7 +428,8 @@ lib/
 ├── main.dart / app.dart          # ProviderScope, MaterialApp.router, theme
 ├── core/
 │   ├── config/                   # env (dev/staging/prod via --dart-define)
-│   ├── network/                  # dio client, AuthInterceptor, TokenManager (single-flight refresh), ApiException
+│   ├── network/                  # dio client, AuthInterceptor, TokenManager (single-flight refresh), ApiException, UploadClient
+│   ├── media/                    # PhotoPicker: image_picker + image_cropper (square crop for avatars)
 │   ├── storage/                  # secure storage wrapper
 │   ├── router/                   # go_router + auth redirect
 │   ├── theme/                    # design tokens → ThemeData, typography
@@ -439,13 +440,18 @@ lib/
 │   │   ├── data/                 # AuthRepository, models (hand-written fromJson)
 │   │   ├── application/          # AuthController (Riverpod AsyncNotifier), session state
 │   │   └── presentation/         # PhoneScreen, OtpScreen, EmailScreen, ProfileSetupScreen
-│   ├── home/ listings/ search/ chat/ bookings/ profile/ ...   # later phases
+│   ├── profile/                  # ProfileRepository, ProfileScreen (photo, name, city, bio, badges)   (Phase 2b)
+│   ├── documents/                # DocumentsRepository, My documents, add flow, viewer                  (Phase 2b)
+│   ├── home/ settings/
+│   ├── listings/ search/ chat/ bookings/ ...   # later phases
 └── shared/widgets/               # buttons, inputs, OTP field, loaders
 shaders/                          # GLSL fragment shaders (declared in pubspec `shaders:`)
 ```
 
 - **Auth state** is a Riverpod `Notifier<AuthState>` with a sealed state: `AuthUnknown` (checking the stored session, or offline with a retry), `Unauthenticated` (with an optional "why you were signed out" message) and `Authenticated` (which knows whether the name and email steps are still due). All redirect rules live in one pure function, `authRedirect()`, which is unit-tested; go_router re-runs it whenever the auth state changes.
 - **Tokens:** the access token is kept in memory and the refresh token in `flutter_secure_storage`. `AuthInterceptor` adds the token and, on a 401, asks `TokenManager` to refresh. The refresh is single-flight, so concurrent 401s share one refresh call (the server rotates refresh tokens, so two parallel refreshes would sign the device out). The request is then retried once. If the server says the session is gone (revoked, expired or suspended), the app signs out with a message. If the refresh fails only because of the network, the session is kept.
+- **Uploads** (Phase 2b): `UploadClient` sniffs the image type, calls `POST /v1/uploads`, then PUTs the bytes to the presigned URL with a **separate Dio that has no auth interceptor**: the signed URL is the credential, and the Bearer token must never reach storage. The key then goes to `PUT /v1/me/avatar` or `POST /v1/me/documents`. `PhotoPicker` sits behind a provider, so widget tests swap in a fake, and `FakeSajhaApi` plays both the API and a storage host.
+- **ID badge:** `AppUser.idVerified` comes from `/me`. The documents screen re-reads `/me` after each load, so an approval or a deletion shows up in the badge without a restart.
 - Environments are selected with `--dart-define-from-file=config/<env>.json` (`ENV`, `API_BASE_URL`). Android has `dev`/`staging`/`prod` product flavors (separate app IDs `com.sajha.app[.dev|.staging]`); matching iOS schemes are added when the iOS build is set up on a Mac.
 
 ## 10. Admin architecture (`apps/admin`)

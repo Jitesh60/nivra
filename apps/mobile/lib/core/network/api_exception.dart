@@ -84,6 +84,13 @@ class ApiException implements Exception {
     'TOKEN_EXPIRED': 'Your session ended. Please sign in again.',
     'REFRESH_REUSED': 'For your security, please sign in again.',
     'VALIDATION_FAILED': 'Please check what you entered.',
+    'UPLOAD_NOT_FOUND': 'The upload expired. Please choose the photo again.',
+    'UPLOAD_INVALID': 'That photo couldn’t be used. Try a different one.',
+    'UPLOAD_RATE_LIMITED': 'Too many uploads. Please try again later.',
+    'UPLOAD_FAILED': 'The upload didn’t go through. Please try again.',
+    'DOCUMENT_ALREADY_EXISTS':
+        'You already have this document. Delete it first to add a new one.',
+    'NOT_FOUND': 'This was removed or isn’t available any more.',
     networkError: 'Can’t reach Sajha. Check your internet connection.',
     networkTimeout: 'Sajha is taking too long to respond. Please try again.',
   };

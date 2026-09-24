@@ -7,8 +7,12 @@ import '../../features/auth/presentation/email_screen.dart';
 import '../../features/auth/presentation/name_screen.dart';
 import '../../features/auth/presentation/otp_screens.dart';
 import '../../features/auth/presentation/phone_screen.dart';
+import '../../features/documents/presentation/add_document_screen.dart';
+import '../../features/documents/presentation/document_viewer_screen.dart';
+import '../../features/documents/presentation/documents_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/settings/presentation/devices_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -52,6 +56,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
       GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: Routes.devices, builder: (_, _) => const DevicesScreen()),
+      GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
+      GoRoute(
+        path: Routes.documents,
+        builder: (_, _) => const DocumentsScreen(),
+      ),
+      GoRoute(
+        path: Routes.documentsAdd,
+        builder: (_, _) => const AddDocumentScreen(),
+      ),
+      GoRoute(
+        path: Routes.documentView,
+        redirect: (_, state) =>
+            state.extra is DocumentViewArgs ? null : Routes.documents,
+        builder: (_, state) =>
+            DocumentViewerScreen(args: state.extra! as DocumentViewArgs),
+      ),
     ],
   );
   ref.onDispose(() {

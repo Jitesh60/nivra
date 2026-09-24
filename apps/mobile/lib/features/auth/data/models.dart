@@ -7,6 +7,10 @@ class AppUser {
     required this.emailVerified,
     this.email,
     this.name,
+    this.city,
+    this.bio,
+    this.avatarUrl,
+    this.idVerified = false,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
@@ -16,6 +20,10 @@ class AppUser {
     name: json['name'] as String?,
     phoneVerified: json['phoneVerified'] as bool? ?? false,
     emailVerified: json['emailVerified'] as bool? ?? false,
+    city: json['city'] as String?,
+    bio: json['bio'] as String?,
+    avatarUrl: json['avatarUrl'] as String?,
+    idVerified: json['idVerified'] as bool? ?? false,
   );
 
   final String id;
@@ -24,11 +32,27 @@ class AppUser {
   final String? name;
   final bool phoneVerified;
   final bool emailVerified;
+  final String? city;
+  final String? bio;
+
+  /// Public URL of the profile photo, or null for the initials avatar.
+  final String? avatarUrl;
+
+  /// An admin approved at least one of the user's ID documents.
+  final bool idVerified;
 
   bool get hasName => name != null && name!.trim().isNotEmpty;
 
   /// "Rahul" from "Rahul Sharma".
   String? get firstName => hasName ? name!.trim().split(' ').first : null;
+
+  /// "RS" from "Rahul Sharma"; "?" without a name.
+  String get initials {
+    if (!hasName) return '?';
+    final parts = name!.trim().split(RegExp(r'\s+'));
+    return (parts.first[0] + (parts.length > 1 ? parts.last[0] : ''))
+        .toUpperCase();
+  }
 }
 
 /// A code was sent; verify it with [challengeId].
