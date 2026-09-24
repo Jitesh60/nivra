@@ -217,6 +217,7 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** a
 
 - Profile view and edit (avatar crop and upload, name, city, bio), badges row (Phone / Email / ID)
 - "My documents": list with status and rejection reason, add flow with masked-Aadhaar guidance, view, delete
+- Uploads go through `UploadClient`: a presigned PUT on a separate, token-free HTTP client
 - **Done when:** widget tests cover the avatar and add-document flows, and the live contract test does a real upload
 
 ### 2c — Admin

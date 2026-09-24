@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../auth/application/auth_controller.dart';
 
 Future<bool> confirm(
@@ -67,9 +68,12 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           ListTile(
-            leading: const Icon(Icons.person_outline),
+            key: const ValueKey('settings-profile'),
+            leading: UserAvatar(user: user, radius: 20),
             title: Text(user.name ?? '—'),
             subtitle: Text(user.phone),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.profile),
           ),
           ListTile(
             leading: const Icon(Icons.email_outlined),
@@ -78,6 +82,14 @@ class SettingsScreen extends ConsumerWidget {
             onTap: user.emailVerified
                 ? null
                 : () => context.push(Routes.setupEmail),
+          ),
+          ListTile(
+            key: const ValueKey('settings-documents'),
+            leading: const Icon(Icons.badge_outlined),
+            title: const Text('My documents'),
+            subtitle: Text(user.idVerified ? 'ID verified' : 'No verified ID'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.documents),
           ),
           const Divider(),
           ListTile(
@@ -119,7 +131,7 @@ class SettingsScreen extends ConsumerWidget {
               final ok = await confirm(
                 context,
                 title: 'Delete your account?',
-                body: 'Your name, phone number and email are removed and you’ll be signed out everywhere. This can’t be undone.',
+                body: 'Your profile, photo, documents, phone number and email are removed and you’ll be signed out everywhere. This can’t be undone.',
                 action: 'Delete',
                 destructive: true,
               );

@@ -15,8 +15,16 @@ class FakeSajhaApi implements HttpClientAdapter {
   final _sessions = <String, _Session>{};
   final _challenges = <String, _Challenge>{};
   final _expiredAccess = <String>{};
+  final _uploads = <String, _Upload>{}; // by key
+  final documents = <String, FakeDocument>{}; // by id
   int _seq = 0;
   bool offline = false;
+
+  /// Host that plays object storage for presigned PUTs and document views.
+  static const storageHost = 'storage.test';
+
+  /// Headers of every PUT to [storageHost], to check no token leaks there.
+  final storagePuts = <Map<String, dynamic>>[];
 
   int get refreshCalls =>
       requests.where((r) => r == 'POST /auth/refresh').length;
@@ -63,6 +71,9 @@ class FakeSajhaApi implements HttpClientAdapter {
         reason: 'offline',
       );
     }
+    if (options.uri.host == storageHost) {
+      return _storage(options, requestStream);
+    }
     final path = options.uri.path.replaceFirst('/v1', '');
     final key = '${options.method} $path';
     requests.add(key);
@@ -84,6 +95,39 @@ class FakeSajhaApi implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+
+  /// Presigned PUT: the signed Content-Type and Content-Length must match.
+  Future<ResponseBody> _storage(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+  ) async {
+    if (options.method != 'PUT') return ResponseBody.fromString('', 200);
+    storagePuts.add(Map.of(options.headers));
+    final bytes = <int>[];
+    if (requestStream != null) {
+      await for (final chunk in requestStream) {
+        bytes.addAll(chunk);
+      }
+    }
+    final upload = _uploads[options.uri.path.substring(1)];
+    if (upload == null ||
+        options.headers['Content-Type'] != upload.contentType ||
+        bytes.length != upload.size) {
+      return ResponseBody.fromString(
+        '<Error>SignatureDoesNotMatch</Error>',
+        403,
+      );
+    }
+    upload.uploaded = true;
+    return ResponseBody.fromString('', 200);
+  }
+
+  /// Admin review, as the admin panel would do it.
+  void review(String documentId, {bool approve = true, String? reason}) {
+    documents[documentId]!
+      ..status = approve ? 'APPROVED' : 'REJECTED'
+      ..rejectionReason = approve ? null : reason;
+  }
 
   (int, Object?) _handle(
     String method,
@@ -165,8 +209,78 @@ class FakeSajhaApi implements HttpClientAdapter {
       case 'GET /me':
         return (200, {'user': user.json});
       case 'PATCH /me':
-        user.name = (body['name'] as String).trim();
+        String? clean(Object? v) {
+          final s = (v as String).trim();
+          return s.isEmpty ? null : s;
+        }
+        if (body.containsKey('name')) user.name = clean(body['name']);
+        if (body.containsKey('city')) user.city = clean(body['city']);
+        if (body.containsKey('bio')) user.bio = clean(body['bio']);
         return (200, {'user': user.json});
+      case 'POST /uploads':
+        final key =
+            'tmp/${(body['purpose'] as String).toLowerCase()}/'
+            '${user.id}/${++_seq}';
+        _uploads[key] = _Upload(
+          user.id,
+          body['purpose'] as String,
+          body['contentType'] as String,
+          body['sizeBytes'] as int,
+        );
+        return (
+          201,
+          {
+            'key': key,
+            'url': 'http://$storageHost/$key?X-Amz-Signature=fake',
+            'headers': {'Content-Type': body['contentType']},
+            'expiresInSec': 300,
+          },
+        );
+      case 'PUT /me/avatar':
+        if (_claim(user, body['key'], 'AVATAR') == null) {
+          return _error(400, 'UPLOAD_NOT_FOUND', 'Upload not found');
+        }
+        user.avatarUrl = 'http://cdn.test/avatars/${user.id}/${++_seq}.webp';
+        return (200, {'user': user.json});
+      case 'DELETE /me/avatar':
+        user.avatarUrl = null;
+        return (200, {'user': user.json});
+      case 'GET /me/documents':
+        return (
+          200,
+          [
+            for (final d in documents.values.where((d) => d.userId == user.id))
+              d.json,
+          ],
+        );
+      case 'POST /me/documents':
+        final type = body['type'] as String;
+        if (type == 'OTHER' && body['label'] == null) {
+          return _error(400, 'VALIDATION_FAILED', 'Label required', {
+            'label': ['label is required'],
+          });
+        }
+        if (documents.values.any(
+          (d) =>
+              d.userId == user.id && d.type == type && d.status != 'REJECTED',
+        )) {
+          return _error(409, 'DOCUMENT_ALREADY_EXISTS', 'Already exists');
+        }
+        final back = body['backKey'];
+        if (_claim(user, body['frontKey'], 'DOCUMENT') == null ||
+            (back != null && _claim(user, back, 'DOCUMENT') == null)) {
+          return _error(400, 'UPLOAD_NOT_FOUND', 'Upload not found');
+        }
+        final doc = FakeDocument(
+          'doc-${++_seq}',
+          user.id,
+          type,
+          label: body['label'] as String?,
+          hasBack: back != null,
+          expiresOn: body['expiresOn'] as String?,
+        );
+        documents[doc.id] = doc;
+        return (201, doc.json);
       case 'DELETE /me':
         _users.remove(user.id);
         _sessions.values
@@ -213,6 +327,23 @@ class FakeSajhaApi implements HttpClientAdapter {
           ],
         );
     }
+    if (path.startsWith('/me/documents/')) {
+      final parts = path.split('/'); // ['', 'me', 'documents', id, 'view'?]
+      final doc = documents[parts[3]];
+      if (doc == null || doc.userId != user.id) {
+        return _error(404, 'NOT_FOUND', 'Document not found');
+      }
+      if (method == 'GET' && parts.length == 5) {
+        return (
+          200,
+          {'url': 'http://$storageHost/view/${doc.id}', 'expiresInSec': 300},
+        );
+      }
+      if (method == 'DELETE') {
+        documents.remove(doc.id);
+        return (204, null);
+      }
+    }
     if (method == 'DELETE' && path.startsWith('/me/sessions/')) {
       final target = _sessions[path.split('/').last];
       if (target == null || target.userId != user.id) {
@@ -222,6 +353,18 @@ class FakeSajhaApi implements HttpClientAdapter {
       return (204, null);
     }
     return _error(404, 'NOT_FOUND', 'Cannot $method $path');
+  }
+
+  /// Consumes an upload the user PUT to storage, like the API's finalise step.
+  _Upload? _claim(_User user, Object? key, String purpose) {
+    final upload = _uploads[key];
+    if (upload == null ||
+        upload.userId != user.id ||
+        upload.purpose != purpose ||
+        !upload.uploaded) {
+      return null;
+    }
+    return _uploads.remove(key);
   }
 
   Map<String, dynamic> _challenge(String target, String? userId) {
@@ -249,7 +392,7 @@ class FakeSajhaApi implements HttpClientAdapter {
   }
 
   _User _createUser(String phone) {
-    final user = _User('user-${++_seq}', phone);
+    final user = _User('user-${++_seq}', phone)..api = this;
     _users[user.id] = user;
     return user;
   }
@@ -287,12 +430,24 @@ class _User {
   String? email;
   bool emailVerified = false;
   bool suspended = false;
+  String? city;
+  String? bio;
+  String? avatarUrl;
+  FakeSajhaApi? api;
 
   Map<String, dynamic> get json => {
     'id': id,
     'phone': phone,
     'email': email,
     'name': name,
+    'city': city,
+    'bio': bio,
+    'avatarUrl': avatarUrl,
+    'idVerified':
+        api?.documents.values.any(
+          (d) => d.userId == id && d.status == 'APPROVED',
+        ) ??
+        false,
     'status': suspended ? 'SUSPENDED' : 'ACTIVE',
     'phoneVerified': true,
     'emailVerified': emailVerified,
@@ -316,4 +471,44 @@ class _Challenge {
   final String target;
   int attempts = 0;
   bool used = false;
+}
+
+class _Upload {
+  _Upload(this.userId, this.purpose, this.contentType, this.size);
+  final String userId;
+  final String purpose;
+  final String contentType;
+  final int size;
+  bool uploaded = false;
+}
+
+class FakeDocument {
+  FakeDocument(
+    this.id,
+    this.userId,
+    this.type, {
+    this.label,
+    this.hasBack = false,
+    this.expiresOn,
+  });
+  final String id;
+  final String userId;
+  final String type;
+  final String? label;
+  final bool hasBack;
+  final String? expiresOn;
+  String status = 'PENDING';
+  String? rejectionReason;
+
+  Map<String, dynamic> get json => {
+    'id': id,
+    'type': type,
+    'label': label,
+    'status': status,
+    'rejectionReason': rejectionReason,
+    'hasBack': hasBack,
+    'expiresOn': expiresOn,
+    'createdAt': '2026-09-24T10:00:00.000Z',
+    'reviewedAt': status == 'PENDING' ? null : '2026-09-24T11:00:00.000Z',
+  };
 }

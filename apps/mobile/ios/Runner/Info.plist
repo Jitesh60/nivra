@@ -72,5 +72,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Sajha uses the camera to take your profile photo and photos of your ID documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Sajha lets you choose a profile photo or an ID document photo from your library.</string>
 </dict>
 </plist>

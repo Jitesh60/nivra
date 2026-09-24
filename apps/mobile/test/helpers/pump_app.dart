@@ -6,6 +6,7 @@ import 'package:sajha/app.dart';
 import 'package:sajha/core/config/app_config.dart';
 import 'package:sajha/core/config/providers.dart';
 import 'package:sajha/core/device/device_info.dart';
+import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/core/network/api_client.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
@@ -19,13 +20,16 @@ class TestHarness {
     FakeSajhaApi? api,
     InMemorySessionStorage? storage,
     FakeAppPrefs? prefs,
+    FakePhotoPicker? picker,
   }) : api = api ?? FakeSajhaApi(),
+       picker = picker ?? FakePhotoPicker(),
        storage = storage ?? InMemorySessionStorage(),
        prefs = prefs ?? FakeAppPrefs();
 
   final FakeSajhaApi api;
   final InMemorySessionStorage storage;
   final FakeAppPrefs prefs;
+  final FakePhotoPicker picker;
   late ProviderContainer container;
 
   List<Override> get overrides => [
@@ -36,6 +40,7 @@ class TestHarness {
     sessionStorageProvider.overrideWithValue(storage),
     appPrefsProvider.overrideWithValue(prefs),
     deviceInfoProvider.overrideWithValue(FakeDeviceInfo()),
+    photoPickerProvider.overrideWithValue(picker),
   ];
 
   /// Boots the whole app and lets the splash finish.
@@ -65,5 +70,22 @@ Future<void> enterText(WidgetTester tester, String key, String text) async {
 
 Future<void> tapText(WidgetTester tester, String text) async {
   await tester.tap(find.text(text).last);
+  await settle(tester);
+}
+
+/// Taps the keyed widget, scrolling it into view first when it's in a list.
+Future<void> tapKey(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  if (finder.evaluate().isEmpty) {
+    // Not built yet: lists build lazily, so scroll the visible list to it.
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: find.byType(Scrollable).hitTestable().last,
+    );
+  }
+  await tester.ensureVisible(finder);
+  await settle(tester, 3);
+  await tester.tap(finder);
   await settle(tester);
 }

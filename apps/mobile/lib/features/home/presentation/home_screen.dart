@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
+import '../../../shared/widgets/user_avatar.dart';
+import '../../../shared/widgets/verification_badges.dart';
 import '../../auth/application/auth_controller.dart';
 
-/// Phase 1 home: greeting and verification status. Browsing and listing
-/// arrive in Phases 3–4.
+/// Greeting, profile and verification status. Browsing and listing arrive
+/// in Phases 3–4.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -22,6 +24,12 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Sajha'),
         actions: [
+          IconButton(
+            key: const ValueKey('open-profile'),
+            tooltip: 'Profile',
+            icon: UserAvatar(user: user, radius: 14),
+            onPressed: () => context.push(Routes.profile),
+          ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
@@ -45,14 +53,7 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Text('Verification', style: text.titleMedium),
                   const SizedBox(height: SajhaSpacing.sm),
-                  Wrap(
-                    spacing: SajhaSpacing.sm,
-                    runSpacing: SajhaSpacing.sm,
-                    children: [
-                      _Badge(label: 'Phone', verified: user.phoneVerified),
-                      _Badge(label: 'Email', verified: user.emailVerified),
-                    ],
-                  ),
+                  VerificationBadges(user: user),
                   if (!user.emailVerified) ...[
                     const SizedBox(height: SajhaSpacing.md),
                     Text(
@@ -64,6 +65,19 @@ class HomeScreen extends ConsumerWidget {
                       key: const ValueKey('verify-email'),
                       onPressed: () => context.push(Routes.setupEmail),
                       child: const Text('Verify email'),
+                    ),
+                  ] else if (!user.idVerified) ...[
+                    const SizedBox(height: SajhaSpacing.md),
+                    Text(
+                      'Add an ID so lenders know who they’re renting to. '
+                      'It stays private until you choose to share it.',
+                      style: text.bodyMedium,
+                    ),
+                    const SizedBox(height: SajhaSpacing.sm),
+                    FilledButton.tonal(
+                      key: const ValueKey('add-id'),
+                      onPressed: () => context.push(Routes.documents),
+                      child: const Text('Add an ID'),
                     ),
                   ],
                 ],
@@ -79,25 +93,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.verified});
-
-  final String label;
-  final bool verified;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(
-        verified ? Icons.verified : Icons.error_outline,
-        size: 18,
-        color: verified ? SajhaColors.success : SajhaColors.warning,
-      ),
-      label: Text(verified ? '$label verified' : '$label not verified'),
     );
   }
 }
