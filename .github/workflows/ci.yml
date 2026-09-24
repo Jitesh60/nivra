@@ -31,6 +31,10 @@ jobs:
       - run: pnpm build
       - name: Generated Dart design tokens are committed
         run: git diff --exit-code -- apps/mobile/lib/core/theme/tokens.g.dart
+      - name: OpenAPI document is up to date (run `pnpm --filter @sajha/api openapi:export`)
+        run: |
+          pnpm --filter @sajha/api openapi:export
+          git diff --exit-code -- packages/api-client/openapi.json
 
   api-e2e:
     name: API · e2e + coverage (Postgres, Redis, Mailpit via Testcontainers)
@@ -45,6 +49,60 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @sajha/api prisma:generate
       - run: pnpm --filter @sajha/api test:cov
+
+  admin-e2e:
+    name: Admin · e2e (Playwright against the real API)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: sajha
+          POSTGRES_PASSWORD: sajha
+          POSTGRES_DB: sajha
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sajha -d sajha" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://sajha:sajha@localhost:5432/sajha?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-user-access-secret-0123456789abcdef
+      JWT_ADMIN_ACCESS_SECRET: ci-admin-access-secret-0123456789abcdef
+      OTP_PEPPER: ci-otp-pepper-0123456789abcdef0123456789
+      TOTP_ENC_KEY: Y2ktdG90cC1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+      SAJHA_API_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=@sajha/api --filter=@sajha/admin
+      - run: pnpm --filter @sajha/api prisma:deploy
+      - name: Start API
+        run: |
+          nohup node apps/api/dist/main.js > api.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/v1/health && exit 0; sleep 1; done
+          cat api.log; exit 1
+      - run: pnpm --filter @sajha/admin exec playwright install --with-deps chromium
+      - run: pnpm --filter @sajha/admin test:e2e
+        env:
+          CI: 'true'
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-e2e-report
+          path: |
+            apps/admin/playwright-report
+            apps/admin/test-results
+            api.log
 
   mobile:
     name: Mobile · format, analyze, test

@@ -17,7 +17,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed:admin": "tsx src/cli/seed-admin.ts",
-    "test:cov": "vitest run --config ./vitest.config.e2e.ts --coverage"
+    "test:cov": "vitest run --config ./vitest.config.e2e.ts --coverage",
+    "openapi:export": "node dist/cli/export-openapi.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",

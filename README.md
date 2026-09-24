@@ -53,6 +53,8 @@ Mobile: see [apps/mobile/README.md](apps/mobile/README.md).
 | `pnpm --filter @sajha/api test:e2e` | API end-to-end tests against throwaway Postgres + Redis containers |
 | `pnpm format` | Prettier |
 | `pnpm tokens` | Rebuild design tokens (Tailwind theme + Dart theme) after editing `packages/design-tokens/src/tokens.json` |
+| `pnpm --filter @sajha/api openapi:export` | Refresh `packages/api-client/openapi.json` after changing API endpoints (after `pnpm build`) |
+| `pnpm --filter @sajha/admin test:e2e` | Admin end-to-end tests (Playwright; needs the API running) |
 | `pnpm infra:down` | Stop local infrastructure |
 
 ## Repository layout
@@ -62,6 +64,7 @@ apps/api            NestJS backend
 apps/mobile         Flutter app
 apps/admin          Next.js admin panel
 apps/web            Next.js marketing site
+packages/api-client     Typed API client generated from the API's OpenAPI document
 packages/design-tokens  Colours, fonts, radii → Tailwind theme + Dart theme
 packages/eslint-config  Shared ESLint config
 packages/tsconfig       Shared TypeScript configs

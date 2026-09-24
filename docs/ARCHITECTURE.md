@@ -33,7 +33,7 @@ flowchart LR
   end
 
   M -- REST + WebSocket --> API
-  A -- REST via Next route handlers --> API
+  A -- REST from the Next.js server --> API
   W -- waitlist POST --> API
   API --> PG
   API --> RD
@@ -51,7 +51,7 @@ flowchart LR
 
 - **One API** (a NestJS modular monolith) serves the mobile app, admin and web. Workers run as the same codebase in a separate process (`main.worker.ts`), so they scale independently.
 - The **mobile app uploads files straight to S3** using presigned URLs; the API never proxies large files.
-- **Admin** never stores tokens in the browser. Next.js route handlers keep the admin session in an `httpOnly` cookie and call the API server-to-server.
+- **Admin** never exposes tokens to browser JavaScript. The Next.js server keeps the admin session in `httpOnly` cookies and calls the API server-to-server (Server Components and Server Functions).
 
 ## 2. Backend module map (`apps/api/src`)
 
@@ -430,11 +430,12 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 
 ## 10. Admin architecture (`apps/admin`)
 
-- App Router with route groups: `(auth)/login`, `(auth)/2fa`, `(dashboard)/…`
-- `proxy.ts` (Next.js 16 renamed Middleware to Proxy) redirects to `/login` without a valid session cookie
-- Route handlers under `app/api/*` proxy to the API, attach the admin bearer token from the httpOnly cookie, and handle refresh
-- Server components fetch through the generated `@sajha/api-client`; client mutations use TanStack Query
-- Navigation and actions are hidden or disabled by role (the API still enforces permissions)
+- App Router with route groups: `(auth)/login` (`/login`, `/login/setup`, `/login/verify`, `/login/recovery-codes`) and `(dashboard)` (`/`, `/users`, `/admins`, `/account`, `/account/password`), plus the `/logout` route handler.
+- **Cookies** (all `httpOnly`, `SameSite=Strict`, `Secure` in production): `sajha_admin_at` (access token, lives as long as the token), `sajha_admin_rt` (refresh token, 12 hours), `sajha_admin_mfa` (5-minute token between the password and 2FA steps), `sajha_admin_rc` (recovery codes, held for one page view).
+- **`proxy.ts`** (Next.js 16's renamed Middleware) runs before every page. With no session it redirects to `/login?next=…`. If the access cookie has expired but the refresh cookie is present, it refreshes with the API, rotates both cookies and lets the request continue, so pages never see an expired token. A signed-in admin opening `/login` goes to the dashboard.
+- **Reads** happen in Server Components and **writes** in Server Functions (`'use server'` actions with `useActionState`). Both use the typed `@sajha/api-client`, so paths, bodies and responses are checked at compile time against the API's OpenAPI document. A 401 from the API goes to `/logout?reason=expired`, which clears the cookies. A disabled account or a pending password change redirects accordingly.
+- The dashboard layout loads the admin once. Navigation is filtered by role (`src/lib/roles.ts`, mirroring the API's `@Roles`), pages the role can't use render a 403 panel, and the API still enforces every permission.
+- **2FA setup** asks the API for a secret exactly once per page visit (each call replaces the secret), shows the QR code plus the key for manual entry, then shows the recovery codes once with copy and download buttons.
 
 ## 11. Marketing site architecture (`apps/web`)
 
