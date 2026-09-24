@@ -22,6 +22,7 @@ export default async function ConversationPage({
   const query = await searchParams;
   const before = typeof query.before === 'string' ? query.before : undefined;
   const reportId = typeof query.report === 'string' ? query.report : undefined;
+  const bookingId = typeof query.booking === 'string' ? query.booking : undefined;
   const t = await unwrap(
     (await adminApi()).GET('/v1/admin/conversations/{id}/messages', {
       params: { path: { id }, query: { limit: 50, ...(before ? { before } : {}) } },
@@ -41,10 +42,12 @@ export default async function ConversationPage({
     <>
       <p className="mb-2 text-sm">
         <Link
-          href={reportId ? `/reports/${reportId}` : '/reports'}
+          href={
+            bookingId ? `/bookings/${bookingId}` : reportId ? `/reports/${reportId}` : '/reports'
+          }
           className="text-muted-foreground hover:underline"
         >
-          ← {reportId ? 'Report' : 'Reports'}
+          ← {bookingId ? 'Booking' : reportId ? 'Report' : 'Reports'}
         </Link>
       </p>
       <PageHeader
@@ -62,7 +65,7 @@ export default async function ConversationPage({
       {t.nextCursor && (
         <Button asChild variant="outline" className="mb-3">
           <Link
-            href={`/conversations/${id}?before=${t.nextCursor}${reportId ? `&report=${reportId}` : ''}`}
+            href={`/conversations/${id}?before=${t.nextCursor}${reportId ? `&report=${reportId}` : ''}${bookingId ? `&booking=${bookingId}` : ''}`}
           >
             Older messages
           </Link>
