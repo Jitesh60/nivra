@@ -19,6 +19,8 @@ import '../application/discovery_providers.dart';
 import '../application/search_area.dart';
 import '../data/discovery_repository.dart';
 import '../data/models.dart';
+import '../../bookings/data/models.dart' show PublicReview, ReviewPage;
+import '../../rentals/data/rentals_repository.dart';
 import 'listing_card.dart';
 
 ListingViewData viewDataFor(PublicListing l, {double? distanceKm}) =>
@@ -273,6 +275,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
         extras: [
           const Divider(height: SajhaSpacing.xl),
           _LenderTile(lender: listing.lender, mine: mine),
+          if (listing.ratingCount > 0) _ItemReviews(listing),
           if (listing.favoriteCount > 0)
             Padding(
               padding: const EdgeInsets.only(top: SajhaSpacing.sm),
@@ -592,6 +595,7 @@ class _LenderTile extends StatelessWidget {
           title: Text(mine ? '$name (you)' : name),
           subtitle: Text(
             [
+              ?ratingLine(lender.ratingAvg, lender.ratingCount),
               if (lender.city != null) lender.city!,
               'On Sajha since ${_monthYear(since)}',
             ].join(' · '),
@@ -615,3 +619,47 @@ const _months = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
+
+final listingReviewsProvider = FutureProvider.autoDispose
+    .family<ReviewPage, String>(
+      (ref, listingId) =>
+          ref.read(rentalsRepositoryProvider).listingReviews(listingId),
+    );
+
+/// Borrowers' published reviews of rentals of this item.
+class _ItemReviews extends ConsumerWidget {
+  const _ItemReviews(this.listing);
+
+  final PublicListing listing;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final text = Theme.of(context).textTheme;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final page = ref.watch(listingReviewsProvider(listing.id)).value;
+    return Column(
+      key: const ValueKey('item-reviews'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: SajhaSpacing.md),
+        Text(
+          'Reviews · ${ratingLine(listing.ratingAvg, listing.ratingCount)}',
+          key: const ValueKey('item-rating'),
+          style: text.titleSmall,
+        ),
+        for (final r in page?.items.take(3) ?? const <PublicReview>[])
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(
+              '${'★' * r.rating}${'☆' * (5 - r.rating)}  '
+              '${r.authorName ?? 'A borrower'}',
+            ),
+            subtitle: r.comment == null
+                ? null
+                : Text('“${r.comment}”', style: TextStyle(color: muted)),
+          ),
+      ],
+    );
+  }
+}

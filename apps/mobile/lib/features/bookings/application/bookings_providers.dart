@@ -51,6 +51,12 @@ class BookingController extends AsyncNotifier<BookingDetail> {
   Future<void> rejectDocuments(String reason) =>
       _apply(_repo.rejectDocuments(bookingId, reason));
 
+  /// Shows the API's answer to an action taken on another screen.
+  void replace(BookingDetail updated) {
+    if (ref.mounted) state = AsyncData(updated);
+    ref.invalidate(bookingsProvider);
+  }
+
   Future<void> _apply(Future<BookingDetail> action) async {
     final updated = await action;
     if (ref.mounted) state = AsyncData(updated);

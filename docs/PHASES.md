@@ -690,6 +690,37 @@ Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mob
     - reminders: once a day, and overdue by SMS
 - **Checks:** 143 e2e tests pass, with 92.1% statement and 79.8% branch coverage.
 
+### 8b — Mobile
+**Branch:** `phase/8b-rental-mobile`
+
+- **Codes:**
+  - The borrower (at handover) and the lender (at return) open **Show code**: a QR (`qr_flutter`) and the 6 digits in large type. It closes itself once the other person confirms.
+  - The other person opens **Hand over** or **Return it**, scans the QR with the camera (`mobile_scanner`, behind the `CodeScanner` seam) or types the 6 digits, and adds 2–6 condition photos.
+  - A QR for another booking is refused on the phone.
+- **Booking page:**
+  - What happens next, for each rental step.
+  - A **late banner** when the item is due today or overdue, with the fee so far.
+  - A countdown while the lender can still report a problem.
+  - **Condition photos** by stage and person, opening a full-screen viewer.
+  - The late fee line and the deposit refund.
+  - **Report a problem** (lender): reason, amount capped at what's left, description, photos. Then **Give your side** (borrower), and Sajha's decision once it's made.
+  - **Borrower didn't show up** (lender, from the first day).
+  - **Rate {name}** after completion, with a double-blind note.
+  - **Report {name}**, using the existing report sheet.
+- **Ratings:** ★ average (count) on listing cards, the item page's lender tile and a Reviews section on the item page.
+- **Platform:** the camera permission on Android, and the iOS camera string now mentions scanning codes.
+- **Tests:**
+  - 8 widget flows:
+    - showing the code, which closes after the handover
+    - handing over by scan, including a wrong QR and a wrong typed code
+    - a late return with the banner and fee
+    - a lender's claim
+    - the borrower's reply and the outcome
+    - no-show
+    - double-blind reviews and the item rating
+    - reporting a person
+  - An opt-in live test covers handover and return with real codes and photos against the API. The chat offer in the live contract test now uses a random date, so reruns don't collide.
+
 ## Phase 9 — Launch hardening & release
 **Branch:** `phase/9-launch`
 

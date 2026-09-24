@@ -43,6 +43,8 @@ class ListingCard {
     this.distanceKm,
     this.rentPaise,
     this.days,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   factory ListingCard.fromJson(Map<String, dynamic> json) => ListingCard(
@@ -60,6 +62,8 @@ class ListingCard {
     available: json['available'] as bool,
     rentPaise: (json['rentPaise'] as num?)?.toInt(),
     days: (json['days'] as num?)?.toInt(),
+    ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+    ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -82,6 +86,10 @@ class ListingCard {
   /// Rent for the searched dates, when dates were given.
   final int? rentPaise;
   final int? days;
+
+  /// Borrowers' average rating of rentals of this item (null: none yet).
+  final double? ratingAvg;
+  final int ratingCount;
 
   /// "Kothrud, Pune · 2.5 km".
   String get placeLine => [
@@ -233,6 +241,8 @@ class LenderSummary {
     this.name,
     this.avatarUrl,
     this.city,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   factory LenderSummary.fromJson(Map<String, dynamic> json) => LenderSummary(
@@ -244,6 +254,8 @@ class LenderSummary {
     emailVerified: json['emailVerified'] as bool,
     idVerified: json['idVerified'] as bool,
     memberSince: DateTime.parse(json['memberSince'] as String),
+    ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+    ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -254,6 +266,10 @@ class LenderSummary {
   final bool emailVerified;
   final bool idVerified;
   final DateTime memberSince;
+
+  /// Published reviews of this person (null: none yet).
+  final double? ratingAvg;
+  final int ratingCount;
 
   String get firstName {
     final n = name?.trim();
@@ -287,6 +303,8 @@ class PublicListing {
     this.brand,
     this.size,
     this.areaLabel,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   factory PublicListing.fromJson(Map<String, dynamic> json) => PublicListing(
@@ -321,6 +339,8 @@ class PublicListing {
     lender: LenderSummary.fromJson(json['lender'] as Map<String, dynamic>),
     saved: json['saved'] as bool,
     favoriteCount: (json['favoriteCount'] as num).toInt(),
+    ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+    ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -345,6 +365,10 @@ class PublicListing {
   final LenderSummary lender;
   final bool saved;
   final int favoriteCount;
+
+  /// Borrowers' average rating of rentals of this item (null: none yet).
+  final double? ratingAvg;
+  final int ratingCount;
 }
 
 enum UnavailableReason {
@@ -408,3 +432,7 @@ class Quote {
   final bool available;
   final UnavailableReason? unavailableReason;
 }
+
+/// "★ 4.8 (12)"; null when there are no reviews yet.
+String? ratingLine(double? avg, int count) =>
+    avg == null || count == 0 ? null : '★ ${avg.toStringAsFixed(1)} ($count)';

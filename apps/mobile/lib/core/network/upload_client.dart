@@ -10,7 +10,8 @@ enum UploadPurpose {
   avatar('AVATAR'),
   document('DOCUMENT'),
   listingPhoto('LISTING_PHOTO'),
-  chatImage('CHAT_IMAGE');
+  chatImage('CHAT_IMAGE'),
+  conditionPhoto('CONDITION_PHOTO');
 
   const UploadPurpose(this.apiValue);
   final String apiValue;

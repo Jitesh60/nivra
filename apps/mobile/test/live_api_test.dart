@@ -31,6 +31,8 @@ import 'package:sajha/features/listings/data/listings_repository.dart';
 import 'package:sajha/features/listings/data/models.dart' as listing;
 import 'package:sajha/features/payments/data/models.dart';
 import 'package:sajha/features/payments/data/payments_repository.dart';
+import 'package:sajha/core/network/upload_client.dart' as up;
+import 'package:sajha/features/rentals/data/rentals_repository.dart';
 import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/features/profile/data/profile_repository.dart';
 
@@ -248,7 +250,10 @@ void main() {
         (sent.id, true, 'Call me on 98765 43210'),
       );
 
-      final start = DateTime.now().add(const Duration(days: 20));
+      // Random, so reruns against the same database don't collide.
+      final start = DateTime.now().add(
+        Duration(days: 20 + Random().nextInt(300)),
+      );
       final offerMessage = await chat.makeOffer(
         conversation.id,
         start: start,
@@ -471,6 +476,100 @@ void main() {
       expect(refunded.refundedPaise, b.totalPaise);
 
       await borrower.repo.deleteAccount();
+    },
+    skip: liveUrl.isEmpty || liveListingId.isEmpty || liveLenderPhone.isEmpty
+        ? 'Set LIVE_API_URL, LIVE_LISTING_ID and LIVE_LENDER_PHONE to run'
+        : false,
+  );
+
+  test(
+    'rents it out: handover and return with codes and photos',
+    () async {
+      final borrower = await _signIn(_randomPhone(), verifyEmail: true);
+      final lender = await _signIn(liveLenderPhone);
+      final bookings = BookingsRepository(dio: borrower.api);
+      final payments = PaymentsRepository(dio: borrower.api);
+      RentalsRepository rentals(Dio api) => RentalsRepository(
+        dio: api,
+        uploads: up.UploadClient(api: api, storage: Dio()),
+      );
+      final item = await DiscoveryRepository(borrower.api)
+          .listing(liveListingId);
+
+      // The handover opens the day before the start: book a day that's close.
+      BookingDetail? requested;
+      for (final offset in [
+        item.advanceNoticeDays,
+        item.advanceNoticeDays + 1,
+      ]) {
+        final day = DateTime.now().add(Duration(days: offset));
+        try {
+          requested = await bookings.request(
+            listingId: item.id,
+            start: day,
+            end: day.add(Duration(days: item.minDays - 1)),
+          );
+          break;
+        } on ApiException catch (e) {
+          if (e.code != 'BOOKING_DATES_UNAVAILABLE') rethrow;
+        }
+      }
+      if (requested == null) {
+        markTestSkipped('The next days are booked on LIVE_LISTING_ID');
+        return;
+      }
+      final id = requested.booking.id;
+      await BookingsRepository(dio: lender.api).accept(id);
+      final order = await payments.checkout(id);
+      final sheet = await payments.testCheckout(order.orderId, succeed: true);
+      await payments.verify(sheet as CheckoutSuccess);
+
+      // Handover: the borrower's code, the lender's photos.
+      final handoverCode = await rentals(borrower.api).code(id);
+      expect(handoverCode.stage, RentalStage.handover);
+      expect(codeFromQr(handoverCode.qr, bookingId: id), handoverCode.code);
+      final wrong = await rentals(lender.api)
+          .handOver(
+            id,
+            code: '000000' == handoverCode.code ? '111111' : '000000',
+            photos: [_jpeg, _jpeg],
+          )
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect((wrong! as ApiException).code, 'BOOKING_CODE_INVALID');
+      final active = await rentals(lender.api).handOver(
+        id,
+        code: handoverCode.code,
+        photos: [_jpeg, _jpeg],
+        note: 'Live test handover',
+      );
+      expect(active.booking.status, BookingStatus.active);
+      expect(active.rental?.handedOverAt, isNotNull);
+      expect(active.conditionReports.single.photos, hasLength(2));
+      final photo = await Dio().get<List<int>>(
+        active.conditionReports.single.photos.first.thumbUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      expect(photo.headers.value('content-type'), 'image/webp');
+
+      // Return: the lender's code, the borrower's photos.
+      final returnCode = await rentals(lender.api).code(id);
+      expect(returnCode.stage, RentalStage.returned);
+      final back = await rentals(borrower.api)
+          .returnItem(id, code: returnCode.code, photos: [_jpeg, _jpeg]);
+      expect(back.booking.status, BookingStatus.returned);
+      expect(back.rental?.claimUntil, isNotNull);
+      expect(back.rental?.lateFeePaise, 0);
+      expect(back.conditionReports.map((r) => r.stage), [
+        RentalStage.handover,
+        RentalStage.returned,
+      ]);
+      final lenderView = await BookingsRepository(dio: lender.api).get(id);
+      expect(lenderView.can.dispute, isTrue);
+      expect(lenderView.can.addPhotos, isTrue);
+      // Reviews come after completion (24 h after the return).
+      expect(back.can.review, isFalse);
+      final itemReviews = await rentals(borrower.api).listingReviews(item.id);
+      expect(itemReviews.ratingCount, greaterThanOrEqualTo(0));
     },
     skip: liveUrl.isEmpty || liveListingId.isEmpty || liveLenderPhone.isEmpty
         ? 'Set LIVE_API_URL, LIVE_LISTING_ID and LIVE_LENDER_PHONE to run'

@@ -75,7 +75,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Sajha uses your location to place your item's pickup point on the map. Borrowers only see the approximate area.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Sajha uses the camera to take your profile photo and photos of your ID documents.</string>
+	<string>Sajha uses the camera to take your profile photo, photos of your ID documents and of rented items, and to scan handover codes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Sajha lets you choose a profile photo or an ID document photo from your library.</string>
 </dict>

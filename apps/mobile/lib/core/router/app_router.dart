@@ -7,6 +7,12 @@ import '../../features/auth/presentation/email_screen.dart';
 import '../../features/auth/presentation/name_screen.dart';
 import '../../features/auth/presentation/otp_screens.dart';
 import '../../features/auth/presentation/phone_screen.dart';
+import '../../features/bookings/data/models.dart' show RentalStage;
+import '../../features/rentals/presentation/confirm_stage_screen.dart';
+import '../../features/rentals/presentation/dispute_screen.dart';
+import '../../features/rentals/presentation/photo_viewer.dart';
+import '../../features/rentals/presentation/review_screen.dart';
+import '../../features/rentals/presentation/show_code_screen.dart';
 import '../../features/payments/presentation/earnings_screen.dart';
 import '../../features/payments/presentation/payment_processing_screen.dart';
 import '../../features/payments/presentation/payouts_screen.dart';
@@ -134,6 +140,49 @@ final routerProvider = Provider<GoRouter>((ref) {
           bookingId: state.pathParameters['id']!,
           payment: state.extra! as CheckoutSuccess,
         ),
+      ),
+      GoRoute(
+        path: Routes.bookingCodePattern,
+        builder: (_, state) =>
+            ShowCodeScreen(bookingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.bookingHandoverPattern,
+        builder: (_, state) => ConfirmStageScreen(
+          bookingId: state.pathParameters['id']!,
+          stage: RentalStage.handover,
+        ),
+      ),
+      GoRoute(
+        path: Routes.bookingReturnPattern,
+        builder: (_, state) => ConfirmStageScreen(
+          bookingId: state.pathParameters['id']!,
+          stage: RentalStage.returned,
+        ),
+      ),
+      GoRoute(
+        path: Routes.bookingDisputePattern,
+        builder: (_, state) =>
+            DisputeScreen(bookingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.bookingRespondPattern,
+        builder: (_, state) => DisputeScreen(
+          bookingId: state.pathParameters['id']!,
+          respond: true,
+        ),
+      ),
+      GoRoute(
+        path: Routes.bookingReviewPattern,
+        builder: (_, state) =>
+            ReviewScreen(bookingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.photos,
+        redirect: (_, state) =>
+            state.extra is PhotoViewerArgs ? null : Routes.bookings,
+        builder: (_, state) =>
+            PhotoViewerScreen(args: state.extra! as PhotoViewerArgs),
       ),
       GoRoute(path: Routes.earnings, builder: (_, _) => const EarningsScreen()),
       GoRoute(path: Routes.payouts, builder: (_, _) => const PayoutsScreen()),

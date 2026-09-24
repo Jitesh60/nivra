@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 part 'fake_bookings.dart';
 part 'fake_chat.dart';
 part 'fake_payments.dart';
+part 'fake_rentals.dart';
 
 /// In-memory stand-in for the Sajha API, plugged into Dio as its HTTP adapter.
 /// Mirrors the real endpoints and error shapes closely enough to drive
@@ -291,6 +292,15 @@ class FakeSajhaApi implements HttpClientAdapter {
     String? auth,
     Map<String, String> query,
   ) {
+    // Published reviews are public.
+    final reviews = RegExp(r'^/(listings|users)/([^/]+)/reviews$')
+        .firstMatch(path);
+    if (method == 'GET' && reviews != null) {
+      return (
+        200,
+        _reviewPage(reviews.group(1) == 'listings', reviews.group(2)!),
+      );
+    }
     if (method == 'GET' &&
         (path == '/home' ||
             path == '/search' ||
@@ -645,6 +655,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       target.revoked = true;
       return (204, null);
     }
+    final rentalResult = _rentals(method, path, body, user);
+    if (rentalResult != null) return rentalResult;
     final paymentResult = _payments(method, path, body, user);
     if (paymentResult != null) return paymentResult;
     final bookingResult = _bookings(method, path, body, query, user);
@@ -849,11 +861,15 @@ class FakeSajhaApi implements HttpClientAdapter {
           'emailVerified': lender.emailVerified,
           'idVerified': lender.json['idVerified'],
           'memberSince': '2026-09-01T10:00:00.000Z',
+          'ratingAvg': _reviewPage(false, lender.id)['ratingAvg'],
+          'ratingCount': _reviewPage(false, lender.id)['ratingCount'],
         },
         'saved': favorites[viewer?.id]?.contains(l.id) ?? false,
         'favoriteCount': favorites.values
             .where((ids) => ids.contains(l.id))
             .length,
+        'ratingAvg': _reviewPage(true, l.id)['ratingAvg'],
+        'ratingCount': _reviewPage(true, l.id)['ratingCount'],
       },
     );
   }

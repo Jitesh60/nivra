@@ -13,6 +13,7 @@ import 'package:sajha/core/network/api_client.dart';
 import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
+import 'package:sajha/core/scanner/code_scanner.dart';
 import 'package:sajha/core/security/screen_protection.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
@@ -46,6 +47,10 @@ class TestHarness {
   final gateway = FakePaymentGateway();
   late ProviderContainer container;
 
+  /// What the next QR scan returns; null means the person backed out.
+  String? nextScan;
+  int scans = 0;
+
   /// What the next date-range pick returns; null means cancelled.
   DateTimeRange? nextDates;
 
@@ -67,6 +72,10 @@ class TestHarness {
     pushServiceProvider.overrideWithValue(push),
     screenProtectionProvider.overrideWithValue(screen),
     paymentGatewayProvider.overrideWithValue(gateway),
+    codeScannerProvider.overrideWithValue((_) async {
+      scans++;
+      return nextScan;
+    }),
     dateRangeChooserProvider.overrideWithValue((
       context, {
       required first,

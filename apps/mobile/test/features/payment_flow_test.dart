@@ -106,6 +106,11 @@ void main() {
     );
     expect(find.textContaining('Paid'), findsWidgets);
     expect(find.textContaining('upi'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Paid: booking confirmed'),
+      200,
+      scrollable: find.byType(Scrollable).hitTestable().last,
+    );
     expect(find.text('Paid: booking confirmed'), findsOneWidget);
 
     // The webhook arriving afterwards changes nothing.
