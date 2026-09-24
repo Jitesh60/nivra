@@ -74,9 +74,10 @@ src/
     ├── categories/         # admin-managed categories, public list                  (Phase 3a)
     ├── listings/           # CRUD, photos, blocked dates, required docs, moderation (Phase 3a)
     ├── search/             # text + geo + date search, home feed, wishlist, views   (Phase 4a)
-    ├── chat/               # conversations, messages, Socket.IO gateway              (Phase 5)
-    ├── offers/             # offer / counter-offer                                   (Phase 5)
-    ├── notifications/      # in-app + push/email/SMS fan-out                        (Phase 5)
+    ├── chat/               # conversations, messages, offers, masking, /ws gateway (Phase 5a)
+    ├── realtime/           # RealtimeService (emit, presence), Redis Socket.IO adapter (Phase 5a)
+    ├── notifications/      # device tokens, push when away (in-app centre: Phase 6) (Phase 5a)
+    ├── safety/             # blocks, reports, admin reports + audited transcripts  (Phase 5a)
     ├── bookings/           # booking state machine                                  (Phase 6)
     ├── booking-documents/  # booking-scoped document sharing                       (Phase 6)
     ├── payments/           # Razorpay orders, webhooks, refunds, ledger             (Phase 7)
@@ -84,14 +85,13 @@ src/
     ├── handover/           # handover/return codes, condition reports               (Phase 8)
     ├── reviews/            #                                                        (Phase 8)
     ├── disputes/           #                                                        (Phase 8)
-    ├── reports/            # report user/listing                                    (Phase 8)
     ├── admin/              # admin-facing endpoints per area (/v1/admin/*)          (each phase)
     └── audit/              # audit log writer                                       (Phase 1a)
 ```
 
 **Cross-cutting pieces**
-- `JwtAuthGuard` (users), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` + `@RequireVerified()` (requires verified phone and email → 403 `VERIFICATION_REQUIRED` with `details.missing`; applied to listing create/publish in Phase 3, bookings from Phase 6)
-- `ThrottlerGuard` backed by Redis for general rate limits; dedicated OTP limiter
+- `JwtAuthGuard` (users; the token check itself is `AccessTokenService`, shared with the chat socket), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` + `@RequireVerified()` / `assertVerified()` (requires verified phone and email → 403 `VERIFICATION_REQUIRED` with `details.missing`; applied to listing create/publish in Phase 3, starting a chat in Phase 5, bookings from Phase 6)
+- `RateLimiter` (Redis fixed window, `src/redis/rate-limiter.ts`) for per-user limits; dedicated OTP limiter
 - Global `ValidationPipe` (whitelist, forbid unknown fields, transform)
 - Global exception filter → `{ error: { code, message, details } }`
 - `nestjs-pino` logging with a request ID; sensitive fields (OTP, tokens, phone) redacted
@@ -422,15 +422,33 @@ sequenceDiagram
 - Every rupee movement is a **ledger entry**. The admin finance screen reconciles ledger totals against Razorpay settlements.
 - Lenders complete **Razorpay Route linked-account onboarding** (bank account + PAN) before their first payout; earnings can accrue in the meantime.
 
-## 7. Chat & realtime
+## 7. Chat & realtime (Phase 5a)
 
-- A **Socket.IO** namespace `/ws` authenticates with the access token on connect (`auth: { token }`) and disconnects when the token expires, so the client reconnects with a fresh one.
-- Rooms: `user:{id}` (personal notifications) and `conversation:{id}`.
-- Events: `message:new`, `message:read`, `typing`, `offer:updated`, `booking:updated`.
-- Messages are **persisted first** (REST `POST /v1/conversations/:id/messages` or the socket `message:send` with an ack), then broadcast.
-- The **Redis adapter** allows multiple API instances.
-- If the recipient has no active socket, an FCM push is sent through the notifications queue.
-- **Contact masking:** before a booking is `CONFIRMED`, message bodies are scanned for phone numbers, emails and UPI IDs with regexes, replaced with `•••` in `maskedBody`, and only the masked text is delivered.
+- **Tables** (migration `20260924140000_chat`):
+  - `conversations`: unique (listing, borrower); `lastMessageAt` and a masked `lastMessagePreview`.
+  - `messages`: TEXT / IMAGE / OFFER / SYSTEM, with `body` (as typed), `maskedBody` and `masked`. `clientId` is unique per sender and conversation, and `readAt` holds the read receipt.
+  - `offers`: partial unique indexes allow one PENDING and one ACCEPTED offer per conversation.
+  - `user_blocks`, `reports` (one OPEN report per reporter and target), and `device_tokens` (each tied to a session).
+- **Writes go through REST:** `POST /v1/conversations/:id/messages` is stored first and is idempotent on `clientId`. Only then is it broadcast.
+- **Socket.IO namespace `/ws`:**
+  - It authenticates at the handshake with `auth: { token }`, using `AccessTokenService`, which it shares with `JwtAuthGuard`. A refused handshake fails with the error code as its message (`TOKEN_EXPIRED` → the app refreshes and reconnects). The server disconnects the socket when the access token expires.
+  - Each socket joins `user:{id}`.
+  - Server → client events: `message:new` (each participant gets their own view: the sender's text, or the masked text), `message:read`, `offer:updated`, `typing`.
+  - The client → server event is `typing {conversationId}` (participants only, throttled to one per 2 s).
+  - The **Redis adapter** (`RedisIoAdapter`, set in `configureApp`) lets any instance emit to any socket. `RealtimeService.isOnline()` checks presence across instances.
+- **Push:** when the recipient has no socket open, `NotificationsService.notifyIfAway` sends the masked preview to their devices through `PushProvider` (`console` or `fcm`, FCM HTTP v1 with a service account). Tokens of signed-out or expired sessions, and tokens FCM reports as unregistered, are deleted. Push never fails the request that caused it.
+- **Contact masking** (`chat/masking.ts`, pure and unit-tested):
+  - It hides phone numbers (matched on digit *groups*, so dates and prices aren't caught), emails (including "at … dot"), UPI IDs and WhatsApp/Telegram links. Everything is replaced with `•••`.
+  - It applies until a booking is `CONFIRMED` (Phase 7).
+  - The other participant only ever receives `maskedBody`. Admins see `body` in the audited transcript.
+- **Offers** (`chat/offers.service.ts`, `offer-rules.ts`):
+  - Either side proposes dates and a price per day; rent = price × days.
+  - A new offer or a counter marks the open one COUNTERED.
+  - Only the other side can accept or decline. Accepting re-runs `pricing.quote()` against the listing's rules and needs the listing to be LIVE, and any earlier accepted deal becomes SUPERSEDED.
+  - A pending offer expires after 48 h or at the end of its first day. The status is computed on read; the row is updated when someone acts on it.
+- **Limits:** 30 messages or offers a minute, 20 new chats a day, 10 reports a day. They use `RateLimiter` (`src/redis/rate-limiter.ts`) → 429 `RATE_LIMITED` with `Retry-After`.
+- **Blocks** (either direction) → 403 `USER_BLOCKED` on send, offer, answer and new chats. The chat stays readable.
+- Phase 6 adds `booking:updated` and an in-app notification centre.
 
 ## 8. Files & the document vault
 
@@ -449,6 +467,8 @@ Locally and in e2e tests, storage is SeaweedFS's S3 API (`infra/docker-compose.y
    - sniffs the magic bytes, never trusting the Content-Type header
    - re-encodes with sharp: avatar → 512×512 WebP (public bucket); document → JPEG, longest side ≤ 2400 px (private bucket, SSE). Re-encoding strips EXIF (including GPS) and neutralises polyglot files; a 40-megapixel input limit guards against decompression bombs.
    - deletes the temp object and the ticket.
+
+**Chat photos (Phase 5a):** purpose `CHAT_IMAGE` (≤ 10 MB), finalised by `POST /v1/conversations/:id/messages {type: IMAGE, key}` into a ≤1600 px WebP and a ≤480 px thumbnail in the **private** bucket under `chat/{conversationId}/`. Participants get 10-minute presigned links in each message; admins get them in the audited transcript.
 
 **Listing photos (Phase 3a):** the same flow with purpose `LISTING_PHOTO` (≤ 10 MB). `POST /v1/me/listings/:id/photos {key}` finalises it: magic-byte check, then sharp produces a ≤1600 px WebP and a ≤480 px thumbnail WebP (EXIF stripped) in the public bucket under `listings/{listingId}/`. Deleting a photo or listing removes the objects. Resizing runs in the request for now; it moves to a BullMQ job in Phase 5.
 

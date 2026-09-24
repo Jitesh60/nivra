@@ -3155,6 +3155,958 @@
           "admin · waitlist"
         ]
       }
+    },
+    "/v1/me/devices/push-token": {
+      "put": {
+        "operationId": "DevicesController_register_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register this device for push notifications (this session)",
+        "tags": [
+          "me · devices"
+        ]
+      },
+      "delete": {
+        "operationId": "DevicesController_remove_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stop push notifications to this device",
+        "tags": [
+          "me · devices"
+        ]
+      }
+    },
+    "/v1/me/blocks": {
+      "get": {
+        "operationId": "SafetyController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BlockedUserDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · safety"
+        ]
+      }
+    },
+    "/v1/me/blocks/{userId}": {
+      "put": {
+        "operationId": "SafetyController_block_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block someone: no messages or offers either way (idempotent)",
+        "tags": [
+          "me · safety"
+        ]
+      },
+      "delete": {
+        "operationId": "SafetyController_unblock_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · safety"
+        ]
+      }
+    },
+    "/v1/reports": {
+      "post": {
+        "operationId": "SafetyController_report_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCreatedDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REPORT_DUPLICATE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a user, a listing or a chat message (10 a day)",
+        "tags": [
+          "me · safety"
+        ]
+      }
+    },
+    "/v1/admin/reports": {
+      "get": {
+        "operationId": "AdminSafetyController_list_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "OPEN",
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "ACTIONED",
+                "DISMISSED"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReportPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reports by status (open: oldest first)",
+        "tags": [
+          "admin · reports"
+        ]
+      }
+    },
+    "/v1/admin/reports/{id}": {
+      "get": {
+        "operationId": "AdminSafetyController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReportDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · reports"
+        ]
+      }
+    },
+    "/v1/admin/reports/{id}/resolve": {
+      "post": {
+        "operationId": "AdminSafetyController_resolve_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReportDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REPORT_STATUS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Close a report as actioned or dismissed, with a note",
+        "tags": [
+          "admin · reports"
+        ]
+      }
+    },
+    "/v1/admin/conversations/{id}/messages": {
+      "get": {
+        "operationId": "AdminSafetyController_transcript_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "required": false,
+            "in": "query",
+            "description": "Messages older than this one",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTranscriptDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read-only transcript with original text (every view is audited)",
+        "tags": [
+          "admin · reports"
+        ]
+      }
+    },
+    "/v1/conversations": {
+      "post": {
+        "operationId": "ChatController_start_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartConversationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONVERSATION_NOT_ALLOWED (own listing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "VERIFICATION_REQUIRED, USER_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open the chat about a listing (or return the existing one). Needs a verified phone and email.",
+        "tags": [
+          "chat"
+        ]
+      },
+      "get": {
+        "operationId": "ChatController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Inbox, most recent first",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/me/unread": {
+      "get": {
+        "operationId": "ChatController_unread_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unread counts for the inbox badge",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/conversations/{id}": {
+      "get": {
+        "operationId": "ChatController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/conversations/{id}/messages": {
+      "get": {
+        "operationId": "ChatController_messagesPage_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "required": false,
+            "in": "query",
+            "description": "Messages older than this one",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Messages, newest first; page back with `before`",
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "ChatController_send_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "USER_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send text or a photo (CHAT_IMAGE upload). Contact details are hidden from the other person. 30 a minute.",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/conversations/{id}/read": {
+      "post": {
+        "operationId": "ChatController_read_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark the other person’s messages as read, up to a message",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/conversations/{id}/offers": {
+      "post": {
+        "operationId": "ChatController_offer_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OFFER_DATES_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Make an offer: dates and a price per day. Replaces any open offer.",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/offers/{id}/counter": {
+      "post": {
+        "operationId": "ChatController_counter_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOfferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "OFFER_OWN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OFFER_NOT_PENDING, OFFER_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Answer the other person’s offer with your own dates or price",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/offers/{id}/accept": {
+      "post": {
+        "operationId": "ChatController_accept_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "OFFER_OWN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OFFER_NOT_PENDING, OFFER_EXPIRED, OFFER_DATES_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept the other person’s offer: the deal is locked for booking",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/v1/offers/{id}/decline": {
+      "post": {
+        "operationId": "ChatController_decline_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "OFFER_OWN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OFFER_NOT_PENDING, OFFER_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "chat"
+        ]
+      }
     }
   },
   "info": {
@@ -3520,7 +4472,8 @@
             "enum": [
               "AVATAR",
               "DOCUMENT",
-              "LISTING_PHOTO"
+              "LISTING_PHOTO",
+              "CHAT_IMAGE"
             ]
           },
           "contentType": {
@@ -5703,6 +6656,794 @@
         "required": [
           "total",
           "items"
+        ]
+      },
+      "PushTokenDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "FCM registration token"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "android",
+              "ios"
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "platform"
+        ]
+      },
+      "ParticipantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "idVerified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "idVerified"
+        ]
+      },
+      "BlockedUserDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "blockedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "blockedAt"
+        ]
+      },
+      "CreateReportDto": {
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "LISTING",
+              "MESSAGE"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "SPAM",
+              "SCAM",
+              "OFF_PLATFORM_PAYMENT",
+              "INAPPROPRIATE",
+              "OTHER"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The chat it came from, for context"
+          }
+        },
+        "required": [
+          "targetType",
+          "targetId",
+          "reason"
+        ]
+      },
+      "ReportCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ACTIONED",
+              "DISMISSED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReportTargetDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "LISTING",
+              "MESSAGE"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "description": "A short description: a name, a listing title or the message text"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true,
+            "description": "User or listing status"
+          },
+          "originalText": {
+            "type": "string",
+            "nullable": true,
+            "description": "For messages: what the sender typed (admins only)"
+          },
+          "ownerId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Who wrote it / owns it"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "label"
+        ]
+      },
+      "AdminReportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ACTIONED",
+              "DISMISSED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "SPAM",
+              "SCAM",
+              "OFF_PLATFORM_PAYMENT",
+              "INAPPROPRIATE",
+              "OTHER"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "reporter": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ReportTargetDto"
+          },
+          "conversationId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "openReportsOnTarget": {
+            "type": "number",
+            "description": "Open reports about the same target, this one included"
+          },
+          "resolutionNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedById": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "reason",
+          "reporter",
+          "target",
+          "openReportsOnTarget",
+          "createdAt"
+        ]
+      },
+      "AdminReportPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminReportDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ResolveReportDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ACTIONED",
+              "DISMISSED"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000,
+            "description": "What was done, for the record"
+          }
+        },
+        "required": [
+          "outcome",
+          "note"
+        ]
+      },
+      "AdminMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "IMAGE",
+              "OFFER",
+              "SYSTEM"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "nullable": true,
+            "description": "What the sender typed"
+          },
+          "masked": {
+            "type": "boolean",
+            "description": "Contact details were hidden from the other person"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "offerSummary": {
+            "type": "string",
+            "nullable": true,
+            "description": "Offers: \"12 Oct – 16 Oct 2026 · ₹120/day · ACCEPTED\""
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "senderId",
+          "type",
+          "masked",
+          "createdAt"
+        ]
+      },
+      "AdminTranscriptDto": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "listingTitle": {
+            "type": "string"
+          },
+          "listingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "messages": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminMessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "conversationId",
+          "listingTitle",
+          "listingId",
+          "borrower",
+          "lender",
+          "messages"
+        ]
+      },
+      "StartConversationDto": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "listingId"
+        ]
+      },
+      "ChatListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "thumbUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Listing status; chats continue if it is paused"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "minDays": {
+            "type": "number"
+          },
+          "maxDays": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "pricePerDayPaise",
+          "depositPaise",
+          "minDays",
+          "maxDays"
+        ]
+      },
+      "OfferDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "proposedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Proposed by the viewer"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "number"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "rentPaise": {
+            "type": "number",
+            "description": "pricePerDay × days (no weekly discount on a negotiated price)"
+          },
+          "depositPaise": {
+            "type": "number",
+            "description": "Refundable, from the listing"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "COUNTERED",
+              "DECLINED",
+              "EXPIRED",
+              "SUPERSEDED"
+            ]
+          },
+          "parentOfferId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "A pending offer lapses at this time"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "conversationId",
+          "proposedById",
+          "mine",
+          "startDate",
+          "endDate",
+          "days",
+          "pricePerDayPaise",
+          "rentPaise",
+          "depositPaise",
+          "totalPaise",
+          "status",
+          "expiresAt",
+          "createdAt"
+        ]
+      },
+      "ConversationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ChatListingDto"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER"
+            ],
+            "description": "The viewer’s side"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "lastMessageAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastMessagePreview": {
+            "type": "string",
+            "nullable": true,
+            "description": "Masked"
+          },
+          "unreadCount": {
+            "type": "number"
+          },
+          "blockedByMe": {
+            "type": "boolean",
+            "description": "The viewer blocked the other person"
+          },
+          "canMessage": {
+            "type": "boolean",
+            "description": "Messages and offers are allowed (no block either way)"
+          },
+          "pendingOffer": {
+            "nullable": true,
+            "description": "The open offer, if any",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OfferDto"
+              }
+            ]
+          },
+          "acceptedOffer": {
+            "nullable": true,
+            "description": "The agreed deal, if any",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OfferDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "listing",
+          "role",
+          "other",
+          "lastMessageAt",
+          "unreadCount",
+          "blockedByMe",
+          "canMessage"
+        ]
+      },
+      "ConversationPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UnreadDto": {
+        "type": "object",
+        "properties": {
+          "conversations": {
+            "type": "number",
+            "description": "Conversations with unread messages"
+          },
+          "messages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "conversations",
+          "messages"
+        ]
+      },
+      "MessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Sent by the viewer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "IMAGE",
+              "OFFER",
+              "SYSTEM"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "nullable": true,
+            "description": "Text as the viewer may see it: the sender gets what they typed, the other person gets contact details replaced with •••"
+          },
+          "masked": {
+            "type": "boolean",
+            "description": "Contact details in this message are hidden from the other person (until a booking is confirmed)"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Short-lived link"
+          },
+          "thumbUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Short-lived link"
+          },
+          "offer": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OfferDto"
+              }
+            ]
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Echoed to the sender only"
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "conversationId",
+          "senderId",
+          "mine",
+          "type",
+          "masked",
+          "createdAt"
+        ]
+      },
+      "MessagePageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Pass as `before`"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SendMessageDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "IMAGE"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Required for TEXT"
+          },
+          "key": {
+            "type": "string",
+            "description": "Required for IMAGE: `key` from POST /v1/uploads (CHAT_IMAGE)"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "Chosen by the app; resending the same id returns the same message"
+          }
+        },
+        "required": [
+          "type",
+          "clientId"
+        ]
+      },
+      "MarkReadDto": {
+        "type": "object",
+        "properties": {
+          "upTo": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Everything up to and including this message"
+          }
+        },
+        "required": [
+          "upTo"
+        ]
+      },
+      "CreateOfferDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-12"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-16"
+          },
+          "pricePerDayPaise": {
+            "type": "number",
+            "example": 12000
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "pricePerDayPaise"
         ]
       }
     }

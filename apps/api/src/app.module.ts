@@ -20,6 +20,11 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
+import { ChatModule } from './modules/chat/chat.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { RealtimeModule } from './modules/realtime/realtime.module.js';
+import { SafetyModule } from './modules/safety/safety.module.js';
+import { PushModule } from './providers/push/push.module.js';
 import { SmsModule } from './providers/sms/sms.module.js';
 import { RedisModule } from './redis/redis.module.js';
 
@@ -38,6 +43,8 @@ import { RedisModule } from './redis/redis.module.js';
     RedisModule,
     SmsModule,
     EmailModule,
+    PushModule,
+    RealtimeModule,
     StorageModule,
     UserViewModule,
     AuditModule,
@@ -53,6 +60,9 @@ import { RedisModule } from './redis/redis.module.js';
     AdminAuthModule,
     AdminModule,
     WaitlistModule,
+    NotificationsModule,
+    SafetyModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

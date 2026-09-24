@@ -43,6 +43,15 @@ model User {
   listings      Listing[]
   favorites     Favorite[]
 
+  borrowerConversations Conversation[] @relation("ConversationBorrower")
+  lenderConversations   Conversation[] @relation("ConversationLender")
+  messages              Message[]
+  offers                Offer[]
+  blocksMade            UserBlock[]    @relation("BlockBlocker")
+  blocksReceived        UserBlock[]    @relation("BlockBlocked")
+  reports               Report[]
+  deviceTokens          DeviceToken[]
+
   @@map("users")
 }
 
@@ -82,6 +91,7 @@ model AdminUser {
   recoveryCodes     AdminRecoveryCode[]
   reviewedDocuments UserDocument[]
   reviewedListings  Listing[]
+  resolvedReports   Report[]
 
   @@map("admin_users")
 }
@@ -126,6 +136,7 @@ model Session {
   user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   adminUser     AdminUser?     @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
+  deviceTokens  DeviceToken[]
 
   @@index([userId])
   @@index([adminUserId])
@@ -373,14 +384,15 @@ model Listing {
   createdAt         DateTime                  @default(now()) @map("created_at")
   updatedAt         DateTime                  @updatedAt @map("updated_at")
 
-  lender       User                 @relation(fields: [lenderId], references: [id], onDelete: Cascade)
-  category     Category             @relation(fields: [categoryId], references: [id])
-  reviewedBy   AdminUser?           @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
-  photos       ListingPhoto[]
-  requiredDocs ListingRequiredDoc[]
-  blocks       AvailabilityBlock[]
-  favorites    Favorite[]
-  views        ListingView[]
+  lender        User                 @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  category      Category             @relation(fields: [categoryId], references: [id])
+  reviewedBy    AdminUser?           @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  photos        ListingPhoto[]
+  requiredDocs  ListingRequiredDoc[]
+  blocks        AvailabilityBlock[]
+  favorites     Favorite[]
+  views         ListingView[]
+  conversations Conversation[]
 
   @@index([lenderId])
   @@index([status, createdAt])
@@ -476,4 +488,178 @@ model ListingView {
   @@id([listingId, viewerKey, day])
   @@index([day, listingId])
   @@map("listing_views")
+}
+
+// ─── Phase 5: chat, offers, safety, push ─────────────────────────────────────
+
+/// One thread per borrower and listing. Only the borrower starts it.
+model Conversation {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  listingId          String   @map("listing_id") @db.Uuid
+  borrowerId         String   @map("borrower_id") @db.Uuid
+  lenderId           String   @map("lender_id") @db.Uuid
+  lastMessageAt      DateTime @default(now()) @map("last_message_at")
+  /// Masked, so it's safe to show either participant.
+  lastMessagePreview String?  @map("last_message_preview")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  borrower User      @relation("ConversationBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
+  lender   User      @relation("ConversationLender", fields: [lenderId], references: [id], onDelete: Cascade)
+  messages Message[]
+  offers   Offer[]
+
+  @@unique([listingId, borrowerId])
+  @@index([borrowerId, lastMessageAt])
+  @@index([lenderId, lastMessageAt])
+  @@map("conversations")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  OFFER
+  SYSTEM
+}
+
+/// `body` is what the sender typed (shown to them and to admins); the other
+/// participant only ever gets `maskedBody` (contact details replaced with •••).
+model Message {
+  id             String      @id @default(uuid(7)) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  senderId       String      @map("sender_id") @db.Uuid
+  type           MessageType
+  body           String?
+  maskedBody     String?     @map("masked_body")
+  masked         Boolean     @default(false)
+  /// Private bucket: `imageKey` (≤1600px WebP) and `thumbKey` (≤480px WebP).
+  imageKey       String?     @map("image_key")
+  thumbKey       String?     @map("thumb_key")
+  offerId        String?     @unique @map("offer_id") @db.Uuid
+  /// The sender's id for this message, so a retried send isn't stored twice.
+  clientId       String?     @map("client_id")
+  readAt         DateTime?   @map("read_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  offer        Offer?       @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, senderId, clientId])
+  @@index([conversationId, id])
+  @@map("messages")
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  COUNTERED
+  DECLINED
+  EXPIRED
+  /// An accepted deal replaced by a later one in the same conversation.
+  SUPERSEDED
+}
+
+/// Dates and a price per day proposed in chat. At most one PENDING and one
+/// ACCEPTED offer per conversation (partial unique indexes in the migration).
+/// Expiry is applied lazily: a PENDING offer past `expiresAt` counts as EXPIRED.
+model Offer {
+  id               String      @id @default(uuid(7)) @db.Uuid
+  conversationId   String      @map("conversation_id") @db.Uuid
+  proposedById     String      @map("proposed_by_id") @db.Uuid
+  startsOn         DateTime    @map("starts_on") @db.Date
+  endsOn           DateTime    @map("ends_on") @db.Date
+  days             Int
+  pricePerDayPaise Int         @map("price_per_day_paise")
+  rentPaise        Int         @map("rent_paise")
+  depositPaise     Int         @map("deposit_paise")
+  status           OfferStatus @default(PENDING)
+  parentOfferId    String?     @map("parent_offer_id") @db.Uuid
+  expiresAt        DateTime    @map("expires_at")
+  respondedAt      DateTime?   @map("responded_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  proposedBy   User         @relation(fields: [proposedById], references: [id], onDelete: Cascade)
+  parent       Offer?       @relation("OfferCounter", fields: [parentOfferId], references: [id], onDelete: SetNull)
+  counters     Offer[]      @relation("OfferCounter")
+  message      Message?
+
+  @@index([conversationId, createdAt])
+  @@map("offers")
+}
+
+/// Either side of a block stops messages and offers both ways.
+model UserBlock {
+  blockerId String   @map("blocker_id") @db.Uuid
+  blockedId String   @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+enum ReportTarget {
+  USER
+  LISTING
+  MESSAGE
+}
+
+enum ReportReason {
+  SPAM
+  SCAM
+  OFF_PLATFORM_PAYMENT
+  INAPPROPRIATE
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+model Report {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  reporterId     String       @map("reporter_id") @db.Uuid
+  targetType     ReportTarget @map("target_type")
+  targetId       String       @map("target_id") @db.Uuid
+  /// The chat it came from, for context in the admin panel.
+  conversationId String?      @map("conversation_id") @db.Uuid
+  reason         ReportReason
+  note           String?
+  status         ReportStatus @default(OPEN)
+  resolvedById   String?      @map("resolved_by_id") @db.Uuid
+  resolutionNote String?      @map("resolution_note")
+  resolvedAt     DateTime?    @map("resolved_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  reporter   User       @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy AdminUser? @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@map("reports")
+}
+
+/// An FCM registration token for one signed-in device (session).
+model DeviceToken {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  sessionId  String   @map("session_id") @db.Uuid
+  token      String   @unique
+  platform   String
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("device_tokens")
 }

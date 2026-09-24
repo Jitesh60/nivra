@@ -6,8 +6,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { bearerToken } from '../sessions/bearer.js';
-import { suspended, SessionsService } from '../sessions/sessions.service.js';
-import { invalidToken, TokenService } from '../sessions/token.service.js';
+import { AccessTokenService } from './access-token.service.js';
 
 export interface UserAuth {
   userId: string;
@@ -23,18 +22,12 @@ type AuthedRequest = Request & { userAuth?: UserAuth };
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly tokens: TokenService,
-    private readonly sessions: SessionsService,
-  ) {}
+  constructor(private readonly accessTokens: AccessTokenService) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
-    const claims = this.tokens.verify(bearerToken(req), 'user');
-    const session = await this.sessions.findActive(claims.sid!, 'USER');
-    if (!session || session.userId !== claims.sub || !session.user) throw invalidToken();
-    if (session.user.status !== 'ACTIVE') throw suspended();
-    req.userAuth = { userId: claims.sub, sessionId: session.id };
+    const { userId, sessionId } = await this.accessTokens.authenticate(bearerToken(req));
+    req.userAuth = { userId, sessionId };
     return true;
   }
 }
