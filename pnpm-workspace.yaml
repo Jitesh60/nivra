@@ -16,3 +16,10 @@ ignoredBuiltDependencies:
   - cpu-features
   - protobufjs
   - ssh2
+
+# Security fixes in transitive dependencies (pnpm audit --prod), until upstream bumps them.
+# Both arrive through the Prisma CLI: mysql2 is never loaded (we use Postgres), and
+# deepmerge-ts only merges Prisma's own config.
+overrides:
+  mysql2: '>=3.22.0'
+  deepmerge-ts: '>=8.0.0'

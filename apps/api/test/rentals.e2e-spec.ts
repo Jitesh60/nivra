@@ -8,6 +8,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 import type { FakePaymentProvider } from '../src/providers/payments/fake-payment.provider.js';
 import { createTestApp } from './create-test-app.js';
 import { createAdmin, flushRedis, http, loginAdmin, type UserSession } from './helpers/auth.js';
+import { emailsTo, sendQueuedEmails } from './helpers/email.js';
 import type { InMemorySmsProvider } from './helpers/in-memory-sms.js';
 import { bearer, paymentHelpers } from './helpers/payments.js';
 import { photo, upload } from './helpers/uploads.js';
@@ -490,6 +491,14 @@ describe('Rentals: handover, return, disputes, reviews (e2e)', () => {
       expect(kept).toMatchObject({ amountPaise: 60_000, status: 'RELEASED', onHold: false });
       const { net } = await ledgerFor(m.bookingId);
       expect(net).toMatchObject({ DEPOSIT_HELD: 0, LENDER_PAYABLE: 0 });
+      // Both are told by email, with the split and the note.
+      await sendQueuedEmails(app);
+      for (const user of [m.borrower, m.lender]) {
+        const { email } = await prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+        const decision = (await emailsTo(email!)).find((e) => e.subject.startsWith('Decision on'));
+        expect(decision?.text).toContain('Back to the borrower: ₹400');
+        expect(decision?.text).toContain('The tear is new; the lender keeps ₹600.');
+      }
       expect(
         await prisma.auditLog.count({
           where: { action: 'admin.dispute.resolve', targetId: m.bookingId },
@@ -575,5 +584,26 @@ describe('Rentals: handover, return, disputes, reviews (e2e)', () => {
     await worker.process({ name: 'reminders' });
     expect(await types(overdue.borrower, overdue.bookingId)).toHaveLength(1);
     expect(sms.overdue.filter((s) => s.phone === overdue.borrower.phone)).toHaveLength(1);
+  });
+
+  it('a borrower who turned off SMS reminders still gets the in-app one, without the SMS', async () => {
+    const overdue = await handedOver();
+    await datesFrom(overdue.bookingId, -2);
+    await http(app)
+      .put('/v1/me/notification-preferences')
+      .set(bearer(overdue.borrower.accessToken))
+      .send({ smsReminders: false })
+      .expect(200);
+
+    await app.get(RentalsWorker).process({ name: 'reminders' });
+    const reminders = await prisma.notification.count({
+      where: {
+        userId: overdue.borrower.userId,
+        type: 'booking.reminder.overdue',
+        data: { path: ['bookingId'], equals: overdue.bookingId },
+      },
+    });
+    expect(reminders).toBe(1);
+    expect(sms.overdue.filter((s) => s.phone === overdue.borrower.phone)).toEqual([]);
   });
 });

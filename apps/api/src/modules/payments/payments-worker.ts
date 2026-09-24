@@ -5,6 +5,7 @@ import type { Redis } from 'ioredis';
 import type { Env } from '../../config/env.js';
 import { bullConnection } from '../bookings/booking-queue.js';
 import { PaymentsService } from './payments.service.js';
+import { reportJobFailure } from '../../common/observability/report.js';
 
 const QUEUE = 'payments';
 
@@ -29,9 +30,10 @@ export class PaymentsWorker implements OnApplicationBootstrap, OnApplicationShut
     this.worker = new Worker(QUEUE, () => this.payments.sweep(), {
       connection: this.connections[1]!,
     });
-    this.worker.on('failed', (job, err) =>
-      this.logger.warn(`Payments sweep ${job?.id} failed: ${err.message}`),
-    );
+    this.worker.on('failed', (job, err) => {
+      this.logger.warn(`Payments sweep ${job?.id} failed: ${err.message}`);
+      reportJobFailure(QUEUE, job, err);
+    });
     await this.queue.upsertJobScheduler('sweep', { every: 5 * 60_000 }, { name: 'sweep' });
   }
 

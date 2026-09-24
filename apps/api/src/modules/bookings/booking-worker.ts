@@ -12,6 +12,7 @@ import {
   type ExpireJobData,
 } from './booking-queue.js';
 import { BookingsService } from './bookings.service.js';
+import { reportJobFailure } from '../../common/observability/report.js';
 
 /**
  * Runs the bookings queue in this process when JOBS_WORKER is on (the
@@ -37,9 +38,10 @@ export class BookingWorker implements OnApplicationBootstrap, OnApplicationShutd
       connection: this.connection,
       concurrency: 5,
     });
-    this.worker.on('failed', (job, err) =>
-      this.logger.warn(`Job ${job?.name} ${job?.id} failed: ${err.message}`),
-    );
+    this.worker.on('failed', (job, err) => {
+      this.logger.warn(`Job ${job?.name} ${job?.id} failed: ${err.message}`);
+      reportJobFailure(BOOKINGS_QUEUE, job, err);
+    });
     await this.queue.ensureSchedules();
   }
 

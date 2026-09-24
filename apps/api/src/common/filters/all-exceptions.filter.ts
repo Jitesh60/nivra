@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AppException } from '../errors/app.exception.js';
+import { reportError } from '../observability/report.js';
 import type { ErrorResponse } from '../errors/error-response.js';
 
 const CODE_BY_STATUS: Record<number, string> = {
@@ -38,6 +39,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(exception instanceof Error ? exception.stack : String(exception));
+      reportError(exception);
     }
     res.status(status).json(body);
   }

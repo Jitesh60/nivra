@@ -9,6 +9,8 @@ import { LISTING_RULES } from '../listings/listing-rules.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { type Amounts, goodwillPostings, refundPostings } from './ledger.js';
 import { LedgerService } from './ledger.service.js';
+import { refundMessage } from '../../providers/email/templates.js';
+import { Mailer } from '../mail/mailer.service.js';
 
 /** Failed provider calls are retried this many times before an admin has to look. */
 export const MAX_ATTEMPTS = 5;
@@ -29,6 +31,7 @@ export class RefundsService {
     private readonly provider: PaymentProvider,
     private readonly ledger: LedgerService,
     private readonly notifications: NotificationsService,
+    private readonly mailer: Mailer,
   ) {}
 
   /** What can still be refunded from a captured payment. */
@@ -87,7 +90,12 @@ export class RefundsService {
   async attempt(refundId: string): Promise<Refund> {
     const r = await this.prisma.refund.findUniqueOrThrow({
       where: { id: refundId },
-      include: { payment: true, booking: { select: { rentPaise: true, borrowerId: true } } },
+      include: {
+        payment: true,
+        booking: {
+          select: { rentPaise: true, borrowerId: true, listing: { select: { title: true } } },
+        },
+      },
     });
     // Claim it, so two retries can't both send it.
     const claimed = await this.prisma.refund.updateMany({
@@ -173,6 +181,19 @@ export class RefundsService {
       },
       { push: true },
     );
+    const to = await this.mailer.forBookings(r.booking.borrowerId);
+    if (to) {
+      await this.mailer.send(
+        `refund-${r.id}`,
+        refundMessage({
+          to: to.email,
+          name: to.name,
+          listingTitle: r.booking.listing.title,
+          amountPaise: r.amountPaise,
+          kind: r.kind,
+        }),
+      );
+    }
     return updated;
   }
 

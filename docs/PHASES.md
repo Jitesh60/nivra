@@ -743,7 +743,7 @@ Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mob
   - Payouts being released after a claim window that runs out without a dispute is covered by the API e2e suite: it needs the 24-hour window to pass.
 
 ## Phase 9 — Launch hardening & release
-**Branch:** `phase/9-launch`
+Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobile → 9c Admin + Web → 9d Infra**.
 
 - Admin analytics dashboard (signups, listings, bookings, GMV, disputes)
 - Notification preferences; email templates polished
@@ -752,3 +752,27 @@ Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mob
 - Production infrastructure, staging → production promotion, monitoring alerts
 - Marketing site: switch the waitlist to download links, blog/SEO pages
 - **Done when:** the apps are live on the Play Store (and the App Store), with production monitoring in place
+
+**Decisions**
+- **Hosting:** Railway for the API, the worker, Postgres and Redis; Vercel for admin and web; S3 stays on AWS (ap-south-1).
+- **Crash reporting:** Sentry everywhere (API, admin, web, Flutter), off unless a DSN is set, with personal data scrubbed before sending.
+- **Stores:** Phase 9 delivers a release-ready kit and a checklist; publishing needs the owner's Play Console and Apple Developer accounts, signing keys and a Mac.
+- **Worker:** production runs the same image twice: web (`JOBS_WORKER=false`, public) and worker (`JOBS_WORKER=true`, no public domain). The worker keeps its Socket.IO server so timer-driven updates still reach open apps through the Redis adapter.
+
+### 9a — API
+**Branch:** `phase/9a-launch-api`
+
+- **Notification preferences:** `GET/PUT /v1/me/notification-preferences` with push (bookings, chat, reminders), email (booking updates), SMS (return reminders) and marketing switches, stored in `notification_preferences` (no row = the defaults, everything on but marketing). In-app notifications, codes and security or legal messages always go out. `NotificationsService.notifyIfAway` checks the switch for the push's type; the overdue reminder skips the SMS when it's off. Account deletion removes the row.
+- **Emails:**
+  - One layout for all emails (HTML and text, brand colours, a "why you got this" footer and how to opt out).
+  - Sent on payment (the borrower's receipt with the charge breakdown and pickup area; the lender's confirmation with their earnings), on a refund, when a dispute is decided (the split and Sajha's note, to both), and when an account is deleted (always).
+  - Queued on BullMQ `email` (5 tries with backoff; the job id makes each email once-only) and sent by the worker, only to verified addresses and only with booking emails on.
+- **Admin analytics:** `GET /v1/admin/analytics?days=7|30|90` (every admin role): totals and a daily series by IST day (signups, listings published, bookings requested / paid / completed / cancelled, GMV, Sajha's revenue from the ledger, refunds, disputes opened and settled), the previous period for comparison, a snapshot (active users, live listings, items out, open disputes) and the requested → paid → completed funnel. Cached for 5 minutes.
+- **Sentry:** `@sentry/nestjs`, initialised before anything else (`src/instrument.ts`) only with `SENTRY_DSN`. 5xx errors and failed jobs on every queue are reported; `scrubEvent` removes bodies, cookies, auth headers and user details but the id, and masks phones, emails and codes. Release = `GIT_SHA`, which `/v1/health` also reports as `version`.
+- **Hardening** ([SECURITY.md](SECURITY.md) has the ASVS L1 review):
+  - Staging and production now also refuse console push, SMTP email, empty or `*` CORS, and Swagger (production).
+  - Public reads (search, home, listings, reviews) are limited per IP (`PUBLIC_READ_LIMIT_PER_MIN`, default 120), answering 429 `RATE_LIMITED` with `Retry-After`.
+  - Log redaction adds email, PAN, account number and the Razorpay signature.
+  - `pnpm audit --prod --audit-level high` in CI; the two advisories found (mysql2 and deepmerge-ts, both via the Prisma CLI) are overridden to fixed versions.
+- **Load tests** ([infra/load](../infra/load/README.md), results in [PERFORMANCE.md](PERFORMANCE.md)): k6 scripts for browsing and chat and a `seed:load` script (refuses any database not named for load or tests). On one shared 4-vCPU machine: browsing meets its targets up to about 75 requests a second with no errors up to about 95; chat meets them at 40 people sending about 16 messages a second. Unread counts got a partial index.
+- **Tests:** unit tests for the preference mapping, the email templates, IST date ranges, the Sentry scrubber and the production env rules; e2e (`test/launch.e2e-spec.ts`) for the preference endpoints, pushes stopping when turned off, the receipt, lender and refund emails in Mailpit (and none when opted out), the account-deletion email, analytics after a paid booking (cache, periods, auth), the public read limit and the health version; the rentals suite adds the dispute emails and SMS reminders turned off.

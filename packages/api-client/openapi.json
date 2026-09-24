@@ -3282,6 +3282,68 @@
         ]
       }
     },
+    "/v1/me/notification-preferences": {
+      "get": {
+        "operationId": "NotificationPreferencesController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferencesDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "What you want to hear about by push, email and SMS (in-app always shows)",
+        "tags": [
+          "me · notifications"
+        ]
+      },
+      "put": {
+        "operationId": "NotificationPreferencesController_update_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationPreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferencesDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change some switches; the rest stay as they are",
+        "tags": [
+          "me · notifications"
+        ]
+      }
+    },
     "/v1/me/blocks": {
       "get": {
         "operationId": "SafetyController_list_v1",
@@ -6208,6 +6270,48 @@
           "admin"
         ]
       }
+    },
+    "/v1/admin/analytics": {
+      "get": {
+        "operationId": "AdminAnalyticsController_get_v1",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 30,
+              "type": "number",
+              "enum": [
+                7,
+                30,
+                90
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dashboard numbers: daily series and totals (IST days) against the period before, a snapshot and the booking funnel",
+        "tags": [
+          "admin"
+        ]
+      }
     }
   },
   "info": {
@@ -8890,6 +8994,66 @@
             "type": "string",
             "format": "uuid",
             "description": "Everything up to and including this one; omit to mark all read"
+          }
+        }
+      },
+      "NotificationPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "pushBookings": {
+            "type": "boolean",
+            "description": "Push: requests, payments, handover, return, disputes, refunds"
+          },
+          "pushChat": {
+            "type": "boolean",
+            "description": "Push: new chat messages"
+          },
+          "pushReminders": {
+            "type": "boolean",
+            "description": "Push: pickup and return reminders"
+          },
+          "emailBookings": {
+            "type": "boolean",
+            "description": "Email: receipts, refunds and dispute outcomes"
+          },
+          "smsReminders": {
+            "type": "boolean",
+            "description": "SMS: overdue return reminders"
+          },
+          "marketing": {
+            "type": "boolean",
+            "description": "News and offers from Sajha"
+          }
+        },
+        "required": [
+          "pushBookings",
+          "pushChat",
+          "pushReminders",
+          "emailBookings",
+          "smsReminders",
+          "marketing"
+        ]
+      },
+      "UpdateNotificationPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "pushBookings": {
+            "type": "boolean"
+          },
+          "pushChat": {
+            "type": "boolean"
+          },
+          "pushReminders": {
+            "type": "boolean"
+          },
+          "emailBookings": {
+            "type": "boolean"
+          },
+          "smsReminders": {
+            "type": "boolean"
+          },
+          "marketing": {
+            "type": "boolean"
           }
         }
       },
@@ -12528,6 +12692,239 @@
         "required": [
           "keptPaise",
           "note"
+        ]
+      },
+      "AnalyticsMetricsDto": {
+        "type": "object",
+        "properties": {
+          "signups": {
+            "type": "number",
+            "description": "New app accounts"
+          },
+          "listings": {
+            "type": "number",
+            "description": "Listings published for the first time"
+          },
+          "requested": {
+            "type": "number",
+            "description": "Booking requests (and accepted chat offers)"
+          },
+          "confirmed": {
+            "type": "number",
+            "description": "Bookings paid for"
+          },
+          "completed": {
+            "type": "number",
+            "description": "Rentals completed (including settled disputes)"
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Bookings cancelled, including no-shows"
+          },
+          "gmvPaise": {
+            "type": "number",
+            "description": "Captured payments (rent, fee and deposit)"
+          },
+          "revenuePaise": {
+            "type": "number",
+            "description": "Sajha’s commission and fees, net of refunds"
+          },
+          "refundsPaise": {
+            "type": "number",
+            "description": "Refunds sent (not failed)"
+          },
+          "disputesOpened": {
+            "type": "number"
+          },
+          "disputesSettled": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "signups",
+          "listings",
+          "requested",
+          "confirmed",
+          "completed",
+          "cancelled",
+          "gmvPaise",
+          "revenuePaise",
+          "refundsPaise",
+          "disputesOpened",
+          "disputesSettled"
+        ]
+      },
+      "AnalyticsDayDto": {
+        "type": "object",
+        "properties": {
+          "signups": {
+            "type": "number",
+            "description": "New app accounts"
+          },
+          "listings": {
+            "type": "number",
+            "description": "Listings published for the first time"
+          },
+          "requested": {
+            "type": "number",
+            "description": "Booking requests (and accepted chat offers)"
+          },
+          "confirmed": {
+            "type": "number",
+            "description": "Bookings paid for"
+          },
+          "completed": {
+            "type": "number",
+            "description": "Rentals completed (including settled disputes)"
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Bookings cancelled, including no-shows"
+          },
+          "gmvPaise": {
+            "type": "number",
+            "description": "Captured payments (rent, fee and deposit)"
+          },
+          "revenuePaise": {
+            "type": "number",
+            "description": "Sajha’s commission and fees, net of refunds"
+          },
+          "refundsPaise": {
+            "type": "number",
+            "description": "Refunds sent (not failed)"
+          },
+          "disputesOpened": {
+            "type": "number"
+          },
+          "disputesSettled": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Day in India (IST)"
+          }
+        },
+        "required": [
+          "signups",
+          "listings",
+          "requested",
+          "confirmed",
+          "completed",
+          "cancelled",
+          "gmvPaise",
+          "revenuePaise",
+          "refundsPaise",
+          "disputesOpened",
+          "disputesSettled",
+          "date"
+        ]
+      },
+      "AnalyticsSnapshotDto": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "number",
+            "description": "Active app accounts"
+          },
+          "liveListings": {
+            "type": "number"
+          },
+          "activeRentals": {
+            "type": "number",
+            "description": "Items out with a borrower right now"
+          },
+          "openDisputes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "users",
+          "liveListings",
+          "activeRentals",
+          "openDisputes"
+        ]
+      },
+      "AnalyticsFunnelDto": {
+        "type": "object",
+        "properties": {
+          "requested": {
+            "type": "number",
+            "description": "Bookings requested in the period"
+          },
+          "confirmed": {
+            "type": "number",
+            "description": "…of which were paid for"
+          },
+          "completed": {
+            "type": "number",
+            "description": "…of which are completed"
+          }
+        },
+        "required": [
+          "requested",
+          "confirmed",
+          "completed"
+        ]
+      },
+      "AnalyticsDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AnalyticsMetricsDto"
+          },
+          "previous": {
+            "description": "The same number of days before",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnalyticsMetricsDto"
+              }
+            ]
+          },
+          "series": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsDayDto"
+            }
+          },
+          "now": {
+            "description": "Right now",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnalyticsSnapshotDto"
+              }
+            ]
+          },
+          "funnel": {
+            "$ref": "#/components/schemas/AnalyticsFunnelDto"
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "days",
+          "from",
+          "to",
+          "totals",
+          "previous",
+          "series",
+          "now",
+          "funnel",
+          "generatedAt"
         ]
       }
     }

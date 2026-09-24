@@ -19,6 +19,8 @@ import { UsersModule } from './modules/users/users.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
+import { MailModule } from './modules/mail/mail.module.js';
+import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
 import { BookingsModule } from './modules/bookings/bookings.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
@@ -47,6 +49,7 @@ import { RedisModule } from './redis/redis.module.js';
     RedisModule,
     SmsModule,
     EmailModule,
+    MailModule,
     PushModule,
     PaymentsProviderModule,
     RealtimeModule,
@@ -71,6 +74,7 @@ import { RedisModule } from './redis/redis.module.js';
     BookingsModule,
     PaymentsModule,
     RentalsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

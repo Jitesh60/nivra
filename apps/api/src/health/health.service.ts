@@ -9,6 +9,8 @@ export interface HealthReport {
   status: 'ok' | 'error';
   checks: { database: DependencyStatus; redis: DependencyStatus };
   uptimeSec: number;
+  /** The deployed commit (GIT_SHA), or "dev". */
+  version: string;
 }
 
 const CHECK_TIMEOUT_MS = 2_000;
@@ -36,6 +38,7 @@ export class HealthService {
       status: database === 'up' && redis === 'up' ? 'ok' : 'error',
       checks: { database, redis },
       uptimeSec: Math.round(process.uptime()),
+      version: process.env.GIT_SHA || 'dev',
     };
   }
 

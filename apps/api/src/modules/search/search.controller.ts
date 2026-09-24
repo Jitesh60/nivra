@@ -28,9 +28,10 @@ import {
 } from './dto/search.dto.js';
 import { EngagementService } from './engagement.service.js';
 import { SearchService } from './search.service.js';
+import { PublicReadLimitGuard } from '../../common/http/public-read-limit.guard.js';
 
 @ApiTags('discovery')
-@UseGuards(OptionalJwtGuard)
+@UseGuards(PublicReadLimitGuard, OptionalJwtGuard)
 @Controller()
 export class SearchController {
   constructor(private readonly search: SearchService) {}
