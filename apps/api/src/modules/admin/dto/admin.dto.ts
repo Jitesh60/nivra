@@ -107,9 +107,20 @@ export class ActivityDto {
   @ApiProperty({ type: String, format: 'date-time' }) createdAt: string;
 }
 
+export class AdminUserListingDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty() title: string;
+  @ApiProperty({ enum: ['DRAFT', 'PENDING', 'LIVE', 'PAUSED', 'REJECTED', 'REMOVED', 'DELETED'] })
+  status: string;
+  @ApiProperty() pricePerDayPaise: number;
+  @ApiProperty({ type: String, format: 'date-time' }) createdAt: string;
+}
+
 export class AdminUserDetailDto {
   @ApiProperty({ type: UserDto }) user: UserDto;
   @ApiProperty({ type: [DocumentDto] }) documents: DocumentDto[];
+  @ApiProperty({ type: [AdminUserListingDto], description: 'Not deleted, newest first' })
+  listings: AdminUserListingDto[];
   @ApiProperty() activeSessions: number;
   @ApiProperty({
     type: [ActivityDto],

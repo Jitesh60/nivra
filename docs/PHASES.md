@@ -18,7 +18,9 @@ Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.m
 | 2a | Profiles & verification — API | `phase/2a-profiles-api` | api |
 | 2b | Profiles & verification — Mobile | `phase/2b-profiles-mobile` | mobile |
 | 2c | Profiles & verification — Admin | `phase/2c-profiles-admin` | admin |
-| 3 | Listings & categories | `phase/3-listings` | api, mobile, admin |
+| 3a | Listings & categories — API | `phase/3a-listings-api` | api |
+| 3b | Listings & categories — Mobile | `phase/3b-listings-mobile` | mobile |
+| 3c | Listings & categories — Admin | `phase/3c-listings-admin` | admin |
 | 4 | Discovery & search | `phase/4-discovery` | api, mobile |
 | 5 | Chat, offers & notifications | `phase/5-chat-offers` | api, mobile, admin |
 | 6 | Bookings & document sharing | `phase/6-bookings` | api, mobile, admin |
@@ -231,12 +233,48 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** a
 **Later:** purging rejected documents after 30 days (BullMQ jobs, Phase 5), `FLAG_SECURE` when lenders view documents (Phase 6), PDF documents.
 
 ## Phase 3 — Listings & categories
-**Branch:** `phase/3-listings`
+Delivered as three sub-phases, each with its own branch and PR. **Done when:** a lender publishes a listing with required docs, and it shows as LIVE after moderation.
 
-- **API:** `categories`, `listings` CRUD, `listing_photos` (presigned uploads plus a resize job), pricing (paise), deposit, min/max days, `availability_blocks`, `listing_required_docs`, listing status and moderation, exact address encrypted at rest
-- **Mobile:** create/edit listing wizard (photos → details → pricing → calendar → location → required docs → preview), "My listings", pause or unpause
-- **Admin:** category management, listing moderation queue, listing detail
-- **Done when:** a lender publishes a listing with required docs; it shows as LIVE after moderation (or immediately, per the chosen decision)
+**Decisions:**
+- **Moderation:** a lender's **first** listing is reviewed by an admin. Once a lender has an approved listing, their later listings go LIVE immediately. Admins can unpublish anything.
+- **Location:** OpenStreetMap (`flutter_map`) with a draggable pin from GPS. The tile server is configurable.
+- **Weekly pricing:** a weekly discount % (0–50) for 7+ days.
+- **Limits:**
+  - ₹10–₹10,000 per day
+  - deposit ₹0–₹50,000
+  - 1–90 days
+  - advance notice 0–7 days
+  - 1–8 photos
+- **Commission:** 10%, served by `GET /v1/config`.
+
+### 3a — API
+**Branch:** `phase/3a-listings-api`
+
+- `categories` (admin-managed; 9 launch categories seeded). Public `GET /v1/categories`; admin create, edit, hide and reorder.
+- `listings`:
+  - draft → publish (PENDING or LIVE) → pause/unpause → delete
+  - admin approve, reject, unpublish and change category
+  - public `GET /v1/listings/:id` with an approximate location (~1 km)
+- `listing_photos`: presigned upload (`LISTING_PHOTO`), re-encoded into a 1600 px WebP and a 480 px thumbnail WebP (synchronous; BullMQ comes in Phase 5)
+- `availability_blocks` (inclusive date ranges) and `listing_required_docs`
+- Exact address encrypted with AES-256-GCM (`ADDRESS_ENC_KEY`). `location geography(Point)` is kept in sync by a trigger, with a GIST index for Phase 4.
+- `@RequireVerified()` on create and publish; everything audited
+- **Done when:** e2e covers the moderation rule, the photos, blocks and docs, public privacy, and deletion; coverage ≥ 80%; the OpenAPI client is regenerated
+
+### 3b — Mobile
+**Branch:** `phase/3b-listings-mobile`
+
+- Create/edit listing wizard: photos → details → pricing (earnings preview) → availability → location on the map → required docs → preview → publish
+- "My listings": status, reasons, pause/unpause, edit, delete
+- **Done when:** widget tests cover the wizard through "Sent for review", and the live contract test publishes a real listing
+
+### 3c — Admin
+**Branch:** `phase/3c-listings-admin`
+
+- Listing moderation queue and detail: approve, reject, unpublish, change category
+- Category management
+- The user page lists the user's listings
+- **Done when:** Playwright approves a first listing that then appears publicly, the lender's second listing goes live without review, and Support gets 403
 
 ## Phase 4 — Discovery & search
 **Branch:** `phase/4-discovery`

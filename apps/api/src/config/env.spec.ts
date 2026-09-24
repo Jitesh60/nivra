@@ -7,6 +7,7 @@ const valid = {
   JWT_ADMIN_ACCESS_SECRET: 'b'.repeat(32),
   OTP_PEPPER: 'c'.repeat(32),
   TOTP_ENC_KEY: Buffer.alloc(32, 1).toString('base64'),
+  ADDRESS_ENC_KEY: Buffer.alloc(32, 2).toString('base64'),
   S3_ACCESS_KEY_ID: 'key',
   S3_SECRET_ACCESS_KEY: 'secret',
   S3_PUBLIC_BUCKET: 'public-media',
@@ -57,6 +58,7 @@ describe('validateEnv', () => {
 
   it('rejects a TOTP key that is not 32 bytes', () => {
     expect(() => validateEnv({ ...valid, TOTP_ENC_KEY: 'c2hvcnQ=' })).toThrow(/TOTP_ENC_KEY/);
+    expect(() => validateEnv({ ...valid, ADDRESS_ENC_KEY: 'c2hvcnQ=' })).toThrow(/ADDRESS_ENC_KEY/);
   });
 
   it('requires document encryption outside development', () => {

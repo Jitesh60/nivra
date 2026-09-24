@@ -71,9 +71,8 @@ src/
     ├── waitlist/           # marketing waitlist                                    (Phase 1d)
     ├── media/              # presigned uploads, sharp re-encode pipeline            (Phase 2a)
     ├── documents/          # personal document vault + admin review                 (Phase 2a)
-    ├── categories/         #                                                        (Phase 3)
-    ├── listings/           # CRUD, photos, pricing, required docs                   (Phase 3)
-    ├── availability/       # blocked dates, availability queries                   (Phase 3)
+    ├── categories/         # admin-managed categories, public list                  (Phase 3a)
+    ├── listings/           # CRUD, photos, blocked dates, required docs, moderation (Phase 3a)
     ├── search/             # text + geo + date search                               (Phase 4)
     ├── favorites/          # wishlist                                               (Phase 4)
     ├── chat/               # conversations, messages, Socket.IO gateway              (Phase 5)
@@ -92,7 +91,7 @@ src/
 ```
 
 **Cross-cutting pieces**
-- `JwtAuthGuard` (users), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` + `@RequireVerified()` (requires verified phone and email → 403 `VERIFICATION_REQUIRED` with `details.missing`; applied to listing and booking routes from Phase 3)
+- `JwtAuthGuard` (users), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` + `@RequireVerified()` (requires verified phone and email → 403 `VERIFICATION_REQUIRED` with `details.missing`; applied to listing create/publish in Phase 3, bookings from Phase 6)
 - `ThrottlerGuard` backed by Redis for general rate limits; dedicated OTP limiter
 - Global `ValidationPipe` (whitelist, forbid unknown fields, transform)
 - Global exception filter → `{ error: { code, message, details } }`
@@ -151,20 +150,29 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 
 **Why sessions and refresh tokens are separate tables:** the session ID (`sid` in the access token) stays the same for the whole login, so guards can check on every request that the session is still live. Revoking a session signs that device out immediately, and rotating refresh tokens never invalidates in-flight access tokens.
 
-### 3.3 Later tables (summary)
+### 3.3 Phase 3 tables (built in Phase 3a)
+
+| Table | Purpose | Key fields |
+|---|---|---|
+| `categories` | Admin-managed, flat | `name`, `slug` (unique), `icon` (Material Symbols name), `sort_order`, `is_active`. Nine launch categories seeded by the migration |
+| `listings` | An item for rent | `lender_id`, `category_id`, `title`, `description`, `condition` (NEW/LIKE_NEW/GOOD/FAIR), `brand`, `size`, `price_per_day_paise`, `weekly_discount_pct`, `deposit_paise`, `min_days`, `max_days`, `advance_notice_days`, `lat`/`lng` (exact pin, private), `location geography` (**kept in sync from lat/lng by a trigger**; GIST index for Phase 4), `area_label` (public), `exact_address_enc` (AES-256-GCM, `ADDRESS_ENC_KEY`), `status` (DRAFT/PENDING/LIVE/PAUSED/REJECTED/REMOVED/DELETED), `rejection_reason`, `reviewed_by_id`, `approved_at`, `published_at`. CHECK constraints mirror the limits in `listing-rules.ts` |
+| `listing_photos` | Public bucket `listings/{id}/…` | `key` (≤1600 px WebP), `thumb_key` (≤480 px WebP), `width`, `height`, `sort_order` (0 = cover) |
+| `listing_required_docs` | What a borrower must share (Phase 6) | `doc_type` (GOVERNMENT_ID/COLLEGE_OR_EMPLOYEE_ID/ADDRESS_PROOF/OTHER), `note` (CHECK: required for OTHER); unique per listing and type |
+| `availability_blocks` | Dates the item can't be rented | `starts_on`, `ends_on` (dates, inclusive), `reason` (OWNER_BLOCK; BOOKING comes in Phase 6) |
+
+**Listing lifecycle:** DRAFT → publish → **PENDING** (the lender has no approved listing yet) or **LIVE** (already trusted). An admin approves (sets `approved_at`, so the lender is trusted from then on) or rejects with a reason. A rejected listing goes back to DRAFT when the lender edits it. LIVE ⇄ PAUSED by the lender. An admin can unpublish PENDING, LIVE or PAUSED listings (→ REMOVED, with a reason). DELETED is a soft delete that also removes the photos. Every status change is a status-guarded `updateMany`, so two admins can't both act on the same listing.
+
+**Privacy:** the public `GET /v1/listings/:id` returns `approxLat`/`approxLng` rounded to 2 decimals (~1 km) and `area_label`, never the pin or the address. Listings of a suspended or banned lender aren't public.
+
+### 3.4 Later tables (summary)
 
 | Table | Key fields |
 |---|---|
 | `profiles` (additions) | location `geography(Point)` (Phase 3), ratingAvg, ratingCount (Phase 8) |
-| `categories` | name, slug, icon, parentId, sortOrder, isActive |
-| `listings` | lenderId, categoryId, title, description, condition, pricePerDayPaise, weeklyPricePaise, depositPaise, minDays, maxDays, advanceNoticeDays, location `geography(Point)`, areaLabel, exactAddressEnc, status (DRAFT/PENDING/LIVE/PAUSED/REJECTED/DELETED), search tsvector |
-| `listing_photos` | listingId, key, width, height, sortOrder |
-| `listing_required_docs` | listingId, docType, note |
-| `availability_blocks` | listingId, `during tstzrange`, reason (OWNER_BLOCK / BOOKING) |
 | `conversations` | listingId, borrowerId, lenderId, lastMessageAt; unique(listingId, borrowerId) |
 | `messages` | conversationId, senderId, type (TEXT/IMAGE/OFFER/SYSTEM), body, maskedBody, imageKey, readAt |
 | `offers` | messageId, startDate, endDate, pricePerDayPaise, status (PENDING/ACCEPTED/COUNTERED/DECLINED/EXPIRED), parentOfferId |
-| `bookings` | listingId, borrowerId, lenderId, `during tstzrange`, days, pricePerDayPaise, rentPaise, feePaise, depositPaise, totalPaise, status, handoverCodeHash, returnCodeHash, expiresAt, cancelledBy, cancelReason |
+| `bookings` | listingId, borrowerId, lenderId, `startsOn`/`endsOn` (dates, inclusive), days, pricePerDayPaise, rentPaise, feePaise, depositPaise, totalPaise, status, handoverCodeHash, returnCodeHash, expiresAt, cancelledBy, cancelReason |
 | `booking_document_shares` | bookingId, userDocumentId, requiredDocId, status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
 | `document_access_logs` | shareId, viewerId, viewerType, ip, createdAt |
 | `payments` | bookingId, razorpayOrderId, razorpayPaymentId, amountPaise, status, raw |
@@ -177,12 +185,12 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `notifications` | userId, type, payload, readAt |
 | `device_tokens` | userId, sessionId, fcmToken, platform |
 
-**Double-booking guard** (raw SQL in a migration):
+**Double-booking guard** (raw SQL in a migration; bookings, like availability blocks, are whole days):
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 ALTER TABLE bookings ADD CONSTRAINT bookings_no_overlap
-  EXCLUDE USING gist (listing_id WITH =, during WITH &&)
+  EXCLUDE USING gist (listing_id WITH =, daterange(starts_on, ends_on, '[]') WITH &&)
   WHERE (status IN ('AWAITING_PAYMENT','CONFIRMED','ACTIVE','RETURNED'));
 ```
 
@@ -276,7 +284,12 @@ sequenceDiagram
 | `DOCUMENT_ALREADY_EXISTS` | 409 | A pending or approved document of this type already exists |
 | `DOCUMENT_NOT_PENDING` | 409 | Approving or rejecting a document that's already been reviewed |
 | `USER_STATUS_CONFLICT` | 409 | Suspend/ban/reactivate isn't valid from the user's current status |
-| `VERIFICATION_REQUIRED` | 403 | Route needs a verified phone and email (`details.missing`); applied from Phase 3 |
+| `VERIFICATION_REQUIRED` | 403 | Route needs a verified phone and email (`details.missing`): creating and publishing listings (bookings from Phase 6) |
+| `LISTING_INCOMPLETE` | 400 | Publishing without a photo or location (`details.missing`) |
+| `LISTING_STATUS_CONFLICT` | 409 | Action doesn't fit the listing's status (e.g. approving a listing that isn't pending, editing a removed one) |
+| `LISTING_PHOTO_LIMIT` | 409 | More than 8 photos |
+| `CATEGORY_SLUG_TAKEN` | 409 | Another category uses this slug |
+| `CATEGORY_INACTIVE` | 400 | The category doesn't exist or is hidden |
 
 ### 4.2 Admins — email + password + TOTP 2FA
 
@@ -414,6 +427,8 @@ Locally and in e2e tests, storage is SeaweedFS's S3 API (`infra/docker-compose.y
    - sniffs the magic bytes, never trusting the Content-Type header
    - re-encodes with sharp: avatar → 512×512 WebP (public bucket); document → JPEG, longest side ≤ 2400 px (private bucket, SSE). Re-encoding strips EXIF (including GPS) and neutralises polyglot files; a 40-megapixel input limit guards against decompression bombs.
    - deletes the temp object and the ticket.
+
+**Listing photos (Phase 3a):** the same flow with purpose `LISTING_PHOTO` (≤ 10 MB). `POST /v1/me/listings/:id/photos {key}` finalises it: magic-byte check, then sharp produces a ≤1600 px WebP and a ≤480 px thumbnail WebP (EXIF stripped) in the public bucket under `listings/{listingId}/`. Deleting a photo or listing removes the objects. Resizing runs in the request for now; it moves to a BullMQ job in Phase 5.
 
 **Viewing your own document / admin review:** `GET /v1/me/documents/:id/view?side=` and `GET /v1/admin/documents/:id/view?side=` return a 5-minute presigned GET (`no-store`, inline) and write `document.view` / `admin.document.view` to `audit_logs`. Document list responses never contain storage keys or URLs.
 

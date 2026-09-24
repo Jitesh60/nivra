@@ -508,6 +508,1391 @@
         ]
       }
     },
+    "/v1/config": {
+      "get": {
+        "operationId": "ConfigController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfigDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Marketplace rules the apps use for forms and previews (public)",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/v1/listings/{id}": {
+      "get": {
+        "operationId": "PublicListingsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicListingDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A live listing (public; approximate location only)",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/v1/me/listings": {
+      "get": {
+        "operationId": "MyListingsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyListingDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · listings"
+        ]
+      },
+      "post": {
+        "operationId": "MyListingsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "VERIFICATION_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a draft listing (needs a verified phone and email)",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}": {
+      "get": {
+        "operationId": "MyListingsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · listings"
+        ]
+      },
+      "patch": {
+        "operationId": "MyListingsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit; a rejected listing goes back to draft",
+        "tags": [
+          "me · listings"
+        ]
+      },
+      "delete": {
+        "operationId": "MyListingsController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a listing and its photos",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/photos": {
+      "post": {
+        "operationId": "MyListingsController_addPhoto_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LISTING_PHOTO_LIMIT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a photo from an upload (purpose LISTING_PHOTO); max 8",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/photos/order": {
+      "put": {
+        "operationId": "MyListingsController_reorderPhotos_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder photos (cover first)",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/photos/{photoId}": {
+      "delete": {
+        "operationId": "MyListingsController_deletePhoto_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "photoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/blocks": {
+      "put": {
+        "operationId": "MyListingsController_setBlocks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlocksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the blocked dates (inclusive ranges, next 365 days)",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/required-docs": {
+      "put": {
+        "operationId": "MyListingsController_setRequiredDocs_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequiredDocsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the documents a borrower must share",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/publish": {
+      "post": {
+        "operationId": "MyListingsController_publish_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "LISTING_INCOMPLETE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a draft: your first listing is reviewed; later ones go live at once",
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/pause": {
+      "post": {
+        "operationId": "MyListingsController_pause_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/me/listings/{id}/unpause": {
+      "post": {
+        "operationId": "MyListingsController_unpause_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings": {
+      "get": {
+        "operationId": "AdminListingsController_list_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "PENDING",
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "PENDING",
+                "LIVE",
+                "PAUSED",
+                "REJECTED",
+                "REMOVED",
+                "DELETED"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Title, or the lender’s phone or name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listings by status (pending: oldest first), with search",
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings/{id}": {
+      "get": {
+        "operationId": "AdminListingsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings/{id}/approve": {
+      "post": {
+        "operationId": "AdminListingsController_approve_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LISTING_STATUS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings/{id}/reject": {
+      "post": {
+        "operationId": "AdminListingsController_reject_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LISTING_STATUS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings/{id}/unpublish": {
+      "post": {
+        "operationId": "AdminListingsController_unpublish_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LISTING_STATUS_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Take a listing down (REMOVED), with a reason the lender sees",
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/listings/{id}/category": {
+      "patch": {
+        "operationId": "AdminListingsController_changeCategory_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · listings"
+        ]
+      }
+    },
+    "/v1/admin/auth/login": {
+      "post": {
+        "operationId": "AdminAuthController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ACCOUNT_LOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Step 1: email + password → 2FA token",
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/2fa/setup": {
+      "post": {
+        "operationId": "AdminAuthController_setup_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorSetupDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Step 2a (first login): get the authenticator QR code",
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/2fa/verify": {
+      "post": {
+        "operationId": "AdminAuthController_verify_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwoFactorVerifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSessionResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "MFA_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Step 2b: authenticator or recovery code → session tokens",
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/refresh": {
+      "post": {
+        "operationId": "AdminAuthController_refresh_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokensDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/logout": {
+      "post": {
+        "operationId": "AdminAuthController_logout_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/me": {
+      "get": {
+        "operationId": "AdminAuthController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/me/password": {
+      "post": {
+        "operationId": "AdminAuthController_changePassword_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change password (signs out other sessions)",
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/me/sessions": {
+      "get": {
+        "operationId": "AdminAuthController_sessionsList_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminSessionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/admin/me/sessions/{id}": {
+      "delete": {
+        "operationId": "AdminAuthController_revokeSession_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · auth"
+        ]
+      }
+    },
+    "/v1/categories": {
+      "get": {
+        "operationId": "CategoriesController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Active categories, in display order (public)",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/v1/admin/categories": {
+      "get": {
+        "operationId": "AdminCategoriesController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCategoryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · categories"
+        ]
+      },
+      "post": {
+        "operationId": "AdminCategoriesController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CATEGORY_SLUG_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · categories"
+        ]
+      }
+    },
+    "/v1/admin/categories/order": {
+      "put": {
+        "operationId": "AdminCategoriesController_reorder_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCategoryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the display order (send every id)",
+        "tags": [
+          "admin · categories"
+        ]
+      }
+    },
+    "/v1/admin/categories/{id}": {
+      "patch": {
+        "operationId": "AdminCategoriesController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CATEGORY_SLUG_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename, change slug or icon, or hide/show a category",
+        "tags": [
+          "admin · categories"
+        ]
+      }
+    },
     "/v1/me/documents": {
       "get": {
         "operationId": "MyDocumentsController_list_v1",
@@ -903,302 +2288,6 @@
         ],
         "tags": [
           "admin · documents"
-        ]
-      }
-    },
-    "/v1/admin/auth/login": {
-      "post": {
-        "operationId": "AdminAuthController_login_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminLoginDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminLoginResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "INVALID_CREDENTIALS",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "ACCOUNT_LOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Step 1: email + password → 2FA token",
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/auth/2fa/setup": {
-      "post": {
-        "operationId": "AdminAuthController_setup_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MfaTokenDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TwoFactorSetupDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Step 2a (first login): get the authenticator QR code",
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/auth/2fa/verify": {
-      "post": {
-        "operationId": "AdminAuthController_verify_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TwoFactorVerifyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSessionResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "MFA_INVALID",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Step 2b: authenticator or recovery code → session tokens",
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/auth/refresh": {
-      "post": {
-        "operationId": "AdminAuthController_refresh_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminRefreshDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminTokensDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/auth/logout": {
-      "post": {
-        "operationId": "AdminAuthController_logout_v1",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/me": {
-      "get": {
-        "operationId": "AdminAuthController_me_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminMeDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/me/password": {
-      "post": {
-        "operationId": "AdminAuthController_changePassword_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminMeDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Change password (signs out other sessions)",
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/me/sessions": {
-      "get": {
-        "operationId": "AdminAuthController_sessionsList_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminSessionDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin · auth"
-        ]
-      }
-    },
-    "/v1/admin/me/sessions/{id}": {
-      "delete": {
-        "operationId": "AdminAuthController_revokeSession_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "admin · auth"
         ]
       }
     },
@@ -2022,7 +3111,8 @@
             "type": "string",
             "enum": [
               "AVATAR",
-              "DOCUMENT"
+              "DOCUMENT",
+              "LISTING_PHOTO"
             ]
           },
           "contentType": {
@@ -2075,129 +3165,160 @@
           "expiresInSec"
         ]
       },
-      "DocumentDto": {
+      "ListingLimitDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ]
+      },
+      "AppConfigDto": {
+        "type": "object",
+        "properties": {
+          "commissionBps": {
+            "type": "number",
+            "example": 1000,
+            "description": "Platform commission on rent, basis points"
+          },
+          "pricePerDayPaise": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "depositPaise": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "weeklyDiscountPct": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "rentalDays": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "advanceNoticeDays": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "photos": {
+            "$ref": "#/components/schemas/ListingLimitDto"
+          },
+          "maxBlockedRanges": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "commissionBps",
+          "pricePerDayPaise",
+          "depositPaise",
+          "weeklyDiscountPct",
+          "rentalDays",
+          "advanceNoticeDays",
+          "photos",
+          "maxBlockedRanges"
+        ]
+      },
+      "CategoryDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "type": {
+          "name": {
             "type": "string",
-            "enum": [
-              "AADHAAR_MASKED",
-              "PAN",
-              "DRIVING_LICENCE",
-              "PASSPORT",
-              "VOTER_ID",
-              "COLLEGE_ID",
-              "EMPLOYEE_ID",
-              "ADDRESS_PROOF",
-              "OTHER"
-            ]
+            "example": "Trekking & outdoor gear"
           },
-          "label": {
+          "slug": {
             "type": "string",
-            "nullable": true
+            "example": "trekking-outdoor"
           },
-          "status": {
+          "icon": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "APPROVED",
-              "REJECTED"
-            ]
-          },
-          "rejectionReason": {
-            "type": "string",
-            "nullable": true
-          },
-          "hasBack": {
-            "type": "boolean",
-            "description": "Whether a back side was uploaded"
-          },
-          "expiresOn": {
-            "type": "string",
-            "format": "date",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "reviewedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "example": "hiking",
+            "description": "Material Symbols icon name"
           }
         },
         "required": [
           "id",
-          "type",
-          "status",
-          "hasBack",
-          "createdAt"
+          "name",
+          "slug",
+          "icon"
         ]
       },
-      "CreateDocumentDto": {
+      "ListingPhotoDto": {
         "type": "object",
         "properties": {
-          "type": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "Gallery size (≤1600 px WebP)"
+          },
+          "thumbUrl": {
+            "type": "string",
+            "description": "Card size (≤480 px WebP)"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "thumbUrl",
+          "width",
+          "height"
+        ]
+      },
+      "RequiredDocDto": {
+        "type": "object",
+        "properties": {
+          "docType": {
             "type": "string",
             "enum": [
-              "AADHAAR_MASKED",
-              "PAN",
-              "DRIVING_LICENCE",
-              "PASSPORT",
-              "VOTER_ID",
-              "COLLEGE_ID",
-              "EMPLOYEE_ID",
+              "GOVERNMENT_ID",
+              "COLLEGE_OR_EMPLOYEE_ID",
               "ADDRESS_PROOF",
               "OTHER"
             ]
           },
-          "label": {
+          "note": {
             "type": "string",
-            "description": "Required when type is OTHER",
-            "example": "Gym membership card"
-          },
-          "frontKey": {
-            "type": "string",
-            "description": "`key` from POST /v1/uploads (purpose DOCUMENT) for the front side"
-          },
-          "backKey": {
-            "type": "string",
-            "description": "Upload key for the back side, if the document has one"
-          },
-          "expiresOn": {
-            "type": "string",
-            "format": "date",
-            "example": "2031-06-30"
+            "nullable": true
           }
         },
         "required": [
-          "type",
-          "frontKey"
+          "docType"
         ]
       },
-      "DocumentViewDto": {
+      "BlockDto": {
         "type": "object",
         "properties": {
-          "url": {
+          "startsOn": {
             "type": "string",
-            "description": "Short-lived URL to the image"
+            "format": "date"
           },
-          "expiresInSec": {
-            "type": "number",
-            "example": 300
+          "endsOn": {
+            "type": "string",
+            "format": "date"
           }
         },
         "required": [
-          "url",
-          "expiresInSec"
+          "startsOn",
+          "endsOn"
         ]
       },
-      "DocumentUserDto": {
+      "LenderSummaryDto": {
         "type": "object",
         "properties": {
           "id": {
@@ -2208,99 +3329,781 @@
             "type": "string",
             "nullable": true
           },
-          "phone": {
-            "type": "string"
-          },
-          "email": {
+          "avatarUrl": {
             "type": "string",
             "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "idVerified": {
+            "type": "boolean"
+          },
+          "memberSince": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
           "id",
-          "phone"
+          "phoneVerified",
+          "emailVerified",
+          "idVerified",
+          "memberSince"
         ]
       },
-      "AdminDocumentDto": {
+      "PublicListingDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "type": {
+          "category": {
+            "$ref": "#/components/schemas/CategoryDto"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "condition": {
             "type": "string",
             "enum": [
-              "AADHAAR_MASKED",
-              "PAN",
-              "DRIVING_LICENCE",
-              "PASSPORT",
-              "VOTER_ID",
-              "COLLEGE_ID",
-              "EMPLOYEE_ID",
-              "ADDRESS_PROOF",
-              "OTHER"
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR"
             ]
           },
-          "label": {
+          "brand": {
             "type": "string",
             "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "weeklyDiscountPct": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "minDays": {
+            "type": "number"
+          },
+          "maxDays": {
+            "type": "number"
+          },
+          "advanceNoticeDays": {
+            "type": "number"
+          },
+          "areaLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "photos": {
+            "description": "Cover first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingPhotoDto"
+            }
+          },
+          "requiredDocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocDto"
+            }
+          },
+          "blocks": {
+            "description": "Upcoming blocked dates",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockDto"
+            }
+          },
+          "approxLat": {
+            "type": "number",
+            "description": "Rounded to ~1 km"
+          },
+          "approxLng": {
+            "type": "number",
+            "description": "Rounded to ~1 km"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/LenderSummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "description",
+          "condition",
+          "pricePerDayPaise",
+          "weeklyDiscountPct",
+          "depositPaise",
+          "minDays",
+          "maxDays",
+          "advanceNoticeDays",
+          "photos",
+          "requiredDocs",
+          "blocks",
+          "approxLat",
+          "approxLng",
+          "lender"
+        ]
+      },
+      "MyListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryDto"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR"
+            ]
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "weeklyDiscountPct": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "minDays": {
+            "type": "number"
+          },
+          "maxDays": {
+            "type": "number"
+          },
+          "advanceNoticeDays": {
+            "type": "number"
+          },
+          "areaLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "photos": {
+            "description": "Cover first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingPhotoDto"
+            }
+          },
+          "requiredDocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocDto"
+            }
+          },
+          "blocks": {
+            "description": "Upcoming blocked dates",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockDto"
+            }
           },
           "status": {
             "type": "string",
             "enum": [
+              "DRAFT",
               "PENDING",
-              "APPROVED",
-              "REJECTED"
+              "LIVE",
+              "PAUSED",
+              "REJECTED",
+              "REMOVED",
+              "DELETED"
             ]
           },
           "rejectionReason": {
             "type": "string",
             "nullable": true
           },
-          "hasBack": {
-            "type": "boolean",
-            "description": "Whether a back side was uploaded"
+          "lat": {
+            "type": "number",
+            "nullable": true
           },
-          "expiresOn": {
+          "lng": {
+            "type": "number",
+            "nullable": true
+          },
+          "exactAddress": {
             "type": "string",
-            "format": "date",
+            "nullable": true
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
-          "reviewedAt": {
+          "updatedAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "user": {
-            "$ref": "#/components/schemas/DocumentUserDto"
-          },
-          "reviewedBy": {
-            "type": "string",
-            "nullable": true,
-            "description": "Admin who reviewed it"
+            "format": "date-time"
           }
         },
         "required": [
           "id",
-          "type",
+          "category",
+          "title",
+          "description",
+          "condition",
+          "pricePerDayPaise",
+          "weeklyDiscountPct",
+          "depositPaise",
+          "minDays",
+          "maxDays",
+          "advanceNoticeDays",
+          "photos",
+          "requiredDocs",
+          "blocks",
           "status",
-          "hasBack",
           "createdAt",
-          "user"
+          "updatedAt"
         ]
       },
-      "AdminDocumentPageDto": {
+      "CreateListingDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Quechua 2-person trekking tent"
+          },
+          "description": {
+            "type": "string",
+            "example": "Waterproof, used on 3 treks. Comes with pegs and a carry bag."
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR"
+            ]
+          },
+          "brand": {
+            "type": "string",
+            "example": "Decathlon"
+          },
+          "size": {
+            "type": "string",
+            "example": "UK 9",
+            "description": "Size, if it matters (shoes, clothes)"
+          },
+          "pricePerDayPaise": {
+            "type": "number",
+            "example": 15000,
+            "description": "Rent per day in paise (₹10–₹10,000)"
+          },
+          "weeklyDiscountPct": {
+            "type": "number",
+            "example": 10,
+            "description": "Discount % for rentals of 7+ days (0–50)"
+          },
+          "depositPaise": {
+            "type": "number",
+            "example": 100000,
+            "description": "Refundable deposit in paise (₹0–₹50,000)"
+          },
+          "minDays": {
+            "type": "number",
+            "example": 1
+          },
+          "maxDays": {
+            "type": "number",
+            "example": 30
+          },
+          "advanceNoticeDays": {
+            "type": "number",
+            "example": 1,
+            "description": "Days of notice before a rental can start"
+          },
+          "lat": {
+            "type": "number",
+            "example": 18.5074,
+            "description": "Exact pickup point (never public)"
+          },
+          "lng": {
+            "type": "number",
+            "example": 73.8077
+          },
+          "areaLabel": {
+            "type": "string",
+            "example": "Kothrud, Pune",
+            "description": "Shown publicly"
+          },
+          "exactAddress": {
+            "type": "string",
+            "example": "Flat 4B, Sai Residency, Paud Road",
+            "description": "Encrypted; shared with a borrower only after a confirmed booking. Empty string clears it."
+          }
+        },
+        "required": [
+          "categoryId",
+          "title",
+          "description",
+          "condition",
+          "pricePerDayPaise",
+          "depositPaise"
+        ]
+      },
+      "UpdateListingDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Quechua 2-person trekking tent"
+          },
+          "description": {
+            "type": "string",
+            "example": "Waterproof, used on 3 treks. Comes with pegs and a carry bag."
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR"
+            ]
+          },
+          "brand": {
+            "type": "string",
+            "example": "Decathlon"
+          },
+          "size": {
+            "type": "string",
+            "example": "UK 9",
+            "description": "Size, if it matters (shoes, clothes)"
+          },
+          "pricePerDayPaise": {
+            "type": "number",
+            "example": 15000,
+            "description": "Rent per day in paise (₹10–₹10,000)"
+          },
+          "weeklyDiscountPct": {
+            "type": "number",
+            "example": 10,
+            "description": "Discount % for rentals of 7+ days (0–50)"
+          },
+          "depositPaise": {
+            "type": "number",
+            "example": 100000,
+            "description": "Refundable deposit in paise (₹0–₹50,000)"
+          },
+          "minDays": {
+            "type": "number",
+            "example": 1
+          },
+          "maxDays": {
+            "type": "number",
+            "example": 30
+          },
+          "advanceNoticeDays": {
+            "type": "number",
+            "example": 1,
+            "description": "Days of notice before a rental can start"
+          },
+          "lat": {
+            "type": "number",
+            "example": 18.5074,
+            "description": "Exact pickup point (never public)"
+          },
+          "lng": {
+            "type": "number",
+            "example": 73.8077
+          },
+          "areaLabel": {
+            "type": "string",
+            "example": "Kothrud, Pune",
+            "description": "Shown publicly"
+          },
+          "exactAddress": {
+            "type": "string",
+            "example": "Flat 4B, Sai Residency, Paud Road",
+            "description": "Encrypted; shared with a borrower only after a confirmed booking. Empty string clears it."
+          }
+        }
+      },
+      "AddPhotoDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "`key` from POST /v1/uploads (purpose LISTING_PHOTO)"
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "PhotoOrderDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Every photo id, cover first",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "BlockRangeDto": {
+        "type": "object",
+        "properties": {
+          "startsOn": {
+            "type": "string",
+            "example": "2026-10-02",
+            "format": "date"
+          },
+          "endsOn": {
+            "type": "string",
+            "example": "2026-10-05",
+            "format": "date",
+            "description": "Inclusive"
+          }
+        },
+        "required": [
+          "startsOn",
+          "endsOn"
+        ]
+      },
+      "BlocksDto": {
+        "type": "object",
+        "properties": {
+          "ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockRangeDto"
+            }
+          }
+        },
+        "required": [
+          "ranges"
+        ]
+      },
+      "RequiredDocInputDto": {
+        "type": "object",
+        "properties": {
+          "docType": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_ID",
+              "COLLEGE_OR_EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "example": "Trek permit",
+            "description": "Required for OTHER"
+          }
+        },
+        "required": [
+          "docType"
+        ]
+      },
+      "RequiredDocsDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminDocumentDto"
+              "$ref": "#/components/schemas/RequiredDocInputDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PublishResultDto": {
+        "type": "object",
+        "properties": {
+          "listing": {
+            "$ref": "#/components/schemas/MyListingDto"
+          },
+          "inReview": {
+            "type": "boolean",
+            "description": "True when it waits for review (a lender’s first listing)"
+          }
+        },
+        "required": [
+          "listing",
+          "inReview"
+        ]
+      },
+      "AdminLenderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "idVerified": {
+            "type": "boolean"
+          },
+          "memberSince": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "BANNED",
+              "DELETED"
+            ]
+          },
+          "firstListing": {
+            "type": "boolean",
+            "description": "The lender has never had a listing approved"
+          }
+        },
+        "required": [
+          "id",
+          "phoneVerified",
+          "emailVerified",
+          "idVerified",
+          "memberSince",
+          "phone",
+          "status",
+          "firstListing"
+        ]
+      },
+      "AdminListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryDto"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR"
+            ]
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "weeklyDiscountPct": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "minDays": {
+            "type": "number"
+          },
+          "maxDays": {
+            "type": "number"
+          },
+          "advanceNoticeDays": {
+            "type": "number"
+          },
+          "areaLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "photos": {
+            "description": "Cover first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingPhotoDto"
+            }
+          },
+          "requiredDocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocDto"
+            }
+          },
+          "blocks": {
+            "description": "Upcoming blocked dates",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockDto"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING",
+              "LIVE",
+              "PAUSED",
+              "REJECTED",
+              "REMOVED",
+              "DELETED"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "approxLat": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rounded to ~1 km"
+          },
+          "approxLng": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rounded to ~1 km"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/AdminLenderDto"
+          },
+          "reviewedBy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Admin who last reviewed it"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "description",
+          "condition",
+          "pricePerDayPaise",
+          "weeklyDiscountPct",
+          "depositPaise",
+          "minDays",
+          "maxDays",
+          "advanceNoticeDays",
+          "photos",
+          "requiredDocs",
+          "blocks",
+          "status",
+          "lender",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminListingPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminListingDto"
             }
           },
           "nextCursor": {
@@ -2313,16 +4116,28 @@
           "items"
         ]
       },
-      "RejectDocumentDto": {
+      "ListingReasonDto": {
         "type": "object",
         "properties": {
           "reason": {
             "type": "string",
-            "example": "The photo is blurry. Please upload a clearer one."
+            "example": "Photos show a different item than the title."
           }
         },
         "required": [
           "reason"
+        ]
+      },
+      "ChangeCategoryDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "categoryId"
         ]
       },
       "AdminLoginDto": {
@@ -2592,6 +4407,353 @@
           "current"
         ]
       },
+      "AdminCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Trekking & outdoor gear"
+          },
+          "slug": {
+            "type": "string",
+            "example": "trekking-outdoor"
+          },
+          "icon": {
+            "type": "string",
+            "example": "hiking",
+            "description": "Material Symbols icon name"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "listingCount": {
+            "type": "number",
+            "description": "Listings in this category (any status except deleted)"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "icon",
+          "sortOrder",
+          "isActive",
+          "listingCount"
+        ]
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Musical instruments"
+          },
+          "slug": {
+            "type": "string",
+            "example": "musical-instruments",
+            "description": "lowercase, digits and dashes"
+          },
+          "icon": {
+            "type": "string",
+            "example": "music_note"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "icon"
+        ]
+      },
+      "CategoryOrderDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Every category id, in the new order",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Hidden from the apps when false; existing listings stay"
+          }
+        }
+      },
+      "DocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasBack": {
+            "type": "boolean",
+            "description": "Whether a back side was uploaded"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "hasBack",
+          "createdAt"
+        ]
+      },
+      "CreateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Required when type is OTHER",
+            "example": "Gym membership card"
+          },
+          "frontKey": {
+            "type": "string",
+            "description": "`key` from POST /v1/uploads (purpose DOCUMENT) for the front side"
+          },
+          "backKey": {
+            "type": "string",
+            "description": "Upload key for the back side, if the document has one"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2031-06-30"
+          }
+        },
+        "required": [
+          "type",
+          "frontKey"
+        ]
+      },
+      "DocumentViewDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Short-lived URL to the image"
+          },
+          "expiresInSec": {
+            "type": "number",
+            "example": 300
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSec"
+        ]
+      },
+      "DocumentUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "phone"
+        ]
+      },
+      "AdminDocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasBack": {
+            "type": "boolean",
+            "description": "Whether a back side was uploaded"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/DocumentUserDto"
+          },
+          "reviewedBy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Admin who reviewed it"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "hasBack",
+          "createdAt",
+          "user"
+        ]
+      },
+      "AdminDocumentPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDocumentDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RejectDocumentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "The photo is blurry. Please upload a clearer one."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
       "CreateAdminDto": {
         "type": "object",
         "properties": {
@@ -2678,6 +4840,44 @@
           "items"
         ]
       },
+      "AdminUserListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING",
+              "LIVE",
+              "PAUSED",
+              "REJECTED",
+              "REMOVED",
+              "DELETED"
+            ]
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "pricePerDayPaise",
+          "createdAt"
+        ]
+      },
       "ActivityDto": {
         "type": "object",
         "properties": {
@@ -2723,6 +4923,13 @@
               "$ref": "#/components/schemas/DocumentDto"
             }
           },
+          "listings": {
+            "description": "Not deleted, newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserListingDto"
+            }
+          },
           "activeSessions": {
             "type": "number"
           },
@@ -2737,6 +4944,7 @@
         "required": [
           "user",
           "documents",
+          "listings",
           "activeSessions",
           "activity"
         ]

@@ -105,6 +105,7 @@ export class AdminUsersController {
     return {
       user: this.presenter.present(d.user),
       documents: d.documents.map(DocumentDto.from),
+      listings: d.listings.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() })),
       activeSessions: d.activeSessions,
       activity: d.activity.map((a) => ({
         action: a.action,

@@ -40,6 +40,7 @@ model User {
   otpChallenges OtpChallenge[]
   profile       Profile?
   documents     UserDocument[]
+  listings      Listing[]
 
   @@map("users")
 }
@@ -79,6 +80,7 @@ model AdminUser {
   sessions          Session[]
   recoveryCodes     AdminRecoveryCode[]
   reviewedDocuments UserDocument[]
+  reviewedListings  Listing[]
 
   @@map("admin_users")
 }
@@ -284,4 +286,156 @@ model UserDocument {
   @@index([userId])
   @@index([status, createdAt])
   @@map("user_documents")
+}
+
+// ─── Phase 3: listings & categories ──────────────────────────────────────────
+
+/// Admin-managed item categories (flat for the MVP). Launch set seeded by the migration.
+model Category {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  slug      String   @unique
+  /// Material Symbols icon name shown in the apps, e.g. "hiking".
+  icon      String
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  listings Listing[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
+enum ListingStatus {
+  /// Being written by the lender; never public.
+  DRAFT
+  /// Waiting for admin review (a lender's first listing).
+  PENDING
+  LIVE
+  /// Hidden by the lender; can be unpaused.
+  PAUSED
+  /// Admin sent it back with a reason; editing returns it to DRAFT.
+  REJECTED
+  /// Unpublished by an admin.
+  REMOVED
+  /// Deleted by the lender (soft delete; photos removed from storage).
+  DELETED
+}
+
+/// An item a lender offers for rent. Money is in paise. The exact pickup point
+/// (lat/lng) and address are private; the public API shows an approximate
+/// location and `areaLabel`. `location` (geography) is kept in sync with lat/lng
+/// by a trigger (see the migration) and used for radius search in Phase 4.
+model Listing {
+  id                String                    @id @default(uuid(7)) @db.Uuid
+  lenderId          String                    @map("lender_id") @db.Uuid
+  categoryId        String                    @map("category_id") @db.Uuid
+  title             String
+  description       String
+  condition         ItemCondition
+  brand             String?
+  size              String?
+  pricePerDayPaise  Int                       @map("price_per_day_paise")
+  /// Discount for rentals of 7+ days, 0–50.
+  weeklyDiscountPct Int                       @default(0) @map("weekly_discount_pct")
+  depositPaise      Int                       @map("deposit_paise")
+  minDays           Int                       @default(1) @map("min_days")
+  maxDays           Int                       @default(30) @map("max_days")
+  advanceNoticeDays Int                       @default(1) @map("advance_notice_days")
+  lat               Float?
+  lng               Float?
+  location          Unsupported("geography")?
+  /// Public, e.g. "Kothrud, Pune".
+  areaLabel         String?                   @map("area_label")
+  /// AES-256-GCM (ADDRESS_ENC_KEY); shared with a borrower only after a confirmed booking.
+  exactAddressEnc   String?                   @map("exact_address_enc")
+  status            ListingStatus             @default(DRAFT)
+  rejectionReason   String?                   @map("rejection_reason")
+  reviewedById      String?                   @map("reviewed_by_id") @db.Uuid
+  reviewedAt        DateTime?                 @map("reviewed_at")
+  /// Set when an admin approves it. A lender with any approved listing publishes straight to LIVE.
+  approvedAt        DateTime?                 @map("approved_at")
+  publishedAt       DateTime?                 @map("published_at")
+  deletedAt         DateTime?                 @map("deleted_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  lender       User                 @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  category     Category             @relation(fields: [categoryId], references: [id])
+  reviewedBy   AdminUser?           @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  photos       ListingPhoto[]
+  requiredDocs ListingRequiredDoc[]
+  blocks       AvailabilityBlock[]
+
+  @@index([lenderId])
+  @@index([status, createdAt])
+  @@index([categoryId, status])
+  @@index([location], map: "listings_location_gist", type: Gist)
+  @@map("listings")
+}
+
+/// Processed photo in the public bucket: `key` (≤1600px WebP) and `thumbKey` (≤480px WebP).
+model ListingPhoto {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  key       String
+  thumbKey  String   @map("thumb_key")
+  width     Int
+  height    Int
+  sortOrder Int      @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, sortOrder])
+  @@map("listing_photos")
+}
+
+/// What a borrower must share before a booking (Phase 6 does the sharing).
+enum RequiredDocType {
+  /// Any of Aadhaar (masked), PAN, driving licence, passport or voter ID.
+  GOVERNMENT_ID
+  COLLEGE_OR_EMPLOYEE_ID
+  ADDRESS_PROOF
+  OTHER
+}
+
+model ListingRequiredDoc {
+  id        String          @id @default(uuid(7)) @db.Uuid
+  listingId String          @map("listing_id") @db.Uuid
+  docType   RequiredDocType @map("doc_type")
+  /// Required for OTHER (CHECK in the migration), e.g. "Trek permit".
+  note      String?
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, docType])
+  @@map("listing_required_docs")
+}
+
+enum BlockReason {
+  OWNER_BLOCK
+}
+
+/// Dates the item can't be rented (inclusive). Bookings add their own blocks in Phase 6.
+model AvailabilityBlock {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  listingId String      @map("listing_id") @db.Uuid
+  startsOn  DateTime    @map("starts_on") @db.Date
+  endsOn    DateTime    @map("ends_on") @db.Date
+  reason    BlockReason @default(OWNER_BLOCK)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, startsOn])
+  @@map("availability_blocks")
 }

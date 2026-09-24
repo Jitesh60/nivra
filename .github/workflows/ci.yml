@@ -75,6 +75,7 @@ jobs:
       JWT_ADMIN_ACCESS_SECRET: ci-admin-access-secret-0123456789abcdef
       OTP_PEPPER: ci-otp-pepper-0123456789abcdef0123456789
       TOTP_ENC_KEY: Y2ktdG90cC1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+      ADDRESS_ENC_KEY: Y2ktYWRkcmVzcy1rZXktMzItYnl0ZXMtbG9uZyEhISE=
       SAJHA_API_URL: http://localhost:3000
       # The website's waitlist form calls the API from the browser.
       CORS_ORIGINS: http://localhost:3001,http://localhost:3002

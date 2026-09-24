@@ -36,7 +36,16 @@ export class AdminUsersService {
       orderBy: { createdAt: 'desc' },
     });
     const documents = allDocuments.filter((d) => d.deletedAt === null);
-    const [activeSessions, activity] = await Promise.all([
+    // All listings, deleted too, so moderation of them shows up in the trail.
+    const listingIds = (
+      await this.prisma.listing.findMany({ where: { lenderId: id }, select: { id: true } })
+    ).map((l) => l.id);
+    const [listings, activeSessions, activity] = await Promise.all([
+      this.prisma.listing.findMany({
+        where: { lenderId: id, status: { not: 'DELETED' } },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, status: true, pricePerDayPaise: true, createdAt: true },
+      }),
       this.prisma.session.count({
         where: { userId: id, revokedAt: null, expiresAt: { gt: new Date() } },
       }),
@@ -46,13 +55,14 @@ export class AdminUsersService {
             { targetId: id },
             { actorType: 'USER', actorId: id },
             { targetType: 'user_document', targetId: { in: allDocuments.map((d) => d.id) } },
+            { targetType: 'listing', targetId: { in: listingIds } },
           ],
         },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
     ]);
-    return { user, documents, activeSessions, activity };
+    return { user, documents, listings, activeSessions, activity };
   }
 
   /** Suspend or ban (signs the user out everywhere) or reactivate, with a reason. */
