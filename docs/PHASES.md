@@ -21,7 +21,8 @@ Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.m
 | 3a | Listings & categories — API | `phase/3a-listings-api` | api |
 | 3b | Listings & categories — Mobile | `phase/3b-listings-mobile` | mobile |
 | 3c | Listings & categories — Admin | `phase/3c-listings-admin` | admin |
-| 4 | Discovery & search | `phase/4-discovery` | api, mobile |
+| 4a | Discovery & search — API | `phase/4a-discovery-api` | api |
+| 4b | Discovery & search — Mobile | `phase/4b-discovery-mobile` | mobile |
 | 5 | Chat, offers & notifications | `phase/5-chat-offers` | api, mobile, admin |
 | 6 | Bookings & document sharing | `phase/6-bookings` | api, mobile, admin |
 | 7 | Payments & payouts | `phase/7-payments` | api, mobile, admin |
@@ -277,11 +278,37 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** a
 - **Done when:** Playwright approves a first listing that then appears publicly, the lender's second listing goes live without review, and Support gets 403
 
 ## Phase 4 — Discovery & search
-**Branch:** `phase/4-discovery`
+Delivered as two sub-phases, each with its own branch and PR. **Done when:** a borrower finds items within 5 km that are free on their dates, sorted by distance.
 
-- **API:** full-text search (`tsvector`), filters, PostGIS radius search, date-availability filter, sorting, cursor pagination, favourites
-- **Mobile:** home feed (categories, near you, popular), search with filters and a date picker, listing detail with a price breakdown for the chosen dates, lender mini-profile, wishlist
-- **Done when:** a borrower finds items within 5 km that are free on their dates, sorted by distance
+**Decisions:**
+- **Guests can browse** home, search and listing detail; sign-in is asked for at save, chat and book.
+- **Search area:** GPS, or a spot picked on the OpenStreetMap map. 5 km by default, 1–25 km.
+- **"Popular this week":** views (one per viewer per day) + 3× wishlist saves over 7 days.
+- **Distances** are rounded to 0.5 km, and anything under 1 km reads "< 1 km".
+- **Rental days are inclusive:** pickup day to return day.
+- **Recently viewed** is kept on the device.
+
+### 4a — API
+**Branch:** `phase/4a-discovery-api`
+
+- `GET /v1/search`:
+  - keywords: Postgres full text, `english` stemming, weighted title > brand/category > description
+  - `lat`/`lng`/`radiusKm`: PostGIS `ST_DWithin` on the GIST index
+  - dates: free of blocked dates, within min/max days and advance notice
+  - filters: category, price range, condition, verified lenders only
+  - sort by distance, relevance, price or newest
+  - keyset cursor paging
+- `GET /v1/home` (categories, near you, popular this week, newest), `GET /v1/listings?ids=` (cards), `GET /v1/listings/:id/quote`
+- Wishlist: `/v1/me/favorites`. Listing views are counted on the public detail; guests are keyed by a salted hash, with no raw IP stored.
+- An optional sign-in guard personalises public routes (saved flags); a stale token gets 401, never a silent guest.
+- **Done when:** e2e covers radius and distance order, stemming, date availability, filters, paging, privacy (no coordinates), the wishlist, view dedupe and popular ranking, and quotes; coverage ≥ 80%.
+
+### 4b — Mobile
+**Branch:** `phase/4b-discovery-mobile`
+
+- Guest browsing, a search area (GPS or map), the home feed, search with filters and a date picker, and listing detail with a price breakdown and the lender mini-profile
+- Wishlist, and recently viewed
+- **Done when:** widget tests cover the guest → sign-in-to-save flow, filters, the dates quote and the wishlist, and the live contract test searches the local API
 
 ## Phase 5 — Chat, offers & notifications
 **Branch:** `phase/5-chat-offers`

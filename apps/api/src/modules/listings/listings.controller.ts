@@ -33,7 +33,16 @@ import {
   type AdminAuth,
 } from '../admin-auth/admin-jwt.guard.js';
 import { CurrentUser, JwtAuthGuard, type UserAuth } from '../auth/jwt-auth.guard.js';
+import { OptionalJwtGuard, OptionalUser } from '../auth/optional-jwt.guard.js';
 import { RequireVerified } from '../auth/verified.guard.js';
+import {
+  CardsQueryDto,
+  ListingCardDto,
+  QuoteDto,
+  QuoteQueryDto,
+} from '../search/dto/search.dto.js';
+import { EngagementService } from '../search/engagement.service.js';
+import { checkDates, SearchService } from '../search/search.service.js';
 import {
   AddPhotoDto,
   AdminListingDto,
@@ -52,7 +61,8 @@ import {
   UpdateListingDto,
 } from './dto/listing.dto.js';
 import { ListingPresenter } from './listing-presenter.js';
-import { LISTING_RULES as R } from './listing-rules.js';
+import { LISTING_RULES as R, todayUtc } from './listing-rules.js';
+import { quote } from './pricing.js';
 import { ListingsService } from './listings.service.js';
 
 @ApiTags('config')
@@ -76,18 +86,54 @@ export class ConfigController {
 }
 
 @ApiTags('listings')
+@UseGuards(OptionalJwtGuard)
 @Controller('listings')
 export class PublicListingsController {
   constructor(
     private readonly listings: ListingsService,
     private readonly presenter: ListingPresenter,
+    private readonly search: SearchService,
+    private readonly engagement: EngagementService,
   ) {}
 
+  @Get()
+  @ApiOperation({
+    summary: 'Cards for up to 20 live listings, in the order given (recently viewed)',
+  })
+  @ApiOkResponse({ type: [ListingCardDto] })
+  cards(@Query() query: CardsQueryDto, @OptionalUser() auth?: UserAuth): Promise<ListingCardDto[]> {
+    return this.search.cardsFor(query.ids, auth?.userId);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'A live listing (public; approximate location only)' })
+  @ApiOperation({
+    summary: 'A live listing (public; approximate location only). Counts a view for “Popular”.',
+  })
   @ApiOkResponse({ type: PublicListingDto })
-  async get(@Param('id', new ParseUUIDPipe()) id: string): Promise<PublicListingDto> {
-    return this.presenter.public(await this.listings.publicGet(id));
+  async get(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Client() client: ClientInfo,
+    @OptionalUser() auth?: UserAuth,
+  ): Promise<PublicListingDto> {
+    const listing = await this.listings.publicGet(id);
+    const [saved, favoriteCount] = await Promise.all([
+      this.engagement.isSaved(auth?.userId, id),
+      this.engagement.favoriteCount(id),
+      this.engagement.recordView(listing, auth?.userId, client),
+    ]);
+    return this.presenter.public(listing, { saved, favoriteCount });
+  }
+
+  @Get(':id/quote')
+  @ApiOperation({ summary: 'Price breakdown for dates, and whether the item is free then' })
+  @ApiOkResponse({ type: QuoteDto })
+  async quote(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: QuoteQueryDto,
+  ): Promise<QuoteDto> {
+    const dates = checkDates(query)!;
+    const listing = await this.listings.publicGet(id);
+    return quote(listing, dates.startDate, dates.endDate, todayUtc());
   }
 }
 

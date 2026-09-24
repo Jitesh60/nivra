@@ -310,6 +310,8 @@ export class PublicListingDto extends ListingBaseDto {
   @ApiProperty({ description: 'Rounded to ~1 km' }) approxLat: number;
   @ApiProperty({ description: 'Rounded to ~1 km' }) approxLng: number;
   @ApiProperty({ type: LenderSummaryDto }) lender: LenderSummaryDto;
+  @ApiProperty({ description: 'In the signed-in user’s wishlist' }) saved: boolean;
+  @ApiProperty({ description: 'How many people saved it' }) favoriteCount: number;
 }
 
 export class AdminLenderDto extends LenderSummaryDto {

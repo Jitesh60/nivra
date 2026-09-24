@@ -41,6 +41,17 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - Set `ADDRESS_ENC_KEY` (32 bytes, base64) in every environment: it encrypts exact pickup addresses.
 - Rules and limits: `src/modules/listings/listing-rules.ts` (the database CHECK constraints match). Design: [docs/ARCHITECTURE.md §3.3](../../docs/ARCHITECTURE.md#33-phase-3-tables-built-in-phase-3a).
 
+## Discovery (Phase 4a)
+
+- Public, and personalised when signed in:
+  - `GET /v1/search?q=&lat=&lng=&radiusKm=&startDate=&endDate=&categoryId=&minPricePaise=&maxPricePaise=&condition=&verifiedLendersOnly=&sort=&cursor=`
+  - `GET /v1/home?lat=&lng=`
+  - `GET /v1/listings?ids=` (cards)
+  - `GET /v1/listings/:id` (counts a view)
+  - `GET /v1/listings/:id/quote?startDate=&endDate=`
+- Wishlist (signed in): `GET /v1/me/favorites`, `PUT` / `DELETE /v1/me/favorites/:listingId`.
+- Design: [docs/ARCHITECTURE.md §3.4](../../docs/ARCHITECTURE.md#34-phase-4-tables-and-search-built-in-phase-4a).
+
 ## Tests
 
 | Command | What |
