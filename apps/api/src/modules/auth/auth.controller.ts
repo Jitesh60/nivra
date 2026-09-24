@@ -11,7 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponse } from '../../common/errors/error-response.js';
 import { Client, type ClientInfo } from '../../common/http/client-info.js';
-import { UserDto } from '../users/dto/user.dto.js';
+import { UserPresenter } from '../users/user-presenter.js';
 import { AuthService } from './auth.service.js';
 import {
   LoginResponseDto,
@@ -29,7 +29,10 @@ import { CurrentUser, JwtAuthGuard, type UserAuth } from './jwt-auth.guard.js';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly presenter: UserPresenter,
+  ) {}
 
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
@@ -52,7 +55,7 @@ export class AuthController {
     @Client() client: ClientInfo,
   ): Promise<LoginResponseDto> {
     const result = await this.auth.verifyPhoneOtp(body, client);
-    return { ...result, user: UserDto.from(result.user) };
+    return { ...result, user: await this.presenter.load(result.user.id) };
   }
 
   @Post('refresh')
@@ -111,6 +114,6 @@ export class AuthController {
     @Body() body: VerifyEmailOtpDto,
   ): Promise<UserResponseDto> {
     const user = await this.auth.verifyEmailOtp(auth.userId, body.challengeId, body.code);
-    return { user: UserDto.from(user) };
+    return { user: await this.presenter.load(user.id) };
   }
 }

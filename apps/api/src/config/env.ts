@@ -62,6 +62,22 @@ export const envSchema = z.object({
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   RESEND_API_KEY: optional(z.string()),
+
+  // ── Object storage (S3; SeaweedFS locally) ──
+  /** Custom endpoint for S3-compatible storage. Leave unset for AWS S3. */
+  S3_ENDPOINT: optional(z.url()),
+  S3_REGION: z.string().default('ap-south-1'),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  S3_FORCE_PATH_STYLE: booleanString,
+  /** Avatars (and later listing photos), served publicly via S3_PUBLIC_BASE_URL. */
+  S3_PUBLIC_BUCKET: z.string().min(3),
+  /** Identity documents and temporary uploads. Never public. */
+  S3_PRIVATE_BUCKET: z.string().min(3),
+  /** Base URL for public objects: a CDN in production, the bucket URL locally. */
+  S3_PUBLIC_BASE_URL: z.url(),
+  /** Server-side encryption for the private bucket. */
+  S3_PRIVATE_SSE: z.enum(['AES256', 'aws:kms', 'none']).default('none'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -87,6 +103,12 @@ const envRules = envSchema.superRefine((env, ctx) => {
   }
   if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
     issue('RESEND_API_KEY', 'required when EMAIL_PROVIDER=resend');
+  }
+  if (env.S3_PRIVATE_SSE === 'none' && productionLike(env)) {
+    issue('S3_PRIVATE_SSE', 'documents must be encrypted at rest in staging and production');
+  }
+  if (env.S3_PUBLIC_BUCKET === env.S3_PRIVATE_BUCKET) {
+    issue('S3_PRIVATE_BUCKET', 'must differ from S3_PUBLIC_BUCKET');
   }
   if (env.JWT_ACCESS_SECRET === env.JWT_ADMIN_ACCESS_SECRET) {
     issue('JWT_ADMIN_ACCESS_SECRET', 'must differ from JWT_ACCESS_SECRET');

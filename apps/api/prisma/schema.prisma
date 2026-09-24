@@ -38,6 +38,8 @@ model User {
 
   sessions      Session[]
   otpChallenges OtpChallenge[]
+  profile       Profile?
+  documents     UserDocument[]
 
   @@map("users")
 }
@@ -74,8 +76,9 @@ model AdminUser {
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
-  sessions      Session[]
-  recoveryCodes AdminRecoveryCode[]
+  sessions          Session[]
+  recoveryCodes     AdminRecoveryCode[]
+  reviewedDocuments UserDocument[]
 
   @@map("admin_users")
 }
@@ -218,4 +221,67 @@ model WaitlistEntry {
   createdAt DateTime      @default(now()) @map("created_at")
 
   @@map("waitlist_entries")
+}
+
+// ─── Phase 2: profiles & verification ────────────────────────────────────────
+
+/// Public-facing profile details. Created on first update; `name` stays on User.
+model Profile {
+  userId    String   @id @map("user_id") @db.Uuid
+  city      String?
+  bio       String?
+  /// Object key of the processed 512×512 WebP avatar in the public bucket.
+  avatarKey String?  @map("avatar_key")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+enum DocumentType {
+  AADHAAR_MASKED
+  PAN
+  DRIVING_LICENCE
+  PASSPORT
+  VOTER_ID
+  COLLEGE_ID
+  EMPLOYEE_ID
+  ADDRESS_PROOF
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// An identity document in the user's private vault. Files live in the private
+/// bucket (re-encoded, EXIF stripped); only short-lived signed URLs are handed out.
+/// One live (PENDING/APPROVED, not deleted) document per type: partial unique
+/// index in the migration.
+model UserDocument {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  type            DocumentType
+  /// Required for OTHER, e.g. "Gym membership card".
+  label           String?
+  frontKey        String         @map("front_key")
+  backKey         String?        @map("back_key")
+  status          DocumentStatus @default(PENDING)
+  rejectionReason String?        @map("rejection_reason")
+  reviewedById    String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?      @map("reviewed_at")
+  expiresOn       DateTime?      @map("expires_on") @db.Date
+  deletedAt       DateTime?      @map("deleted_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy AdminUser? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@map("user_documents")
 }

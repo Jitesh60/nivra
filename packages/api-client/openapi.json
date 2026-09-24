@@ -325,7 +325,7 @@
             "bearer": []
           }
         ],
-        "summary": "Update profile fields (name)",
+        "summary": "Update name, city and bio",
         "tags": [
           "me"
         ]
@@ -344,6 +344,68 @@
           }
         ],
         "summary": "Delete my account and personal data",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/avatar": {
+      "put": {
+        "operationId": "MeController_setAvatar_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAvatarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the avatar from an upload (purpose AVATAR); it becomes a 512×512 WebP",
+        "tags": [
+          "me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_removeAvatar_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove the avatar",
         "tags": [
           "me"
         ]
@@ -405,6 +467,442 @@
         "summary": "Sign out one device",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "description": "PUT the file to `url` with `headers`, then pass `key` to the endpoint that uses it (avatar or document). Unused uploads expire after 15 minutes.",
+        "operationId": "UploadsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicketDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a URL to upload an image to",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/v1/me/documents": {
+      "get": {
+        "operationId": "MyDocumentsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · documents"
+        ]
+      },
+      "post": {
+        "operationId": "MyDocumentsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DOCUMENT_ALREADY_EXISTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a document from uploads (purpose DOCUMENT); it waits for admin review",
+        "tags": [
+          "me · documents"
+        ]
+      }
+    },
+    "/v1/me/documents/{id}/view": {
+      "get": {
+        "operationId": "MyDocumentsController_view_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "front",
+              "type": "string",
+              "enum": [
+                "front",
+                "back"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Short-lived URL to view one side of your document (logged)",
+        "tags": [
+          "me · documents"
+        ]
+      }
+    },
+    "/v1/me/documents/{id}": {
+      "delete": {
+        "operationId": "MyDocumentsController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a document and its files",
+        "tags": [
+          "me · documents"
+        ]
+      }
+    },
+    "/v1/admin/documents": {
+      "get": {
+        "operationId": "AdminDocumentsController_list_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "PENDING",
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDocumentPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Review queue (pending: oldest first)",
+        "tags": [
+          "admin · documents"
+        ]
+      }
+    },
+    "/v1/admin/documents/{id}": {
+      "get": {
+        "operationId": "AdminDocumentsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDocumentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · documents"
+        ]
+      }
+    },
+    "/v1/admin/documents/{id}/view": {
+      "get": {
+        "operationId": "AdminDocumentsController_view_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "front",
+              "type": "string",
+              "enum": [
+                "front",
+                "back"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Short-lived URL to one side of the document (logged)",
+        "tags": [
+          "admin · documents"
+        ]
+      }
+    },
+    "/v1/admin/documents/{id}/approve": {
+      "post": {
+        "operationId": "AdminDocumentsController_approve_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDocumentDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DOCUMENT_NOT_PENDING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · documents"
+        ]
+      }
+    },
+    "/v1/admin/documents/{id}/reject": {
+      "post": {
+        "operationId": "AdminDocumentsController_reject_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDocumentDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DOCUMENT_NOT_PENDING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · documents"
         ]
       }
     },
@@ -873,6 +1371,179 @@
         ]
       }
     },
+    "/v1/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminUsersController_detail_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "User detail: profile, badges, documents, sessions, activity",
+        "tags": [
+          "admin · users"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/suspend": {
+      "post": {
+        "operationId": "AdminUsersController_suspend_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suspend (signs the user out everywhere)",
+        "tags": [
+          "admin · users"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/ban": {
+      "post": {
+        "operationId": "AdminUsersController_ban_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ban (signs the user out everywhere)",
+        "tags": [
+          "admin · users"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/reactivate": {
+      "post": {
+        "operationId": "AdminUsersController_reactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · users"
+        ]
+      }
+    },
     "/v1/waitlist": {
       "post": {
         "operationId": "WaitlistController_join_v1",
@@ -1127,6 +1798,21 @@
             "nullable": true,
             "example": "Rahul Sharma"
           },
+          "city": {
+            "type": "string",
+            "nullable": true,
+            "example": "Pune"
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "example": "Weekend trekker, happy to lend my camera."
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public URL of the 512×512 avatar"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1142,6 +1828,10 @@
           "emailVerified": {
             "type": "boolean"
           },
+          "idVerified": {
+            "type": "boolean",
+            "description": "Has at least one admin-approved, unexpired document"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1153,6 +1843,7 @@
           "status",
           "phoneVerified",
           "emailVerified",
+          "idVerified",
           "createdAt"
         ]
       },
@@ -1262,10 +1953,29 @@
           "name": {
             "type": "string",
             "example": "Rahul Sharma"
+          },
+          "city": {
+            "type": "string",
+            "example": "Pune",
+            "description": "Empty string clears it"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Weekend trekker, happy to lend my camera.",
+            "description": "Empty string clears it"
+          }
+        }
+      },
+      "SetAvatarDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "`key` from POST /v1/uploads (purpose AVATAR)"
           }
         },
         "required": [
-          "name"
+          "key"
         ]
       },
       "SessionDto": {
@@ -1303,6 +2013,316 @@
           "createdAt",
           "lastUsedAt",
           "current"
+        ]
+      },
+      "CreateUploadDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "AVATAR",
+              "DOCUMENT"
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 482133,
+            "description": "Exact size of the file in bytes (it is signed)"
+          }
+        },
+        "required": [
+          "purpose",
+          "contentType",
+          "sizeBytes"
+        ]
+      },
+      "UploadTicketDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Pass this key to the endpoint that uses the file"
+          },
+          "url": {
+            "type": "string",
+            "description": "PUT the file bytes here"
+          },
+          "headers": {
+            "type": "object",
+            "description": "Headers to send with the PUT (they are part of the signature)",
+            "example": {
+              "Content-Type": "image/jpeg"
+            }
+          },
+          "expiresInSec": {
+            "type": "number",
+            "example": 300
+          }
+        },
+        "required": [
+          "key",
+          "url",
+          "headers",
+          "expiresInSec"
+        ]
+      },
+      "DocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasBack": {
+            "type": "boolean",
+            "description": "Whether a back side was uploaded"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "hasBack",
+          "createdAt"
+        ]
+      },
+      "CreateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Required when type is OTHER",
+            "example": "Gym membership card"
+          },
+          "frontKey": {
+            "type": "string",
+            "description": "`key` from POST /v1/uploads (purpose DOCUMENT) for the front side"
+          },
+          "backKey": {
+            "type": "string",
+            "description": "Upload key for the back side, if the document has one"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2031-06-30"
+          }
+        },
+        "required": [
+          "type",
+          "frontKey"
+        ]
+      },
+      "DocumentViewDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Short-lived URL to the image"
+          },
+          "expiresInSec": {
+            "type": "number",
+            "example": 300
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSec"
+        ]
+      },
+      "DocumentUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "phone"
+        ]
+      },
+      "AdminDocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasBack": {
+            "type": "boolean",
+            "description": "Whether a back side was uploaded"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/DocumentUserDto"
+          },
+          "reviewedBy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Admin who reviewed it"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "hasBack",
+          "createdAt",
+          "user"
+        ]
+      },
+      "AdminDocumentPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDocumentDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RejectDocumentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "The photo is blurry. Please upload a clearer one."
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "AdminLoginDto": {
@@ -1656,6 +2676,81 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "ActivityDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "USER",
+              "SYSTEM"
+            ]
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "action",
+          "actorType",
+          "createdAt"
+        ]
+      },
+      "AdminUserDetailDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentDto"
+            }
+          },
+          "activeSessions": {
+            "type": "number"
+          },
+          "activity": {
+            "description": "Latest 50 audit entries by or about this user",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityDto"
+            }
+          }
+        },
+        "required": [
+          "user",
+          "documents",
+          "activeSessions",
+          "activity"
+        ]
+      },
+      "UserActionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Repeated no-shows reported by three lenders"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "JoinWaitlistDto": {

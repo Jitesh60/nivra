@@ -37,7 +37,7 @@ jobs:
           git diff --exit-code -- packages/api-client/openapi.json
 
   api-e2e:
-    name: API · e2e + coverage (Postgres, Redis, Mailpit via Testcontainers)
+    name: API · e2e + coverage (Postgres, Redis, Mailpit, SeaweedFS via Testcontainers)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +78,14 @@ jobs:
       SAJHA_API_URL: http://localhost:3000
       # The website's waitlist form calls the API from the browser.
       CORS_ORIGINS: http://localhost:3001,http://localhost:3002
+      # Required at boot; no storage is exercised by these suites yet.
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY_ID: sajha
+      S3_SECRET_ACCESS_KEY: sajha-s3-secret
+      S3_FORCE_PATH_STYLE: 'true'
+      S3_PUBLIC_BUCKET: sajha-public-media
+      S3_PRIVATE_BUCKET: sajha-private-docs
+      S3_PUBLIC_BASE_URL: http://localhost:9000/sajha-public-media
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -67,14 +67,13 @@ src/
     ├── auth/               # user auth: phone OTP, email OTP, tokens, sessions     (Phase 1a)
     ├── otp/                # OTP challenge create/verify, rate limits               (Phase 1a)
     ├── admin-auth/         # admin login, TOTP 2FA, admin sessions, RBAC            (Phase 1a)
-    ├── users/              # user record, /me                                      (Phase 1a)
+    ├── users/              # user record, /me, profile (city, bio, avatar)         (Phase 1a, 2a)
     ├── waitlist/           # marketing waitlist                                    (Phase 1d)
-    ├── profiles/           # bio, avatar, location, badges                          (Phase 2)
-    ├── documents/          # personal document vault                                (Phase 2)
+    ├── media/              # presigned uploads, sharp re-encode pipeline            (Phase 2a)
+    ├── documents/          # personal document vault + admin review                 (Phase 2a)
     ├── categories/         #                                                        (Phase 3)
     ├── listings/           # CRUD, photos, pricing, required docs                   (Phase 3)
     ├── availability/       # blocked dates, availability queries                   (Phase 3)
-    ├── media/              # presigned URLs, image processing jobs                  (Phase 3)
     ├── search/             # text + geo + date search                               (Phase 4)
     ├── favorites/          # wishlist                                               (Phase 4)
     ├── chat/               # conversations, messages, Socket.IO gateway              (Phase 5)
@@ -93,7 +92,7 @@ src/
 ```
 
 **Cross-cutting pieces**
-- `JwtAuthGuard` (users), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` (requires verified phone and email)
+- `JwtAuthGuard` (users), `AdminJwtGuard` + `@Roles()` (admins), `VerifiedGuard` + `@RequireVerified()` (requires verified phone and email → 403 `VERIFICATION_REQUIRED` with `details.missing`; applied to listing and booking routes from Phase 3)
 - `ThrottlerGuard` backed by Redis for general rate limits; dedicated OTP limiter
 - Global `ValidationPipe` (whitelist, forbid unknown fields, transform)
 - Global exception filter → `{ error: { code, message, details } }`
@@ -145,6 +144,10 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `otp_challenges` | SMS and email one-time codes | `channel` (SMS/EMAIL), `purpose` (LOGIN/VERIFY_EMAIL), `target`, `user_id`, `code_hash` (HMAC-SHA256 with `OTP_PEPPER`), `attempts`, `max_attempts`, `expires_at`, `consumed_at` |
 | `audit_logs` | Append-only security trail | `actor_type` (ADMIN/USER/SYSTEM), `actor_id`, `action` (e.g. `admin.login`, `admin.admins.create`, `user.account.delete`), `target_type`, `target_id`, `metadata`, `ip` |
 | `waitlist_entries` | Marketing waitlist (Phase 1d) | `email` (unique), `city`, `role`, `source` |
+| `profiles` | 1:1 with `users`, created on first edit (Phase 2a) | `user_id` (PK), `city`, `bio`, `avatar_key` (public bucket) |
+| `user_documents` | Document vault (Phase 2a) | `type` (AADHAAR_MASKED, PAN, DRIVING_LICENCE, PASSPORT, VOTER_ID, COLLEGE_ID, EMPLOYEE_ID, ADDRESS_PROOF, OTHER), `label` (CHECK: required for OTHER), `front_key`, `back_key` (private bucket), `status` (PENDING/APPROVED/REJECTED), `rejection_reason`, `reviewed_by_id`, `reviewed_at`, `expires_on`, `deleted_at`. Partial unique index: one PENDING or APPROVED document per type per user |
+
+**Verified-ID badge:** `idVerified` isn't stored. It's derived per request with a filtered count: at least one APPROVED, non-deleted document whose `expires_on` is empty or not yet past.
 
 **Why sessions and refresh tokens are separate tables:** the session ID (`sid` in the access token) stays the same for the whole login, so guards can check on every request that the session is still live. Revoking a session signs that device out immediately, and rotating refresh tokens never invalidates in-flight access tokens.
 
@@ -152,8 +155,7 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 
 | Table | Key fields |
 |---|---|
-| `profiles` | userId, bio, avatarKey, city, location `geography(Point)`, ratingAvg, ratingCount |
-| `user_documents` | userId, type (AADHAAR_MASKED, PAN, DL, PASSPORT, VOTER_ID, COLLEGE_ID, EMPLOYEE_ID, ADDRESS_PROOF, OTHER), fileKey, status (PENDING/APPROVED/REJECTED), reviewedBy, expiresAt |
+| `profiles` (additions) | location `geography(Point)` (Phase 3), ratingAvg, ratingCount (Phase 8) |
 | `categories` | name, slug, icon, parentId, sortOrder, isActive |
 | `listings` | lenderId, categoryId, title, description, condition, pricePerDayPaise, weeklyPricePaise, depositPaise, minDays, maxDays, advanceNoticeDays, location `geography(Point)`, areaLabel, exactAddressEnc, status (DRAFT/PENDING/LIVE/PAUSED/REJECTED/DELETED), search tsvector |
 | `listing_photos` | listingId, key, width, height, sortOrder |
@@ -268,6 +270,13 @@ sequenceDiagram
 | `REFRESH_REUSED` | 401 | Used refresh token presented again; session revoked |
 | `ACCOUNT_SUSPENDED` | 403 | User suspended/banned, or admin disabled |
 | `VALIDATION_FAILED` | 400 | Body failed validation (`details` maps field → messages) |
+| `UPLOAD_NOT_FOUND` | 400 | Upload key unknown, expired, someone else's, for another purpose, or not uploaded yet |
+| `UPLOAD_INVALID` | 400 | File isn't a real JPEG/PNG/WebP, can't be decoded, or its size differs from what was announced |
+| `UPLOAD_RATE_LIMITED` | 429 | More than 30 uploads in an hour |
+| `DOCUMENT_ALREADY_EXISTS` | 409 | A pending or approved document of this type already exists |
+| `DOCUMENT_NOT_PENDING` | 409 | Approving or rejecting a document that's already been reviewed |
+| `USER_STATUS_CONFLICT` | 409 | Suspend/ban/reactivate isn't valid from the user's current status |
+| `VERIFICATION_REQUIRED` | 403 | Route needs a verified phone and email (`details.missing`); applied from Phase 3 |
 
 ### 4.2 Admins — email + password + TOTP 2FA
 
@@ -393,9 +402,20 @@ sequenceDiagram
 | Bucket | Contents | Access |
 |---|---|---|
 | `sajha-public-media` | Listing photos, avatars (resized variants) | Public via CDN, with random UUID keys |
-| `sajha-private-docs` | ID and other documents, condition photos, dispute evidence | Private; SSE-KMS encryption; **no public access** |
+| `sajha-private-docs` | ID and other documents, condition photos, dispute evidence, `tmp/` uploads | Private; SSE-KMS encryption (`S3_PRIVATE_SSE`); **no public access** |
 
-**Upload flow:** `POST /v1/uploads/presign {purpose, contentType, size}` → the API validates the type and size and returns a presigned PUT URL plus `key` → the client uploads directly → the client confirms with the key on the owning resource.
+Locally and in e2e tests, storage is SeaweedFS's S3 API (`infra/docker-compose.yml`, Testcontainers).
+
+**Upload flow (Phase 2a):**
+1. `POST /v1/uploads {purpose: AVATAR|DOCUMENT, contentType, sizeBytes}`. The API allows JPEG/PNG/WebP only (avatar ≤ 5 MB, document ≤ 10 MB) and 30 uploads per hour. It returns `{key, url, headers, expiresInSec: 300}`: a presigned PUT whose signature covers `Content-Type` and `Content-Length`, to `tmp/{purpose}/{userId}/{uuid}` in the **private** bucket. A Redis ticket (`upload:{key}`, 15 minutes) binds the key to the user, purpose and size.
+2. The client PUTs the bytes straight to storage, with no Bearer header.
+3. The client hands the key to the owning resource (`PUT /v1/me/avatar`, `POST /v1/me/documents`). The API **finalises**:
+   - checks the ticket (same user and purpose) and the object's size
+   - sniffs the magic bytes, never trusting the Content-Type header
+   - re-encodes with sharp: avatar → 512×512 WebP (public bucket); document → JPEG, longest side ≤ 2400 px (private bucket, SSE). Re-encoding strips EXIF (including GPS) and neutralises polyglot files; a 40-megapixel input limit guards against decompression bombs.
+   - deletes the temp object and the ticket.
+
+**Viewing your own document / admin review:** `GET /v1/me/documents/:id/view?side=` and `GET /v1/admin/documents/:id/view?side=` return a 5-minute presigned GET (`no-store`, inline) and write `document.view` / `admin.document.view` to `audit_logs`. Document list responses never contain storage keys or URLs.
 
 **Viewing a shared document:** a lender calls `GET /v1/bookings/:id/documents/:shareId/view`. The API checks that the viewer is the booking's lender, that the booking state is between `AWAITING_DOCS` and `RETURNED`, and that `accessExpiresAt` hasn't passed. It then writes a `document_access_logs` row and returns a **5-minute presigned GET URL**. The app shows the document in an in-app viewer with a watermark ("Shared with <lender> for booking #123") and screenshot blocking on Android (`FLAG_SECURE`).
 
