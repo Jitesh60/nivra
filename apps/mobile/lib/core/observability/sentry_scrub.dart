@@ -22,29 +22,27 @@ String scrubText(String text) => text
 /// numbers, emails and codes in messages, exceptions and breadcrumbs.
 SentryEvent scrubEvent(SentryEvent event) {
   final request = event.request;
+  if (request != null) {
+    event.request = SentryRequest(
+      url: request.url == null ? null : scrubText(request.url!),
+      method: request.method,
+    );
+  }
   final user = event.user;
-  return event.copyWith(
-    request: request == null
-        ? null
-        : SentryRequest(
-            url: request.url == null ? null : scrubText(request.url!),
-            method: request.method,
-          ),
-    user: user == null ? null : SentryUser(id: user.id),
-    message: event.message == null
-        ? null
-        : SentryMessage(scrubText(event.message!.formatted)),
-    exceptions: event.exceptions
-        ?.map(
-          (e) =>
-              e.copyWith(value: e.value == null ? null : scrubText(e.value!)),
-        )
-        .toList(),
-    breadcrumbs: event.breadcrumbs?.map(scrubBreadcrumb).toList(),
-  );
+  if (user != null) event.user = SentryUser(id: user.id);
+  final message = event.message;
+  if (message != null) {
+    event.message = SentryMessage(scrubText(message.formatted));
+  }
+  for (final e in event.exceptions ?? const <SentryException>[]) {
+    if (e.value != null) e.value = scrubText(e.value!);
+  }
+  event.breadcrumbs = event.breadcrumbs?.map(scrubBreadcrumb).toList();
+  return event;
 }
 
-Breadcrumb scrubBreadcrumb(Breadcrumb b) => b.copyWith(
-  message: b.message == null ? null : scrubText(b.message!),
-  data: b.data?.map((k, v) => MapEntry(k, v is String ? scrubText(v) : v)),
-);
+Breadcrumb scrubBreadcrumb(Breadcrumb b) {
+  if (b.message != null) b.message = scrubText(b.message!);
+  b.data = b.data?.map((k, v) => MapEntry(k, v is String ? scrubText(v) : v));
+  return b;
+}
