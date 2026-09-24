@@ -36,7 +36,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  await opsPage.close();
+  // Undefined when beforeAll failed; don't hide that error behind another.
+  await opsPage?.close();
 });
 
 test('Ops approves a lender’s first listing; it goes public', async () => {
