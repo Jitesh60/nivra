@@ -32,6 +32,9 @@ const MESSAGES: Record<string, string> = {
   FORBIDDEN: 'Your role doesn’t allow this.',
   VALIDATION_FAILED: 'Please check the highlighted fields.',
   NETWORK: 'Can’t reach the Sajha API. Is it running?',
+  DOCUMENT_NOT_PENDING: 'This document was already reviewed, maybe by another admin.',
+  USER_STATUS_CONFLICT: 'That action doesn’t apply to the user’s current status.',
+  NOT_FOUND: 'Not found. It may have been deleted.',
 };
 
 export function friendlyMessage(error: ApiError): string {

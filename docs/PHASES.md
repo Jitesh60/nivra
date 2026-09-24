@@ -225,6 +225,7 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** a
 
 - Document review queue and review page (the image streams through the admin server, so the storage URL never reaches the browser; watermark; approve, or reject with a reason)
 - User detail page (profile, badges, documents, sessions, activity) with suspend, ban and reactivate
+- CI's browser e2e job runs real storage (SeaweedFS) and the OTP bypass, so the suite uploads through presigned URLs like the app does
 - **Done when:** Playwright approves a document and the user's `idVerified` flips to true; SUPPORT gets 403 on documents
 
 **Later:** purging rejected documents after 30 days (BullMQ jobs, Phase 5), `FLAG_SECURE` when lenders view documents (Phase 6), PDF documents.

@@ -329,11 +329,17 @@ describe('Profiles, uploads & documents (e2e)', () => {
         .set(bearer(user.accessToken))
         .send({ name: 'Priya', city: 'Dehradun' });
       const frontKey = await upload(app, user.accessToken, 'DOCUMENT', await photo(800, 500));
-      await http(app)
+      const doc = await http(app)
         .post('/v1/me/documents')
         .set(bearer(user.accessToken))
         .send({ type: 'PASSPORT', frontKey })
         .expect(201);
+      const ops = await loginAdmin(app, await createAdmin(app, 'OPS'));
+      await http(app)
+        .post(`/v1/admin/documents/${doc.body.id}/reject`)
+        .set(bearer(ops.accessToken))
+        .send({ reason: 'Blurry photo' })
+        .expect(200);
 
       const support = await loginAdmin(app, await createAdmin(app, 'SUPPORT'));
       const detail = await http(app)
@@ -343,8 +349,9 @@ describe('Profiles, uploads & documents (e2e)', () => {
       expect(detail.body.user).toMatchObject({ name: 'Priya', city: 'Dehradun' });
       expect(detail.body.documents).toHaveLength(1);
       expect(detail.body.activeSessions).toBe(1);
-      expect(detail.body.activity.map((a: { action: string }) => a.action)).toContain(
-        'user.document.upload',
+      // Reviews of the user's documents belong to their trail too.
+      expect(detail.body.activity.map((a: { action: string }) => a.action)).toEqual(
+        expect.arrayContaining(['user.document.upload', 'admin.document.reject']),
       );
     });
 

@@ -38,7 +38,10 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
 
   return (
     <>
-      <PageHeader title="Users" description="People using the Sajha app. Read-only for now." />
+      <PageHeader
+        title="Users"
+        description="People using the Sajha app. Open a user for their documents, activity and account actions."
+      />
       <form className="mb-4 flex max-w-md gap-2" role="search">
         <Input
           name="search"
@@ -57,6 +60,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>ID</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
             </TableRow>
@@ -64,20 +68,31 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
           <TableBody>
             {page.items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                   {search ? `No users match “${search}”.` : 'No users yet.'}
                 </TableCell>
               </TableRow>
             )}
             {page.items.map((user) => (
               <TableRow key={user.id} data-testid="user-row">
-                <TableCell className="font-medium">{user.name ?? '—'}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/users/${user.id}`} className="text-primary hover:underline">
+                    {user.name ?? 'Unnamed user'}
+                  </Link>
+                </TableCell>
                 <TableCell className="font-mono text-xs">
                   {user.phone} {user.phoneVerified && <Badge variant="secondary">verified</Badge>}
                 </TableCell>
                 <TableCell>
                   {user.email ?? '—'}{' '}
                   {user.emailVerified && <Badge variant="secondary">verified</Badge>}
+                </TableCell>
+                <TableCell>
+                  {user.idVerified ? (
+                    <Badge>verified</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.status === 'ACTIVE' ? 'outline' : 'destructive'}>

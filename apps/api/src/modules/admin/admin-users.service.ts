@@ -29,16 +29,25 @@ export class AdminUsersService {
   async detail(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id }, include: userViewInclude() });
     if (!user) throw new AppException(ErrorCode.NOT_FOUND, 'User not found', HttpStatus.NOT_FOUND);
-    const [documents, activeSessions, activity] = await Promise.all([
-      this.prisma.userDocument.findMany({
-        where: { userId: id, deletedAt: null },
-        orderBy: { createdAt: 'desc' },
-      }),
+    // Every document ever uploaded (deleted ones too), so reviews and views of
+    // them show up in the user's activity.
+    const allDocuments = await this.prisma.userDocument.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+    const documents = allDocuments.filter((d) => d.deletedAt === null);
+    const [activeSessions, activity] = await Promise.all([
       this.prisma.session.count({
         where: { userId: id, revokedAt: null, expiresAt: { gt: new Date() } },
       }),
       this.prisma.auditLog.findMany({
-        where: { OR: [{ targetId: id }, { actorType: 'USER', actorId: id }] },
+        where: {
+          OR: [
+            { targetId: id },
+            { actorType: 'USER', actorId: id },
+            { targetType: 'user_document', targetId: { in: allDocuments.map((d) => d.id) } },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),

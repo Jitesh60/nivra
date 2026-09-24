@@ -78,7 +78,7 @@ jobs:
       SAJHA_API_URL: http://localhost:3000
       # The website's waitlist form calls the API from the browser.
       CORS_ORIGINS: http://localhost:3001,http://localhost:3002
-      # Required at boot; no storage is exercised by these suites yet.
+      # Real storage (SeaweedFS, started below): the admin suite uploads and reviews documents.
       S3_ENDPOINT: http://localhost:9000
       S3_ACCESS_KEY_ID: sajha
       S3_SECRET_ACCESS_KEY: sajha-s3-secret
@@ -86,6 +86,8 @@ jobs:
       S3_PUBLIC_BUCKET: sajha-public-media
       S3_PRIVATE_BUCKET: sajha-private-docs
       S3_PUBLIC_BASE_URL: http://localhost:9000/sajha-public-media
+      # The admin suite signs up app users through the API (never allowed in production).
+      OTP_DEV_BYPASS_CODE: '000000'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -94,6 +96,20 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Start S3 storage (SeaweedFS) and create buckets
+        run: |
+          docker run -d --name s3 -p 9000:8333 \
+            -v "$PWD/infra/s3/s3.json:/etc/seaweedfs/s3.json:ro" \
+            chrislusf/seaweedfs server -dir=/data -s3 -s3.port=8333 \
+            -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=256
+          export AWS_ACCESS_KEY_ID=sajha AWS_SECRET_ACCESS_KEY=sajha-s3-secret AWS_DEFAULT_REGION=ap-south-1
+          for b in sajha-public-media sajha-private-docs; do
+            for i in $(seq 1 30); do
+              aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket $b && break
+              sleep 2
+            done
+          done
+          aws --endpoint-url http://localhost:9000 s3api head-bucket --bucket sajha-private-docs
       - run: pnpm turbo run build --filter=@sajha/api --filter=@sajha/admin --filter=@sajha/web
       - run: pnpm --filter @sajha/api prisma:deploy
       - name: Start API
