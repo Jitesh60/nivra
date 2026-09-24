@@ -457,8 +457,10 @@ lib/
 │   │   └── presentation/         # PhoneScreen, OtpScreen, EmailScreen, ProfileSetupScreen
 │   ├── profile/                  # ProfileRepository, ProfileScreen (photo, name, city, bio, badges)   (Phase 2b)
 │   ├── documents/                # DocumentsRepository, My documents, add flow, viewer                  (Phase 2b)
+│   ├── listings/                 # ListingsRepository, ListingEditor + 7-step wizard, My listings,     (Phase 3b)
+│   │                             #   ListingDetailView (reused for the public page in Phase 4)
 │   ├── home/ settings/
-│   ├── listings/ search/ chat/ bookings/ ...   # later phases
+│   ├── search/ chat/ bookings/ ...   # later phases
 └── shared/widgets/               # buttons, inputs, OTP field, loaders
 shaders/                          # GLSL fragment shaders (declared in pubspec `shaders:`)
 ```
@@ -466,6 +468,12 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 - **Auth state** is a Riverpod `Notifier<AuthState>` with a sealed state: `AuthUnknown` (checking the stored session, or offline with a retry), `Unauthenticated` (with an optional "why you were signed out" message) and `Authenticated` (which knows whether the name and email steps are still due). All redirect rules live in one pure function, `authRedirect()`, which is unit-tested; go_router re-runs it whenever the auth state changes.
 - **Tokens:** the access token is kept in memory and the refresh token in `flutter_secure_storage`. `AuthInterceptor` adds the token and, on a 401, asks `TokenManager` to refresh. The refresh is single-flight, so concurrent 401s share one refresh call (the server rotates refresh tokens, so two parallel refreshes would sign the device out). The request is then retried once. If the server says the session is gone (revoked, expired or suspended), the app signs out with a message. If the refresh fails only because of the network, the session is kept.
 - **Uploads** (Phase 2b): `UploadClient` sniffs the image type, calls `POST /v1/uploads`, then PUTs the bytes to the presigned URL with a **separate Dio that has no auth interceptor**: the signed URL is the credential, and the Bearer token must never reach storage. The key then goes to `PUT /v1/me/avatar` or `POST /v1/me/documents`. `PhotoPicker` sits behind a provider, so widget tests swap in a fake, and `FakeSajhaApi` plays both the API and a storage host.
+- **Listing wizard** (Phase 3b): a `ListingEditor` notifier holds one `ListingDraft`, scoped per editor screen with a `ProviderScope` seeded from the listing being edited. Each step validates before moving on. Saving creates or updates the listing, then:
+  - uploads new photos, removes deleted ones and applies the chosen order
+  - replaces the blocked dates and required documents
+  - publishes when it's a draft
+
+  The draft remembers the listing id and the uploaded photos after each step, so a retry never creates a duplicate. The pickup map (`flutter_map`, tile URL from `MAP_TILE_URL`) only moves the pin on the lender's own gestures or "Use my location". Tests switch tiles off and fake the location.
 - **ID badge:** `AppUser.idVerified` comes from `/me`. The documents screen re-reads `/me` after each load, so an approval or a deletion shows up in the badge without a restart.
 - Environments are selected with `--dart-define-from-file=config/<env>.json` (`ENV`, `API_BASE_URL`). Android has `dev`/`staging`/`prod` product flavors (separate app IDs `com.sajha.app[.dev|.staging]`); matching iOS schemes are added when the iOS build is set up on a Mac.
 

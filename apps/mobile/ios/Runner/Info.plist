@@ -72,6 +72,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sajha uses your location to place your item's pickup point on the map. Borrowers only see the approximate area.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Sajha uses the camera to take your profile photo and photos of your ID documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

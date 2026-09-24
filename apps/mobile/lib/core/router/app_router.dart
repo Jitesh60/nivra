@@ -11,6 +11,9 @@ import '../../features/documents/presentation/add_document_screen.dart';
 import '../../features/documents/presentation/document_viewer_screen.dart';
 import '../../features/documents/presentation/documents_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/listings/data/models.dart';
+import '../../features/listings/presentation/listing_editor_screen.dart';
+import '../../features/listings/presentation/my_listings_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/settings/presentation/devices_screen.dart';
@@ -57,6 +60,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: Routes.devices, builder: (_, _) => const DevicesScreen()),
       GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
+      GoRoute(
+        path: Routes.myListings,
+        builder: (_, _) => const MyListingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.newListing,
+        builder: (_, _) => const ListingEditorScreen(),
+      ),
+      GoRoute(
+        path: Routes.editListing,
+        redirect: (_, state) =>
+            state.extra is MyListing ? null : Routes.myListings,
+        builder: (_, state) =>
+            ListingEditorScreen(existing: state.extra! as MyListing),
+      ),
+      GoRoute(
+        path: Routes.listingPreview,
+        redirect: (_, state) =>
+            state.extra is MyListing ? null : Routes.myListings,
+        builder: (_, state) =>
+            ListingPreviewScreen(listing: state.extra! as MyListing),
+      ),
       GoRoute(
         path: Routes.documents,
         builder: (_, _) => const DocumentsScreen(),

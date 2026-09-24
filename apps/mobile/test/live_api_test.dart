@@ -18,6 +18,8 @@ import 'package:sajha/core/network/upload_client.dart';
 import 'package:sajha/features/auth/data/auth_repository.dart';
 import 'package:sajha/features/documents/data/documents_repository.dart';
 import 'package:sajha/features/documents/data/models.dart';
+import 'package:sajha/features/listings/data/listings_repository.dart';
+import 'package:sajha/features/listings/data/models.dart' as listing;
 import 'package:sajha/features/profile/data/profile_repository.dart';
 
 import 'helpers/fakes.dart';
@@ -136,6 +138,46 @@ void main() {
     );
     await documents.delete(doc.id);
     expect(await documents.list(), isEmpty);
+
+    // Listings: categories and rules, draft → photo → publish (first one is
+    // reviewed), then delete.
+    final listings = ListingsRepository(dio: api, uploads: uploads);
+    final categories = await listings.categories();
+    expect(categories.map((c) => c.slug), contains('trekking-outdoor'));
+    final rules = await listings.rules();
+    expect(rules.lenderEarnings(15000), 13500);
+    final draft = await listings.create({
+      'categoryId': categories.first.id,
+      'title': 'Live test trekking tent',
+      'description': 'Created by the mobile live contract test.',
+      'condition': 'GOOD',
+      'pricePerDayPaise': 15000,
+      'depositPaise': 100000,
+      'lat': 18.5074,
+      'lng': 73.8077,
+      'areaLabel': 'Kothrud, Pune',
+      'exactAddress': 'Flat 1, Test Lane',
+    });
+    expect(draft.status, listing.ListingStatus.draft);
+    expect(draft.exactAddress, 'Flat 1, Test Lane');
+    final photographed = await listings.addPhoto(draft.id, _jpeg);
+    expect(photographed.photos.single.thumbUrl, endsWith('-thumb.webp'));
+    await listings.setBlocks(draft.id, [
+      listing.BlockedRange(
+        DateTime.now().add(const Duration(days: 10)),
+        DateTime.now().add(const Duration(days: 12)),
+      ),
+    ]);
+    final withDocs = await listings.setRequiredDocs(draft.id, const [
+      listing.RequiredDoc(listing.RequiredDocType.governmentId),
+    ]);
+    expect(withDocs.blocks, hasLength(1));
+    final published = await listings.publish(draft.id);
+    expect(published.inReview, isTrue);
+    expect(published.listing.status, listing.ListingStatus.pending);
+    expect((await listings.mine()).single.id, draft.id);
+    await listings.delete(draft.id);
+    expect(await listings.mine(), isEmpty);
 
     // Delete the account so the test leaves nothing behind.
     await repo.deleteAccount();
