@@ -10,6 +10,10 @@ import '../../features/auth/presentation/phone_screen.dart';
 import '../../features/documents/presentation/add_document_screen.dart';
 import '../../features/documents/presentation/document_viewer_screen.dart';
 import '../../features/documents/presentation/documents_screen.dart';
+import '../../features/discovery/presentation/area_picker_screen.dart';
+import '../../features/discovery/presentation/item_screen.dart';
+import '../../features/discovery/presentation/search_screen.dart';
+import '../../features/discovery/presentation/wishlist_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/listings/data/models.dart';
 import '../../features/listings/presentation/listing_editor_screen.dart';
@@ -21,6 +25,7 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import 'auth_redirect.dart';
 import 'routes.dart';
+import 'sign_in_return.dart';
 
 /// App routes. Every navigation passes through [authRedirect], and the router
 /// re-evaluates it whenever the auth state changes.
@@ -28,11 +33,32 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authChanged = ValueNotifier(0);
   ref.listen(authControllerProvider, (_, _) => authChanged.value++);
 
-  final router = GoRouter(
+  late final GoRouter router;
+  router = GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: authChanged,
-    redirect: (context, state) =>
-        authRedirect(ref.read(authControllerProvider), state.matchedLocation),
+    redirect: (context, state) {
+      // When the auth state changes, go_router re-checks the current stack
+      // but hands us its bottom page (usually home). Check the page on top
+      // instead: settings pushed over home must not outlive a sign-out, and
+      // a pushed login must move on once signed in.
+      final current = router.routerDelegate.currentConfiguration;
+      final recheck = current.isNotEmpty && state.uri == current.uri;
+      final location = recheck
+          ? router.state.matchedLocation
+          : state.matchedLocation;
+      final returnTo = ref.read(signInReturnProvider);
+      final target = authRedirect(
+        ref.read(authControllerProvider),
+        location,
+        returnTo: returnTo,
+      );
+      if (returnTo != null && target == returnTo) {
+        // Used up. Cleared after this navigation, not during it.
+        Future.microtask(ref.read(signInReturnProvider.notifier).clear);
+      }
+      return target;
+    },
     routes: [
       GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
       GoRoute(
@@ -57,6 +83,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             EmailOtpScreen(args: state.extra! as EmailOtpArgs),
       ),
       GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+      GoRoute(
+        path: Routes.search,
+        builder: (_, state) => SearchScreen(
+          initialQuery: state.uri.queryParameters['q'] ?? '',
+          initialCategoryId: state.uri.queryParameters['categoryId'],
+        ),
+      ),
+      GoRoute(
+        path: Routes.itemPattern,
+        builder: (_, state) => ItemScreen(
+          id: state.pathParameters['id']!,
+          saveOnOpen: state.uri.queryParameters['save'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: Routes.areaPicker,
+        builder: (_, _) => const AreaPickerScreen(),
+      ),
+      GoRoute(path: Routes.wishlist, builder: (_, _) => const WishlistScreen()),
       GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: Routes.devices, builder: (_, _) => const DevicesScreen()),
       GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),

@@ -24,11 +24,10 @@ void main() {
       Routes.onboarding,
     );
     expect(
-      authRedirect(const Unauthenticated(onboardingSeen: true), Routes.splash),
-      Routes.login,
-    );
-    expect(
-      authRedirect(const Unauthenticated(onboardingSeen: true), Routes.home),
+      authRedirect(
+        const Unauthenticated(onboardingSeen: true),
+        Routes.onboarding,
+      ),
       Routes.login,
     );
     expect(
@@ -63,5 +62,51 @@ void main() {
     expect(authRedirect(auth, Routes.splash), Routes.home);
     expect(authRedirect(auth, Routes.setupEmailVerify), Routes.home);
     expect(authRedirect(auth, Routes.settings), isNull);
+  });
+
+  test('guests browse home, search, the map and items, nothing else', () {
+    const guest = Unauthenticated(onboardingSeen: true);
+    expect(authRedirect(guest, Routes.splash), Routes.home);
+    for (final route in [
+      Routes.home,
+      Routes.search,
+      Routes.areaPicker,
+      Routes.item('abc'),
+    ]) {
+      expect(authRedirect(guest, route), isNull, reason: route);
+    }
+    for (final route in [
+      Routes.wishlist,
+      Routes.myListings,
+      Routes.newListing,
+      Routes.settings,
+      Routes.documents,
+    ]) {
+      expect(authRedirect(guest, route), Routes.login, reason: route);
+    }
+    // Before onboarding, even browsing waits.
+    expect(
+      authRedirect(const Unauthenticated(onboardingSeen: false), Routes.home),
+      Routes.onboarding,
+    );
+  });
+
+  test('after signing in, guests go back where they were', () {
+    final auth = Authenticated(user(emailVerified: true));
+    const back = '/item/abc?save=1';
+    expect(authRedirect(auth, Routes.loginVerify, returnTo: back), back);
+    expect(authRedirect(auth, Routes.home, returnTo: back), isNull);
+
+    // New users set their name and email first, then go back.
+    final fresh = Authenticated(user());
+    expect(
+      authRedirect(fresh, Routes.loginVerify, returnTo: back),
+      Routes.setupEmail,
+    );
+    final verified = Authenticated(user(emailVerified: true));
+    expect(
+      authRedirect(verified, Routes.setupEmailVerify, returnTo: back),
+      back,
+    );
   });
 }

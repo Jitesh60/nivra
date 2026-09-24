@@ -36,6 +36,21 @@ class FakeAppPrefs implements AppPrefs {
 
   @override
   Future<void> setOnboardingSeen() async => seen = true;
+
+  String? area;
+  List<String> recent = [];
+
+  @override
+  Future<String?> searchArea() async => area;
+
+  @override
+  Future<void> setSearchArea(String json) async => area = json;
+
+  @override
+  Future<List<String>> recentlyViewed() async => recent;
+
+  @override
+  Future<void> setRecentlyViewed(List<String> ids) async => recent = ids;
 }
 
 class FakeDeviceInfo implements DeviceInfoService {

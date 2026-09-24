@@ -27,6 +27,7 @@ class ListingViewData {
     this.brand,
     this.size,
     this.areaLabel,
+    this.distanceKm,
   });
 
   factory ListingViewData.fromDraft(ListingDraft d, Category? category) =>
@@ -90,6 +91,9 @@ class ListingViewData {
   final String? brand;
   final String? size;
   final String? areaLabel;
+
+  /// From the borrower's search area, already rounded.
+  final double? distanceKm;
 }
 
 class ViewPhoto {
@@ -111,9 +115,20 @@ class ViewPhoto {
 }
 
 class ListingDetailView extends StatelessWidget {
-  const ListingDetailView({required this.data, super.key});
+  const ListingDetailView({
+    required this.data,
+    this.belowPrice,
+    this.extras = const [],
+    super.key,
+  });
 
   final ListingViewData data;
+
+  /// Shown under the price (the public page puts the date quote here).
+  final Widget? belowPrice;
+
+  /// Shown after the facts (e.g. the lender).
+  final List<Widget> extras;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +153,13 @@ class ListingDetailView extends StatelessWidget {
                   children: [
                     Icon(categoryIcon(data.category!.icon), size: 16),
                     const SizedBox(width: SajhaSpacing.xs),
-                    Text(data.category!.name, style: TextStyle(color: muted)),
+                    Flexible(
+                      child: Text(
+                        data.category!.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: muted),
+                      ),
+                    ),
                   ],
                 ),
               const SizedBox(height: SajhaSpacing.xs),
@@ -169,6 +190,10 @@ class ListingDetailView extends StatelessWidget {
                 'Refundable deposit ${formatRupees(data.depositPaise)}',
                 style: TextStyle(color: muted),
               ),
+              if (belowPrice != null) ...[
+                const SizedBox(height: SajhaSpacing.md),
+                belowPrice!,
+              ],
               const SizedBox(height: SajhaSpacing.md),
               Wrap(
                 spacing: SajhaSpacing.sm,
@@ -185,9 +210,13 @@ class ListingDetailView extends StatelessWidget {
               const Divider(height: SajhaSpacing.x2xl),
               _Fact(
                 icon: Icons.place_outlined,
-                title: data.areaLabel?.isNotEmpty == true
-                    ? data.areaLabel!
-                    : 'Pickup area not set',
+                title: [
+                  data.areaLabel?.isNotEmpty == true
+                      ? data.areaLabel!
+                      : 'Pickup area not set',
+                  if (data.distanceKm != null)
+                    '${formatDistance(data.distanceKm!)} away',
+                ].join(' · '),
                 subtitle: 'Exact address shared after the booking is confirmed',
               ),
               _Fact(
@@ -215,6 +244,7 @@ class ListingDetailView extends StatelessWidget {
                     ? 'Verified phone and email are enough'
                     : data.requiredDocs.map((d) => d.title).join(', '),
               ),
+              ...extras,
             ],
           ),
         ),

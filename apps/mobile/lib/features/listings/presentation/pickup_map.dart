@@ -40,35 +40,39 @@ class _PickupMapState extends ConsumerState<PickupMap> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          FlutterMap(
-            mapController: widget.controller,
-            options: MapOptions(
-              initialCenter: widget.initial ?? indiaCenter,
-              initialZoom: widget.initial == null ? 4.5 : 15,
-              minZoom: 3,
-              maxZoom: 18,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          // Fill the space: a Stack would otherwise loosen the constraints
+          // and leave the map with no size.
+          Positioned.fill(
+            child: FlutterMap(
+              mapController: widget.controller,
+              options: MapOptions(
+                initialCenter: widget.initial ?? indiaCenter,
+                initialZoom: widget.initial == null ? 4.5 : 15,
+                minZoom: 3,
+                maxZoom: 18,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
+                // Only the lender's own drags move the pin; layout and
+                // programmatic moves must not set it by accident.
+                onPositionChanged: (camera, hasGesture) {
+                  if (hasGesture) widget.onMoved(camera.center);
+                },
               ),
-              // Only the lender's own drags move the pin; layout and
-              // programmatic moves must not set it by accident.
-              onPositionChanged: (camera, hasGesture) {
-                if (hasGesture) widget.onMoved(camera.center);
-              },
+              children: [
+                if (tiles) ...[
+                  TileLayer(
+                    urlTemplate: url,
+                    userAgentPackageName: 'com.sajha.app',
+                    maxNativeZoom: 19,
+                  ),
+                  const SimpleAttributionWidget(
+                    source: Text('OpenStreetMap contributors'),
+                  ),
+                ] else
+                  const ColoredBox(color: SajhaColors.brand50),
+              ],
             ),
-            children: [
-              if (tiles)
-                TileLayer(
-                  urlTemplate: url,
-                  userAgentPackageName: 'com.sajha.app',
-                  maxNativeZoom: 19,
-                )
-              else
-                const ColoredBox(color: SajhaColors.brand50),
-              const SimpleAttributionWidget(
-                source: Text('OpenStreetMap contributors'),
-              ),
-            ],
           ),
           // The pin's tip sits on the map centre.
           const IgnorePointer(

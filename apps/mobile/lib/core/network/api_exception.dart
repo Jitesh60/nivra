@@ -91,6 +91,7 @@ class ApiException implements Exception {
     'DOCUMENT_ALREADY_EXISTS':
         'You already have this document. Delete it first to add a new one.',
     'NOT_FOUND': 'This was removed or isn’t available any more.',
+    'FAVORITE_OWN_LISTING': 'This is your own listing, so you can’t save it.',
     networkError: 'Can’t reach Sajha. Check your internet connection.',
     networkTimeout: 'Sajha is taking too long to respond. Please try again.',
   };

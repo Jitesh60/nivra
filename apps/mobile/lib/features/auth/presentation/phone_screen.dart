@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/effects/gradient_button.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/router/sign_in_return.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../application/auth_controller.dart';
 import '../data/auth_repository.dart';
@@ -69,8 +70,28 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     final typed = _phone.text;
     final showFormatHint = typed.length == 10 && !isValidIndianMobile(typed);
 
-    return Scaffold(
-      appBar: AppBar(),
+    final returning = ref.watch(signInReturnProvider) != null;
+
+    final screen = Scaffold(
+      appBar: AppBar(
+        leading: returning
+            ? IconButton(
+                key: const ValueKey('cancel-sign-in'),
+                tooltip: 'Not now',
+                icon: const Icon(Icons.close),
+                onPressed: () => cancelSignIn(context, ref),
+              )
+            : null,
+        actions: [
+          // First run lands here; guests may look around before signing in.
+          if (!returning && !context.canPop())
+            TextButton(
+              key: const ValueKey('browse-as-guest'),
+              onPressed: () => cancelSignIn(context, ref),
+              child: const Text('Browse first'),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(SajhaSpacing.lg),
@@ -87,7 +108,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             Text('Enter your mobile number', style: text.headlineSmall),
             const SizedBox(height: SajhaSpacing.sm),
             Text(
-              'We’ll send a 6-digit code to verify it’s you.',
+              returning
+                  ? 'Sign in to save items and rent from lenders. We’ll send '
+                        'a 6-digit code, then bring you right back.'
+                  : 'We’ll send a 6-digit code to verify it’s you.',
               style: text.bodyLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -138,6 +162,14 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
           ],
         ),
       ),
+    );
+    // System back while signing in for something goes back to it.
+    return PopScope(
+      canPop: !returning,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) cancelSignIn(context, ref);
+      },
+      child: screen,
     );
   }
 }

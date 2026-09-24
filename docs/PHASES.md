@@ -306,8 +306,21 @@ Delivered as two sub-phases, each with its own branch and PR. **Done when:** a b
 ### 4b — Mobile
 **Branch:** `phase/4b-discovery-mobile`
 
-- Guest browsing, a search area (GPS or map), the home feed, search with filters and a date picker, and listing detail with a price breakdown and the lender mini-profile
-- Wishlist, and recently viewed
+- **Guest browsing:**
+  - After onboarding, signed-out users land on home and can open home, search, the area picker and item pages (`/item/:id`); everything else still goes to sign-in.
+  - Saving (and later chatting and booking) opens sign-in, then returns to the same item and finishes the save.
+  - "Not now" goes back without saving.
+- **Search area:** GPS or a spot on the map, with a 1–25 km radius. It's saved on the device.
+- **Home:** search box, area, categories, Near you, Popular this week, Recently viewed (last 20 on the device), and New on Sajha. Signed-in users also get a verification prompt (only while something's missing) and the lending card.
+- **Search:**
+  - keywords, area chip, dates, a filters sheet (distance, category, price, condition, ID-verified lenders) and sort
+  - results load as you scroll
+  - an empty result offers to double the radius
+- **Item page:**
+  - the listing, the distance from your area, the lender (badges, member since) and how many people saved it
+  - "Choose dates" greys out blocked days and days inside the notice period, then shows the quote: rent × days, weekly discount, service fee (free), deposit and total, or why the dates don't work
+  - Chat and Request to book are shown but disabled until Phases 5–6
+- **Wishlist:** saved items, newest first; items taken down since stay, marked. Hearts on any card or page stay in sync.
 - **Done when:** widget tests cover the guest → sign-in-to-save flow, filters, the dates quote and the wishlist, and the live contract test searches the local API
 
 ## Phase 5 — Chat, offers & notifications

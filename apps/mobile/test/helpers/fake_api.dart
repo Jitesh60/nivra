@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -18,6 +19,12 @@ class FakeSajhaApi implements HttpClientAdapter {
   final _uploads = <String, _Upload>{}; // by key
   final documents = <String, FakeDocument>{}; // by id
   final listings = <String, FakeListing>{}; // by id
+
+  /// Wishlists: user id → listing ids in the order they were saved.
+  final favorites = <String, List<String>>{};
+
+  /// Listing views counted for "Popular this week".
+  final views = <String, int>{};
 
   /// Lenders whose listings go live without review (an admin approved one).
   final trustedLenders = <String>{};
@@ -58,34 +65,63 @@ class FakeSajhaApi implements HttpClientAdapter {
     ..status = 'REJECTED'
     ..rejectionReason = reason;
 
-  /// A listing with one photo in [status], owned by the only seeded user.
+  /// A listing with one photo in [status]. Owned by [lenderId], or by the
+  /// first seeded user.
   FakeListing seedListing({
     String status = 'LIVE',
     String title = 'Quechua trekking tent',
     String? rejectionReason,
+    String? lenderId,
+    String categoryId = 'cat-trek',
+    String description = 'Two-person tent, used on three treks. Pegs included.',
+    String condition = 'GOOD',
+    int pricePerDayPaise = 15000,
+    int weeklyDiscountPct = 10,
+    int minDays = 1,
+    int maxDays = 30,
+    int advanceNoticeDays = 1,
+    double lat = 18.5074,
+    double lng = 73.8077,
+    String areaLabel = 'Kothrud, Pune',
+    List<Map<String, String>> blocks = const [],
   }) {
-    final lender = _users.values.first;
-    final l = FakeListing('listing-${++_seq}', lender.id)
+    final lender = lenderId ?? _users.values.first.id;
+    final l = FakeListing('listing-${++_seq}', lender)
       ..fields.addAll({
-        'categoryId': 'cat-trek',
+        'categoryId': categoryId,
         'title': title,
-        'description': 'Two-person tent, used on three treks. Pegs included.',
-        'condition': 'GOOD',
-        'pricePerDayPaise': 15000,
-        'weeklyDiscountPct': 10,
+        'description': description,
+        'condition': condition,
+        'pricePerDayPaise': pricePerDayPaise,
+        'weeklyDiscountPct': weeklyDiscountPct,
         'depositPaise': 100000,
-        'minDays': 1,
-        'maxDays': 30,
-        'advanceNoticeDays': 1,
-        'lat': 18.5074,
-        'lng': 73.8077,
-        'areaLabel': 'Kothrud, Pune',
+        'minDays': minDays,
+        'maxDays': maxDays,
+        'advanceNoticeDays': advanceNoticeDays,
+        'lat': lat,
+        'lng': lng,
+        'areaLabel': areaLabel,
       })
       ..status = status
       ..rejectionReason = rejectionReason
+      ..blocks = List.of(blocks)
       ..photos.add(_newPhoto());
     listings[l.id] = l;
     return l;
+  }
+
+  /// A lender with no session on this device; returns their id.
+  String seedLender({
+    String name = 'Asha Patil',
+    String phone = '+919812345678',
+    bool idVerified = false,
+  }) {
+    final u = _createUser(phone)
+      ..name = name
+      ..email = '${name.split(' ').first.toLowerCase()}@example.com'
+      ..emailVerified = true
+      ..idVerifiedFlag = idVerified;
+    return u.id;
   }
 
   Map<String, dynamic> _newPhoto() {
@@ -163,7 +199,14 @@ class FakeSajhaApi implements HttpClientAdapter {
         ? Map<String, dynamic>.from(options.data as Map)
         : <String, dynamic>{};
     final auth = options.headers['Authorization'] as String?;
-    final (status, json) = _handle(options.method, path, body, auth);
+    lastQueries[path] = options.uri.queryParameters;
+    final (status, json) = _handle(
+      options.method,
+      path,
+      body,
+      auth,
+      options.uri.queryParameters,
+    );
     return ResponseBody.fromString(
       json == null ? '' : jsonEncode(json),
       status,
@@ -211,12 +254,38 @@ class FakeSajhaApi implements HttpClientAdapter {
       ..rejectionReason = approve ? null : reason;
   }
 
+  /// Query parameters of the last request to each path.
+  final lastQueries = <String, Map<String, String>>{};
+
   (int, Object?) _handle(
     String method,
     String path,
     Map<String, dynamic> body,
     String? auth,
+    Map<String, String> query,
   ) {
+    if (method == 'GET' &&
+        (path == '/home' ||
+            path == '/search' ||
+            path == '/listings' ||
+            path.startsWith('/listings/'))) {
+      // Public, with optional sign-in: a bad token is still a 401.
+      _User? viewer;
+      if (auth != null) {
+        final token = auth.replaceFirst('Bearer ', '');
+        final s = _sessions.values
+            .where((s) => s.access.contains(token))
+            .firstOrNull;
+        if (s == null || s.revoked) {
+          return _error(401, 'TOKEN_INVALID', 'Invalid token');
+        }
+        if (_expiredAccess.contains(token)) {
+          return _error(401, 'TOKEN_EXPIRED', 'Token expired');
+        }
+        viewer = _users[s.userId];
+      }
+      return _discovery(path, query, viewer);
+    }
     switch ('$method $path') {
       case 'GET /categories':
         return (200, [for (final c in categories) c]);
@@ -413,6 +482,15 @@ class FakeSajhaApi implements HttpClientAdapter {
           ..email = challenge!.target
           ..emailVerified = true;
         return (200, {'user': user.json});
+      case 'GET /me/favorites':
+        final ids = favorites[user.id] ?? const [];
+        return (
+          200,
+          [
+            for (final id in ids.reversed)
+              if (listings[id]!.status != 'DELETED') _card(listings[id]!, user),
+          ],
+        );
       case 'GET /me/sessions':
         return (
           200,
@@ -497,6 +575,23 @@ class FakeSajhaApi implements HttpClientAdapter {
         return (200, l.json);
       }
     }
+    if (path.startsWith('/me/favorites/')) {
+      final id = path.split('/').last;
+      final saved = favorites.putIfAbsent(user.id, () => []);
+      if (method == 'DELETE') {
+        saved.remove(id);
+        return (204, null);
+      }
+      final l = listings[id];
+      if (l == null || l.status != 'LIVE') {
+        return _error(404, 'NOT_FOUND', 'Listing not found');
+      }
+      if (l.lenderId == user.id) {
+        return _error(400, 'FAVORITE_OWN_LISTING', 'Own listing');
+      }
+      if (!saved.contains(id)) saved.add(id);
+      return (204, null);
+    }
     if (path.startsWith('/me/documents/')) {
       final parts = path.split('/'); // ['', 'me', 'documents', id, 'view'?]
       final doc = documents[parts[3]];
@@ -523,6 +618,305 @@ class FakeSajhaApi implements HttpClientAdapter {
       return (204, null);
     }
     return _error(404, 'NOT_FOUND', 'Cannot $method $path');
+  }
+
+  (int, Object?) _discovery(
+    String path,
+    Map<String, String> query,
+    _User? viewer,
+  ) {
+    final lat = double.tryParse(query['lat'] ?? '');
+    final lng = double.tryParse(query['lng'] ?? '');
+    double? meters(FakeListing l) => lat == null || lng == null
+        ? null
+        : _haversine(
+            lat,
+            lng,
+            l.fields['lat'] as double,
+            l.fields['lng'] as double,
+          );
+    final live = [
+      for (final l in listings.values.toList().reversed) // newest first
+        if (l.status == 'LIVE' && !_users[l.lenderId]!.suspended) l,
+    ];
+
+    if (path == '/home') {
+      final near = [
+        for (final l in live)
+          if ((meters(l) ?? double.infinity) <= 10000) l,
+      ]..sort((a, b) => meters(a)!.compareTo(meters(b)!));
+      int score(FakeListing l) =>
+          (views[l.id] ?? 0) +
+          3 * favorites.values.where((ids) => ids.contains(l.id)).length;
+      final popular = [
+        for (final l in live)
+          if (score(l) > 0) l,
+      ]..sort((a, b) => score(b).compareTo(score(a)));
+      return (
+        200,
+        {
+          'categories': [for (final c in categories) c],
+          'nearYou': [
+            for (final l in near.take(10)) _card(l, viewer, meters: meters(l)),
+          ],
+          'popularThisWeek': [
+            for (final l in popular.take(10))
+              _card(l, viewer, meters: meters(l)),
+          ],
+          'newest': [
+            for (final l in live.take(10)) _card(l, viewer, meters: meters(l)),
+          ],
+        },
+      );
+    }
+
+    if (path == '/listings') {
+      final ids = (query['ids'] ?? '').split(',');
+      return (
+        200,
+        [
+          for (final id in ids)
+            if (live.any((l) => l.id == id)) _card(listings[id]!, viewer),
+        ],
+      );
+    }
+
+    if (path == '/search') {
+      final radius = double.parse(query['radiusKm'] ?? '5') * 1000;
+      final q = (query['q'] ?? '').toLowerCase().trim();
+      final conditions = query['condition']?.split(',');
+      final start = query['startDate'] == null
+          ? null
+          : DateTime.parse(query['startDate']!);
+      final end = query['endDate'] == null
+          ? null
+          : DateTime.parse(query['endDate']!);
+      final days = start == null ? null : end!.difference(start).inDays + 1;
+      bool matches(FakeListing l) {
+        final f = l.fields;
+        final m = meters(l);
+        if (m != null && m > radius) return false;
+        if (q.isNotEmpty) {
+          final hay = '${f['title']} ${f['description']} ${f['brand'] ?? ''}'
+              .toLowerCase();
+          // Crude stemming, like Postgres' english config: "tents" ≈ "tent".
+          final words = q.split(RegExp(r'\s+'));
+          if (!words.every(
+            (w) => hay.contains(
+              w.endsWith('s') ? w.substring(0, w.length - 1) : w,
+            ),
+          )) {
+            return false;
+          }
+        }
+        if (query['categoryId'] != null &&
+            f['categoryId'] != query['categoryId']) {
+          return false;
+        }
+        final price = f['pricePerDayPaise'] as int;
+        final min = int.tryParse(query['minPricePaise'] ?? '');
+        final max = int.tryParse(query['maxPricePaise'] ?? '');
+        if (min != null && price < min) return false;
+        if (max != null && price > max) return false;
+        if (conditions != null && !conditions.contains(f['condition'])) {
+          return false;
+        }
+        if (query['verifiedLendersOnly'] == 'true' &&
+            !(_users[l.lenderId]!.json['idVerified'] as bool)) {
+          return false;
+        }
+        if (start != null) {
+          final quote = _quote(l, start, end!);
+          if (!(quote['available'] as bool)) return false;
+        }
+        return true;
+      }
+
+      final sort =
+          query['sort'] ??
+          (lat != null ? 'distance' : (q.isNotEmpty ? 'relevance' : 'newest'));
+      final found = live.where(matches).toList();
+      int price(FakeListing l) => l.fields['pricePerDayPaise'] as int;
+      switch (sort) {
+        case 'distance':
+          found.sort((a, b) => meters(a)!.compareTo(meters(b)!));
+        case 'price_asc':
+          found.sort((a, b) => price(a).compareTo(price(b)));
+        case 'price_desc':
+          found.sort((a, b) => price(b).compareTo(price(a)));
+      }
+      final offset = int.tryParse(query['cursor'] ?? '') ?? 0;
+      final limit = int.tryParse(query['limit'] ?? '') ?? searchPageSize;
+      final page = found.skip(offset).take(limit).toList();
+      final next = offset + page.length;
+      return (
+        200,
+        {
+          'items': [
+            for (final l in page)
+              _card(l, viewer, meters: meters(l), days: days),
+          ],
+          'nextCursor': next < found.length ? '$next' : null,
+          'sort': sort,
+        },
+      );
+    }
+
+    // /listings/:id and /listings/:id/quote
+    final parts = path.split('/'); // ['', 'listings', id, 'quote'?]
+    final l = listings[parts[2]];
+    if (l == null || !live.contains(l)) {
+      return _error(404, 'NOT_FOUND', 'Listing not found');
+    }
+    if (parts.length == 4 && parts[3] == 'quote') {
+      return (
+        200,
+        _quote(
+          l,
+          DateTime.parse(query['startDate']!),
+          DateTime.parse(query['endDate']!),
+        ),
+      );
+    }
+    if (viewer?.id != l.lenderId) views[l.id] = (views[l.id] ?? 0) + 1;
+    final lender = _users[l.lenderId]!;
+    final json = l.json;
+    return (
+      200,
+      {
+        for (final k in [
+          'id',
+          'category',
+          'title',
+          'description',
+          'condition',
+          'brand',
+          'size',
+          'pricePerDayPaise',
+          'weeklyDiscountPct',
+          'depositPaise',
+          'minDays',
+          'maxDays',
+          'advanceNoticeDays',
+          'areaLabel',
+          'photos',
+          'requiredDocs',
+          'blocks',
+        ])
+          k: json[k],
+        'approxLat': ((l.fields['lat'] as double) * 100).round() / 100,
+        'approxLng': ((l.fields['lng'] as double) * 100).round() / 100,
+        'lender': {
+          'id': lender.id,
+          'name': lender.name,
+          'avatarUrl': lender.avatarUrl,
+          'city': lender.city,
+          'phoneVerified': true,
+          'emailVerified': lender.emailVerified,
+          'idVerified': lender.json['idVerified'],
+          'memberSince': '2026-09-01T10:00:00.000Z',
+        },
+        'saved': favorites[viewer?.id]?.contains(l.id) ?? false,
+        'favoriteCount': favorites.values
+            .where((ids) => ids.contains(l.id))
+            .length,
+      },
+    );
+  }
+
+  /// Results per search page.
+  int searchPageSize = 20;
+
+  Map<String, dynamic> _card(
+    FakeListing l,
+    _User? viewer, {
+    double? meters,
+    int? days,
+  }) {
+    final f = l.fields;
+    final lender = _users[l.lenderId]!;
+    final price = f['pricePerDayPaise'] as int;
+    final before = days == null ? null : price * days;
+    final discount = days != null && days >= 7
+        ? (before! * (f['weeklyDiscountPct'] as int? ?? 0) / 100).round()
+        : 0;
+    return {
+      'id': l.id,
+      'title': f['title'],
+      'category': categories.firstWhere((c) => c['id'] == f['categoryId']),
+      'thumbUrl': l.photos.firstOrNull?['thumbUrl'],
+      'pricePerDayPaise': price,
+      'weeklyDiscountPct': f['weeklyDiscountPct'] ?? 0,
+      'depositPaise': f['depositPaise'],
+      'areaLabel': f['areaLabel'],
+      'distanceKm': meters == null
+          ? null
+          : (meters < 1000 ? 0.5 : (meters / 500).round() / 2),
+      'lender': {
+        'id': lender.id,
+        'name': lender.name,
+        'avatarUrl': lender.avatarUrl,
+        'idVerified': lender.json['idVerified'],
+      },
+      'saved': favorites[viewer?.id]?.contains(l.id) ?? false,
+      'available': l.status == 'LIVE',
+      'rentPaise': before == null ? null : before - discount,
+      'days': days,
+    };
+  }
+
+  /// Same rules as the API's `pricing.ts`.
+  Map<String, dynamic> _quote(FakeListing l, DateTime start, DateTime end) {
+    final f = l.fields;
+    final days = end.difference(start).inDays + 1;
+    final price = f['pricePerDayPaise'] as int;
+    final before = price * days;
+    final discount = days >= 7
+        ? (before * (f['weeklyDiscountPct'] as int? ?? 0) / 100).round()
+        : 0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final blocked = l.blocks.any((b) {
+      final m = b as Map;
+      return !DateTime.parse(m['startsOn'] as String).isAfter(end) &&
+          !DateTime.parse(m['endsOn'] as String).isBefore(start);
+    });
+    final reason = days < (f['minDays'] as int)
+        ? 'TOO_SHORT'
+        : days > (f['maxDays'] as int)
+        ? 'TOO_LONG'
+        : start.isBefore(
+            today.add(Duration(days: f['advanceNoticeDays'] as int)),
+          )
+        ? 'NOT_ENOUGH_NOTICE'
+        : blocked
+        ? 'BLOCKED'
+        : null;
+    final deposit = f['depositPaise'] as int;
+    return {
+      'days': days,
+      'pricePerDayPaise': price,
+      'rentBeforeDiscountPaise': before,
+      'weeklyDiscountPaise': discount,
+      'rentPaise': before - discount,
+      'feePaise': 0,
+      'depositPaise': deposit,
+      'totalPaise': before - discount + deposit,
+      'available': reason == null,
+      'unavailableReason': reason,
+    };
+  }
+
+  static double _haversine(double lat1, double lng1, double lat2, double lng2) {
+    double rad(double d) => d * math.pi / 180;
+    final dLat = rad(lat2 - lat1);
+    final dLng = rad(lng2 - lng1);
+    final a =
+        math.pow(math.sin(dLat / 2), 2) +
+        math.cos(rad(lat1)) *
+            math.cos(rad(lat2)) *
+            math.pow(math.sin(dLng / 2), 2);
+    return 6371000 * 2 * math.asin(math.sqrt(a));
   }
 
   /// Consumes an upload the user PUT to storage, like the API's finalise step.
@@ -603,6 +997,7 @@ class _User {
   String? city;
   String? bio;
   String? avatarUrl;
+  bool idVerifiedFlag = false;
   FakeSajhaApi? api;
 
   Map<String, dynamic> get json => {
@@ -614,10 +1009,11 @@ class _User {
     'bio': bio,
     'avatarUrl': avatarUrl,
     'idVerified':
-        api?.documents.values.any(
-          (d) => d.userId == id && d.status == 'APPROVED',
-        ) ??
-        false,
+        idVerifiedFlag ||
+        (api?.documents.values.any(
+              (d) => d.userId == id && d.status == 'APPROVED',
+            ) ??
+            false),
     'status': suspended ? 'SUSPENDED' : 'ACTIVE',
     'phoneVerified': true,
     'emailVerified': emailVerified,
