@@ -70,6 +70,25 @@ pnpm dev                          # http://localhost:3000 (watch mode)
   - `/v1/admin/conversations/:id/messages`: the original text, with every view audited
 - Design: [docs/ARCHITECTURE.md §7](../../docs/ARCHITECTURE.md#7-chat--realtime-phase-5a).
 
+## Bookings & document sharing (Phase 6a)
+
+- **Bookings** (verified phone and email to request):
+  - `POST /v1/bookings {listingId, startDate, endDate}`
+  - `GET /v1/bookings?role=BORROWER|LENDER&scope=OPEN|PAST`
+  - `GET /v1/bookings/:id` (timeline, documents, and `can` flags for buttons)
+  - `POST /v1/bookings/:id/accept | decline | cancel`
+- An offer accepted in chat creates the booking itself. `ConversationDto.openBookingId` links to it.
+- **Documents:**
+  - `POST /v1/bookings/:id/documents` (borrower shares from the vault)
+  - `POST /v1/bookings/:id/documents/approve | reject` (lender)
+  - `GET /v1/bookings/:id/documents/:shareId/view` (lender; a 5-minute link; every view is logged)
+- **Notifications:** `GET /v1/me/notifications`, `POST /v1/me/notifications/read`. Socket events: `booking:updated` and `notification:new`.
+- **Admin:** `/v1/admin/bookings` (cancel: SUPER_ADMIN and OPS).
+- **Background jobs:** BullMQ on `REDIS_URL`, queue `bookings`: step expiry, a 5-minute sweep, and a daily purge of shared copies. The worker runs in the API process; set `JOBS_WORKER=false` to run the API without it.
+  - Windows: `BOOKING_REQUEST_TTL_MIN` (1440), `BOOKING_DOCS_TTL_MIN` (1440), `BOOKING_PAYMENT_TTL_MIN` (120), `SHARE_RETENTION_DAYS` (30).
+  - To watch an expiry locally, start the API with `BOOKING_PAYMENT_TTL_MIN=1`.
+- Design: [docs/ARCHITECTURE.md §5](../../docs/ARCHITECTURE.md#5-booking-lifecycle) and §8.
+
 ## Tests
 
 | Command | What |

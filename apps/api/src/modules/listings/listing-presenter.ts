@@ -82,12 +82,20 @@ export class ListingPresenter {
     };
   }
 
+  /** [held]: dates taken by bookings, shown as unavailable with the lender's blocks. */
   public(
     l: PublicListingRow,
     extras: { saved: boolean; favoriteCount: number } = { saved: false, favoriteCount: 0 },
+    held: { startsOn: Date; endsOn: Date }[] = [],
   ): PublicListingDto {
+    const base = this.base(l);
+    const blocks = [
+      ...base.blocks,
+      ...held.map((b) => ({ startsOn: day(b.startsOn), endsOn: day(b.endsOn) })),
+    ].sort((a, b) => a.startsOn.localeCompare(b.startsOn));
     return {
-      ...this.base(l),
+      ...base,
+      blocks,
       approxLat: approximate(l.lat!),
       approxLng: approximate(l.lng!),
       lender: this.lender(l.lender),

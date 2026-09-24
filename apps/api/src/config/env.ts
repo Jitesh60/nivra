@@ -91,6 +91,29 @@ export const envSchema = z.object({
   S3_PUBLIC_BASE_URL: z.url(),
   /** Server-side encryption for the private bucket. */
   S3_PRIVATE_SSE: z.enum(['AES256', 'aws:kms', 'none']).default('none'),
+
+  // ── Bookings & jobs ──
+  /** Run the BullMQ worker (booking timers, purge) in this process. */
+  JOBS_WORKER: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  /** How long the lender has to accept or decline a request. */
+  BOOKING_REQUEST_TTL_MIN: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(24 * 60),
+  /** How long the borrower has to share documents, and the lender to review them. */
+  BOOKING_DOCS_TTL_MIN: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(24 * 60),
+  /** How long accepted dates are held for payment. */
+  BOOKING_PAYMENT_TTL_MIN: z.coerce.number().int().positive().default(120),
+  /** Shared document copies are deleted this long after the booking closes. */
+  SHARE_RETENTION_DAYS: z.coerce.number().int().nonnegative().default(30),
 });
 
 export type Env = z.infer<typeof envSchema>;

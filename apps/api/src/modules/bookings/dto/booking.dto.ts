@@ -1,0 +1,340 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { ParticipantDto } from '../../safety/dto/safety.dto.js';
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const BOOKING_STATUSES = [
+  'REQUESTED',
+  'AWAITING_DOCS',
+  'AWAITING_PAYMENT',
+  'CONFIRMED',
+  'ACTIVE',
+  'RETURNED',
+  'COMPLETED',
+  'DISPUTED',
+  'DECLINED',
+  'EXPIRED',
+  'CANCELLED',
+] as const;
+
+export const BOOKING_EVENT_TYPES = [
+  'REQUESTED',
+  'ACCEPTED',
+  'DECLINED',
+  'EXPIRED',
+  'CANCELLED',
+  'DOCS_SUBMITTED',
+  'DOCS_APPROVED',
+  'DOCS_REJECTED',
+] as const;
+
+const DOC_TYPES = [
+  'AADHAAR_MASKED',
+  'PAN',
+  'DRIVING_LICENCE',
+  'PASSPORT',
+  'VOTER_ID',
+  'COLLEGE_ID',
+  'EMPLOYEE_ID',
+  'ADDRESS_PROOF',
+  'OTHER',
+] as const;
+const REQUIRED_DOC_TYPES = ['GOVERNMENT_ID', 'COLLEGE_OR_EMPLOYEE_ID', 'ADDRESS_PROOF', 'OTHER'];
+
+// ── Requests ──
+
+export class CreateBookingDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  listingId: string;
+
+  @ApiProperty({ format: 'date', example: '2026-10-12' })
+  @Matches(ISO_DATE, { message: 'startDate must be YYYY-MM-DD' })
+  startDate: string;
+
+  @ApiProperty({ format: 'date', example: '2026-10-16' })
+  @Matches(ISO_DATE, { message: 'endDate must be YYYY-MM-DD' })
+  endDate: string;
+}
+
+export class ListBookingsQueryDto {
+  @ApiProperty({ enum: ['BORROWER', 'LENDER'], description: 'Bookings you made, or of your items' })
+  @IsIn(['BORROWER', 'LENDER'])
+  role: 'BORROWER' | 'LENDER';
+
+  @ApiPropertyOptional({ enum: ['OPEN', 'PAST'], default: 'OPEN' })
+  @IsOptional()
+  @IsIn(['OPEN', 'PAST'])
+  scope: 'OPEN' | 'PAST' = 'OPEN';
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  cursor?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 50, default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit: number = 20;
+}
+
+export class ReasonDto {
+  @ApiProperty({ minLength: 3, maxLength: 300 })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(300)
+  reason: string;
+}
+
+export class OptionalReasonDto {
+  @ApiPropertyOptional({ maxLength: 300 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  reason?: string;
+}
+
+export class ShareChoiceDto {
+  @ApiProperty({ format: 'uuid', description: 'One of the booking’s `requiredDocs`' })
+  @IsUUID()
+  requiredDocId: string;
+
+  @ApiProperty({ format: 'uuid', description: 'A document from your vault' })
+  @IsUUID()
+  userDocumentId: string;
+}
+
+export class ShareDocumentsDto {
+  @ApiProperty({ type: [ShareChoiceDto], description: 'One vault document per required document' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(4)
+  @ValidateNested({ each: true })
+  @Type(() => ShareChoiceDto)
+  shares: ShareChoiceDto[];
+}
+
+// ── Responses ──
+
+export class BookingListingDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty() title: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) thumbUrl: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) areaLabel: string | null;
+}
+
+export class BookingRequiredDocDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ enum: REQUIRED_DOC_TYPES }) docType: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) note: string | null;
+  @ApiProperty({ enum: DOC_TYPES, isArray: true, description: 'Vault documents that count' })
+  accepts: string[];
+}
+
+export class BookingActionsDto {
+  @ApiProperty() accept: boolean;
+  @ApiProperty() decline: boolean;
+  @ApiProperty() cancel: boolean;
+  @ApiProperty({ description: 'Borrower: share documents now' }) shareDocs: boolean;
+  @ApiProperty({ description: 'Lender: approve or reject shared documents now' })
+  reviewDocs: boolean;
+}
+
+export class BookingDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ enum: BOOKING_STATUSES }) status: string;
+  @ApiProperty({ enum: ['REQUEST', 'OFFER'] }) source: string;
+  @ApiProperty({ enum: ['BORROWER', 'LENDER'], description: 'The viewer’s side' }) role: string;
+  @ApiProperty({ type: BookingListingDto }) listing: BookingListingDto;
+  @ApiProperty({ type: ParticipantDto }) other: ParticipantDto;
+  @ApiProperty({ format: 'uuid' }) conversationId: string;
+  @ApiProperty({ format: 'date' }) startDate: string;
+  @ApiProperty({ format: 'date' }) endDate: string;
+  @ApiProperty() days: number;
+  @ApiProperty() pricePerDayPaise: number;
+  @ApiProperty() rentPaise: number;
+  @ApiProperty() feePaise: number;
+  @ApiProperty({ description: 'Refundable' }) depositPaise: number;
+  @ApiProperty() totalPaise: number;
+  @ApiPropertyOptional({
+    type: Date,
+    nullable: true,
+    description: 'The current step times out then (the booking expires)',
+  })
+  expiresAt: Date | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) declineReason: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true, enum: ['BORROWER', 'LENDER', 'ADMIN'] })
+  cancelledBy: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) cancelReason: string | null;
+  @ApiProperty() createdAt: Date;
+  @ApiProperty() updatedAt: Date;
+}
+
+export class BookingPageDto {
+  @ApiProperty({ type: [BookingDto] }) items: BookingDto[];
+  @ApiPropertyOptional({ type: String, nullable: true }) nextCursor: string | null;
+}
+
+export class BookingEventDto {
+  @ApiProperty({ enum: BOOKING_EVENT_TYPES }) type: string;
+  @ApiProperty({ enum: BOOKING_STATUSES }) status: string;
+  @ApiProperty({ enum: ['BORROWER', 'LENDER', 'ADMIN', 'SYSTEM'] }) by: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) note: string | null;
+  @ApiProperty() at: Date;
+}
+
+export class DocumentViewDto {
+  @ApiPropertyOptional({ type: String, nullable: true }) viewerName: string | null;
+  @ApiProperty() at: Date;
+}
+
+export class SharedDocumentDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiPropertyOptional({ type: String, nullable: true, format: 'uuid' })
+  requiredDocId: string | null;
+  @ApiProperty({ enum: DOC_TYPES }) docType: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) label: string | null;
+  @ApiProperty({ description: 'Sajha had verified it when it was shared' }) verified: boolean;
+  @ApiProperty({ enum: ['SUBMITTED', 'APPROVED', 'REJECTED'] }) status: string;
+  @ApiProperty() hasBack: boolean;
+  @ApiProperty({ description: 'The lender can open it now' }) viewable: boolean;
+  @ApiProperty({
+    type: [DocumentViewDto],
+    description: 'Who opened it and when (shown to the borrower only; empty for the lender)',
+  })
+  views: DocumentViewDto[];
+}
+
+export class BookingDetailDto extends BookingDto {
+  @ApiProperty({ type: [BookingRequiredDocDto] }) requiredDocs: BookingRequiredDocDto[];
+  @ApiProperty({ type: [SharedDocumentDto] }) sharedDocuments: SharedDocumentDto[];
+  @ApiProperty({ type: [BookingEventDto], description: 'Oldest first' }) events: BookingEventDto[];
+  @ApiProperty({ type: BookingActionsDto }) can: BookingActionsDto;
+}
+
+export class DocumentViewUrlDto {
+  @ApiProperty({ description: 'Short-lived link (5 minutes)' }) url: string;
+  @ApiProperty() expiresAt: Date;
+  @ApiProperty({ description: 'Draw this over the image' }) watermark: string;
+}
+
+// ── Admin ──
+
+export class AdminBookingPartyDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) name: string | null;
+  @ApiProperty() phone: string;
+}
+
+export class AdminBookingDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ enum: BOOKING_STATUSES }) status: string;
+  @ApiProperty({ enum: ['REQUEST', 'OFFER'] }) source: string;
+  @ApiProperty({ type: BookingListingDto }) listing: BookingListingDto;
+  @ApiProperty({ type: AdminBookingPartyDto }) borrower: AdminBookingPartyDto;
+  @ApiProperty({ type: AdminBookingPartyDto }) lender: AdminBookingPartyDto;
+  @ApiProperty({ format: 'date' }) startDate: string;
+  @ApiProperty({ format: 'date' }) endDate: string;
+  @ApiProperty() days: number;
+  @ApiProperty() totalPaise: number;
+  @ApiPropertyOptional({ type: Date, nullable: true }) expiresAt: Date | null;
+  @ApiProperty() createdAt: Date;
+}
+
+export class AdminBookingPageDto {
+  @ApiProperty({ type: [AdminBookingDto] }) items: AdminBookingDto[];
+  @ApiPropertyOptional({ type: String, nullable: true }) nextCursor: string | null;
+}
+
+export class AdminBookingEventDto extends BookingEventDto {
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Who did it' })
+  actorName: string | null;
+}
+
+export class AdminShareViewDto {
+  @ApiPropertyOptional({ type: String, nullable: true }) viewerName: string | null;
+  @ApiProperty({ enum: ['USER', 'ADMIN'] }) viewerType: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) ip: string | null;
+  @ApiProperty() at: Date;
+}
+
+export class AdminSharedDocumentDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ enum: DOC_TYPES }) docType: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) label: string | null;
+  @ApiProperty() verified: boolean;
+  @ApiProperty({ enum: ['SUBMITTED', 'APPROVED', 'REJECTED'] }) status: string;
+  @ApiPropertyOptional({ type: Date, nullable: true }) accessExpiresAt: Date | null;
+  @ApiPropertyOptional({ type: Date, nullable: true }) purgedAt: Date | null;
+  @ApiProperty({ type: [AdminShareViewDto] }) views: AdminShareViewDto[];
+}
+
+export class AdminBookingDetailDto extends AdminBookingDto {
+  @ApiProperty({ format: 'uuid' }) conversationId: string;
+  @ApiProperty() pricePerDayPaise: number;
+  @ApiProperty() rentPaise: number;
+  @ApiProperty() feePaise: number;
+  @ApiProperty() depositPaise: number;
+  @ApiPropertyOptional({ type: String, nullable: true }) declineReason: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true, enum: ['BORROWER', 'LENDER', 'ADMIN'] })
+  cancelledBy: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) cancelReason: string | null;
+  @ApiPropertyOptional({ type: Date, nullable: true }) closedAt: Date | null;
+  @ApiProperty({ description: 'Bookings this lender cancelled after accepting' })
+  lenderCancellations: number;
+  @ApiProperty({ type: [BookingRequiredDocDto] }) requiredDocs: BookingRequiredDocDto[];
+  @ApiProperty({ type: [AdminSharedDocumentDto] }) sharedDocuments: AdminSharedDocumentDto[];
+  @ApiProperty({ type: [AdminBookingEventDto], description: 'Oldest first' })
+  events: AdminBookingEventDto[];
+  @ApiProperty({ description: 'Open: an admin may cancel it' }) cancellable: boolean;
+}
+
+export class AdminListBookingsQueryDto {
+  @ApiPropertyOptional({
+    enum: ['OPEN', 'AWAITING_PAYMENT', 'CLOSED'],
+    default: 'OPEN',
+    description: 'OPEN: requested or waiting for documents; CLOSED: declined, expired, cancelled',
+  })
+  @IsOptional()
+  @IsIn(['OPEN', 'AWAITING_PAYMENT', 'CLOSED'])
+  tab: 'OPEN' | 'AWAITING_PAYMENT' | 'CLOSED' = 'OPEN';
+
+  @ApiPropertyOptional({ description: 'Listing title, or a borrower’s or lender’s name or phone' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  cursor?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 25 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 25;
+}

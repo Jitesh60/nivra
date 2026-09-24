@@ -1,9 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { AppException } from '../../common/errors/app.exception.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RateLimiter } from '../../redis/rate-limiter.js';
+import { heldRanges } from '../bookings/availability.js';
+import { mapBookingError } from '../bookings/booking-state-machine.js';
+import { BookingsService } from '../bookings/bookings.service.js';
 import { LISTING_RULES, todayUtc } from '../listings/listing-rules.js';
 import { quote } from '../listings/pricing.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
@@ -18,7 +22,7 @@ import { effectiveStatus, offerExpiresAt, offerRent } from './offer-rules.js';
 /**
  * Offers in chat: dates plus a price per day. One open offer per chat (a new
  * offer or a counter replaces it); only the other person can accept or
- * decline. Accepting locks the deal for Phase 6's booking request.
+ * decline. Accepting creates the booking (already accepted by both).
  */
 @Injectable()
 export class OffersService {
@@ -30,7 +34,13 @@ export class OffersService {
     private readonly blocks: BlocksService,
     private readonly limiter: RateLimiter,
     private readonly realtime: RealtimeService,
+    private readonly moduleRef: ModuleRef,
   ) {}
+
+  /** Bookings depend on chat, so chat looks the service up lazily instead of importing its module. */
+  private bookings(): BookingsService {
+    return this.moduleRef.get(BookingsService, { strict: false });
+  }
 
   /** A new offer in a chat; any open one becomes COUNTERED. */
   async create(conversationId: string, userId: string, dto: CreateOfferDto): Promise<MessageDto> {
@@ -56,38 +66,52 @@ export class OffersService {
       );
     }
     this.assertBookable(listing, offer.startsOn, offer.endsOn);
+    const bookings = this.bookings();
+    await bookings.assertNoOpenBooking(c.listingId, c.borrowerId);
 
     const now = new Date();
-    const accepted = await this.prisma.$transaction(async (tx) => {
-      // One agreed deal per chat: an earlier one is replaced.
-      const previous = await tx.offer.findMany({
-        where: { conversationId: c.id, status: 'ACCEPTED' },
+    let accepted;
+    try {
+      accepted = await this.prisma.$transaction(async (tx) => {
+        // One agreed deal per chat: an earlier one is replaced.
+        const previous = await tx.offer.findMany({
+          where: { conversationId: c.id, status: 'ACCEPTED' },
+        });
+        await tx.offer.updateMany({
+          where: { conversationId: c.id, status: 'ACCEPTED' },
+          data: { status: 'SUPERSEDED' },
+        });
+        const updated = await tx.offer.update({
+          where: { id: offer.id },
+          data: { status: 'ACCEPTED', respondedAt: now },
+        });
+        // Both people agreed, so the booking starts out accepted.
+        const booking = await bookings.createFromOffer(tx, updated, c, userId);
+        const next =
+          booking.status === 'AWAITING_DOCS'
+            ? 'Booking created: waiting for the borrower to share documents.'
+            : 'Booking created: the dates are held for payment.';
+        const system = await this.messages.post(
+          c,
+          userId,
+          {
+            type: 'SYSTEM',
+            body: `Offer accepted: ${dateRange(updated.startsOn, updated.endsOn)} at ${rupees(updated.pricePerDayPaise)}/day. ${next}`,
+          },
+          tx,
+        );
+        return { updated, previous, system, booking };
       });
-      await tx.offer.updateMany({
-        where: { conversationId: c.id, status: 'ACCEPTED' },
-        data: { status: 'SUPERSEDED' },
-      });
-      const updated = await tx.offer.update({
-        where: { id: offer.id },
-        data: { status: 'ACCEPTED', respondedAt: now },
-      });
-      const system = await this.messages.post(
-        c,
-        userId,
-        {
-          type: 'SYSTEM',
-          body: `Offer accepted: ${dateRange(updated.startsOn, updated.endsOn)} at ${rupees(updated.pricePerDayPaise)}/day. Booking opens soon.`,
-        },
-        tx,
-      );
-      return { updated, previous, system };
-    });
+    } catch (err) {
+      throw mapBookingError(err);
+    }
     await this.announce(c, [
       accepted.updated,
       ...accepted.previous.map((p) => ({ ...p, status: 'SUPERSEDED' as const })),
     ]);
     await this.conversations.touch(c.id, accepted.system.body!, accepted.system.createdAt);
     await this.messages.broadcast(c, accepted.system);
+    await bookings.afterOfferBooking(accepted.booking, userId);
     return this.presenter.offer(accepted.updated, userId);
   }
 
@@ -239,7 +263,16 @@ export class OffersService {
     return { offer, c };
   }
 
-  private listingFor(listingId: string) {
+  /** The listing's rules and unavailable dates (its blocks plus held bookings). */
+  private async listingFor(listingId: string) {
+    const [listing, held] = await Promise.all([
+      this.listingRow(listingId),
+      heldRanges(this.prisma, listingId),
+    ]);
+    return { ...listing, blocks: [...listing.blocks, ...held] };
+  }
+
+  private listingRow(listingId: string) {
     return this.prisma.listing.findUniqueOrThrow({
       where: { id: listingId },
       select: {

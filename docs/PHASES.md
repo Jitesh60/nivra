@@ -406,12 +406,85 @@ Delivered as three sub-phases, each with its own branch and PR. **Done when:** t
 - **Done when:** Playwright covers a masked UPI ID and phone number reported by the borrower, read in its original form and closed by OPS, and SUPPORT viewing a report read-only.
 
 ## Phase 6 — Bookings & document sharing
-**Branch:** `phase/6-bookings`
+Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mobile → 6c Admin**. Payment capture is Phase 7.
 
-- **API:** `bookings` state machine (REQUESTED → … → CONFIRMED, excluding payment capture), exclusion constraint, BullMQ expiry jobs, `booking-documents` (share from vault, lender approve or reject, time-boxed access, access logs, purge job), cancellation policy
-- **Mobile:** request to book, lender accept/decline, document request and submit flow, lender document viewer (watermarked, `FLAG_SECURE`), "My bookings" (borrowing and lending tabs) with a timeline
-- **Admin:** bookings list and detail with event timeline; cancel with a reason
-- **Done when:** a booking on a listing that requires documents goes through accept → borrower shares ID → lender approves → AWAITING_PAYMENT; overlapping requests can't both reach AWAITING_PAYMENT
+**Done when:** a booking on a listing that requires documents goes accept → borrower shares an ID → lender approves → AWAITING_PAYMENT, and overlapping requests can't both reach AWAITING_PAYMENT.
+
+**Decisions**
+- **Two ways in:**
+  - "Request to book" on the item page, at the listed price; the lender has 24 hours to accept or decline.
+  - An offer accepted in chat creates a booking that is **already accepted** (both people agreed), at the agreed price.
+- **Statuses in this phase:** REQUESTED → AWAITING_DOCS (if the listing asks for documents) → AWAITING_PAYMENT, or DECLINED / EXPIRED / CANCELLED. "Accepted" is an event in the timeline, not a status the booking stays in. CONFIRMED and later come with payment (Phase 7) and handover (Phase 8).
+- **Timers**, each configurable through env, with EXPIRED when they run out:
+  - lender reply: 24 h
+  - borrower shares documents: 24 h
+  - lender reviews them: 24 h
+  - payment hold: 2 h (real in Phase 6: the dates free up again; the app says payment opens in the next update)
+
+  No step runs past the end of the first rental day.
+- **Holding dates:** a Postgres exclusion constraint holds the dates from AWAITING_PAYMENT on. Requests can overlap; the first to be held wins and the other gets `BOOKING_DATES_TAKEN`. Held dates count as unavailable in search, quotes, the public calendar, chat offers and new requests (lender blocks stay in their own table).
+- **Limits:** one booking in progress per borrower and listing; 10 requests a day; verified phone and email; not your own listing; the listing must be LIVE.
+- **Cancelling before payment** refunds nothing because nothing was paid:
+  - The borrower can cancel until payment.
+  - The lender declines a request, or cancels after accepting; that counts against them and admins see the count.
+  - Admins can cancel any booking in progress, with a reason.
+
+  The PRD refund tiers are a tested `refundFor()` ready for Phase 7.
+- **Documents:**
+  - The borrower picks one vault document per required document (pending or approved by Sajha; not rejected or expired). Matching: a government ID is Aadhaar, PAN, driving licence, passport or voter ID; an address proof is also accepted from those that carry an address.
+  - The files are **copied** to `bookings/{id}/` in the private bucket, so the share doesn't depend on the vault.
+  - The lender approves (→ AWAITING_PAYMENT) or rejects with a reason (→ DECLINED).
+  - The lender views them through 5-minute links while the booking is in progress. Every view is logged, and the borrower sees who opened what and when.
+  - Access ends when the booking closes, and a daily job deletes the copies 30 days later.
+- **Chat stays the record:** each change posts a note in the booking's conversation.
+- **Notifications:** an in-app list (the bell) plus push when the app isn't open. Push goes out for booking requested, accepted, declined, expired and cancelled. Documents requested, shared and approved are in-app only (PRD).
+- **Guards:** a listing or account with bookings in progress can't be deleted (pausing a listing still works).
+
+### 6a — API
+**Branch:** `phase/6a-bookings-api`
+
+- **Schema** (migration `20260925080000_bookings`): `bookings` (with the exclusion constraint and a one-open-per-borrower-and-listing index), `booking_events`, `booking_document_shares`, `document_access_logs`, `notifications`.
+- **`modules/bookings`:**
+  - Pure rules (`booking-rules.ts`): transitions, deadlines, `can` flags, refunds and document matching.
+  - `BookingStateMachine`: the only writer of statuses. Each change runs in a transaction with `SELECT … FOR UPDATE` and writes an event row. After the commit it schedules the next timer, posts a note in the chat, sends `booking:updated` to both people, and notifies them.
+  - `BookingsService` and `BookingDocumentsService`, plus the user and admin endpoints.
+- **Jobs:** BullMQ `bookings` queue:
+  - delayed `expire` jobs, which re-check the booking before acting
+  - `sweep-expired` every 5 minutes, which catches lost jobs
+  - `purge-shares` daily at 03:00 IST
+
+  The worker runs in the API process (`JOBS_WORKER`).
+- **Notifications:** `GET /v1/me/notifications`, `POST /v1/me/notifications/read`, `notifications` in `GET /v1/me/unread`, and the socket event `notification:new`.
+- **Chat:** accepting an offer creates the booking, and `ConversationDto.openBookingId` links to it.
+- **Done when:** e2e covers:
+  - requests, accept, decline and cancel, with who can do what
+  - the overlap guard, including a concurrent race
+  - documents: share, mismatch, view logging, approve, reject, access ending and purge
+  - each timer and the sweep
+  - offer → booking
+  - notifications, push and socket events
+  - the delete guards
+  - the admin list, detail and cancel (Support read-only)
+
+  A manual run showed the real delayed expiry freeing held dates.
+
+### 6b — Mobile
+**Branch:** `phase/6b-bookings-mobile`
+
+- Request to book from the item page (confirm sheet with the breakdown and the documents asked for; guests sign in and come back).
+- "My bookings" with Borrowing and Lending tabs.
+- Booking detail with a countdown, the timeline and actions from `can`.
+- Sharing documents from the vault with a consent step, and the borrower's view log.
+- The lender's watermarked viewer with screen protection (`FLAG_SECURE` on Android).
+- The notifications bell.
+- "Open booking" from chat.
+
+### 6c — Admin
+**Branch:** `phase/6c-bookings-admin`
+
+- A bookings list (open, awaiting payment, closed, with search) and a detail page with parties, money, the event timeline, shared documents and their access log.
+- Cancel with a reason (Super Admin and Ops).
+- Playwright covers the documents flow to AWAITING_PAYMENT and the cancel (Support read-only).
 
 ## Phase 7 — Payments & payouts
 **Branch:** `phase/7-payments`

@@ -3204,6 +3204,84 @@
         ]
       }
     },
+    "/v1/me/notifications": {
+      "get": {
+        "operationId": "NotificationsController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "In-app notifications, newest first, with the unread count",
+        "tags": [
+          "me · notifications"
+        ]
+      }
+    },
+    "/v1/me/notifications/read": {
+      "post": {
+        "operationId": "NotificationsController_read_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkNotificationsReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark notifications read (up to one, or all)",
+        "tags": [
+          "me · notifications"
+        ]
+      }
+    },
     "/v1/me/blocks": {
       "get": {
         "operationId": "SafetyController_list_v1",
@@ -4089,6 +4167,737 @@
         ],
         "tags": [
           "chat"
+        ]
+      }
+    },
+    "/v1/bookings": {
+      "post": {
+        "operationId": "BookingsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BOOKING_OWN_LISTING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "VERIFICATION_REQUIRED, USER_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_DATES_UNAVAILABLE (details.reason), BOOKING_OPEN_EXISTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request to book at the listed price. Needs a verified phone and email; the lender has 24 hours to reply.",
+        "tags": [
+          "bookings"
+        ]
+      },
+      "get": {
+        "operationId": "BookingsController_list_v1",
+        "parameters": [
+          {
+            "name": "role",
+            "required": true,
+            "in": "query",
+            "description": "Bookings you made, or of your items",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BORROWER",
+                "LENDER"
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "OPEN",
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "PAST"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My bookings as a borrower or a lender, newest first",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}": {
+      "get": {
+        "operationId": "BookingsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A booking with its timeline, documents and what the viewer can do (`can`)",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/accept": {
+      "post": {
+        "operationId": "BookingsController_accept_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_DATES_TAKEN (another booking holds the dates), BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lender: accept a request (then documents, if the listing asks for them, or payment)",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/decline": {
+      "post": {
+        "operationId": "BookingsController_decline_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptionalReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lender: decline a request, optionally saying why",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/cancel": {
+      "post": {
+        "operationId": "BookingsController_cancel_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel with a reason. Borrower: any time before payment. Lender: after accepting (it counts against them).",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/documents": {
+      "post": {
+        "operationId": "BookingsController_share_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareDocumentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BOOKING_DOCS_MISMATCH",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrower: share one vault document per required document with this lender, for this booking only",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/documents/approve": {
+      "post": {
+        "operationId": "BookingsController_approve_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_DATES_TAKEN, BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lender: approve the shared documents (the dates are then held)",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/documents/reject": {
+      "post": {
+        "operationId": "BookingsController_reject_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lender: don’t accept the documents (declines the booking)",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{id}/documents/{shareId}/view": {
+      "get": {
+        "operationId": "BookingsController_view_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "front",
+                "back"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentViewUrlDto"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "DOCUMENT_ACCESS_ENDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lender: a 5-minute link to a shared document, while the booking is in progress. Every view is logged.",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/admin/bookings": {
+      "get": {
+        "operationId": "AdminBookingsController_list_v1",
+        "parameters": [
+          {
+            "name": "tab",
+            "required": false,
+            "in": "query",
+            "description": "OPEN: requested or waiting for documents; CLOSED: declined, expired, cancelled",
+            "schema": {
+              "default": "OPEN",
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "AWAITING_PAYMENT",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Listing title, or a borrower’s or lender’s name or phone",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bookings by tab, newest first; search by listing or person",
+        "tags": [
+          "admin · bookings"
+        ]
+      }
+    },
+    "/v1/admin/bookings/{id}": {
+      "get": {
+        "operationId": "AdminBookingsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A booking with its timeline and document access log",
+        "tags": [
+          "admin · bookings"
+        ]
+      }
+    },
+    "/v1/admin/bookings/{id}/cancel": {
+      "post": {
+        "operationId": "AdminBookingsController_cancel_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_INVALID_TRANSITION (it has moved on)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an open booking with a reason (shown to both people)",
+        "tags": [
+          "admin · bookings"
         ]
       }
     }
@@ -6662,6 +7471,81 @@
           "platform"
         ]
       },
+      "NotificationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "example": "booking.requested"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "bookingId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Open this booking when tapped"
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "createdAt"
+        ]
+      },
+      "NotificationPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "unread": {
+            "type": "number",
+            "description": "Unread notifications in total"
+          }
+        },
+        "required": [
+          "items",
+          "unread"
+        ]
+      },
+      "MarkNotificationsReadDto": {
+        "type": "object",
+        "properties": {
+          "upTo": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Everything up to and including this one; omit to mark all read"
+          }
+        }
+      },
       "ParticipantDto": {
         "type": "object",
         "properties": {
@@ -7211,6 +8095,12 @@
                 "$ref": "#/components/schemas/OfferDto"
               }
             ]
+          },
+          "openBookingId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "The booking in progress for this chat, if any"
           }
         },
         "required": [
@@ -7251,11 +8141,16 @@
           },
           "messages": {
             "type": "number"
+          },
+          "notifications": {
+            "type": "number",
+            "description": "Unread in-app notifications (the bell)"
           }
         },
         "required": [
           "conversations",
-          "messages"
+          "messages",
+          "notifications"
         ]
       },
       "MessageDto": {
@@ -7424,6 +8319,1046 @@
           "startDate",
           "endDate",
           "pricePerDayPaise"
+        ]
+      },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-12"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-16"
+          }
+        },
+        "required": [
+          "listingId",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "BookingListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "thumbUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "areaLabel": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      },
+      "BookingRequiredDocDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docType": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_ID",
+              "COLLEGE_OR_EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "accepts": {
+            "type": "array",
+            "description": "Vault documents that count",
+            "items": {
+              "type": "string",
+              "enum": [
+                "AADHAAR_MASKED",
+                "PAN",
+                "DRIVING_LICENCE",
+                "PASSPORT",
+                "VOTER_ID",
+                "COLLEGE_ID",
+                "EMPLOYEE_ID",
+                "ADDRESS_PROOF",
+                "OTHER"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "docType",
+          "accepts"
+        ]
+      },
+      "SharedDocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requiredDocId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "docType": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Sajha had verified it when it was shared"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "hasBack": {
+            "type": "boolean"
+          },
+          "viewable": {
+            "type": "boolean",
+            "description": "The lender can open it now"
+          },
+          "views": {
+            "description": "Who opened it and when (shown to the borrower only; empty for the lender)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentViewDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "docType",
+          "verified",
+          "status",
+          "hasBack",
+          "viewable",
+          "views"
+        ]
+      },
+      "BookingEventDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "ACCEPTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED",
+              "DOCS_SUBMITTED",
+              "DOCS_APPROVED",
+              "DOCS_REJECTED"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "ADMIN",
+              "SYSTEM"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "status",
+          "by",
+          "at"
+        ]
+      },
+      "BookingActionsDto": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "boolean"
+          },
+          "decline": {
+            "type": "boolean"
+          },
+          "cancel": {
+            "type": "boolean"
+          },
+          "shareDocs": {
+            "type": "boolean",
+            "description": "Borrower: share documents now"
+          },
+          "reviewDocs": {
+            "type": "boolean",
+            "description": "Lender: approve or reject shared documents now"
+          }
+        },
+        "required": [
+          "accept",
+          "decline",
+          "cancel",
+          "shareDocs",
+          "reviewDocs"
+        ]
+      },
+      "BookingDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "REQUEST",
+              "OFFER"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER"
+            ],
+            "description": "The viewer’s side"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListingDto"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "number"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "rentPaise": {
+            "type": "number"
+          },
+          "feePaise": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number",
+            "description": "Refundable"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "The current step times out then (the booking expires)"
+          },
+          "declineReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledBy": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "ADMIN"
+            ]
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requiredDocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingRequiredDocDto"
+            }
+          },
+          "sharedDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedDocumentDto"
+            }
+          },
+          "events": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingEventDto"
+            }
+          },
+          "can": {
+            "$ref": "#/components/schemas/BookingActionsDto"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source",
+          "role",
+          "listing",
+          "other",
+          "conversationId",
+          "startDate",
+          "endDate",
+          "days",
+          "pricePerDayPaise",
+          "rentPaise",
+          "feePaise",
+          "depositPaise",
+          "totalPaise",
+          "createdAt",
+          "updatedAt",
+          "requiredDocs",
+          "sharedDocuments",
+          "events",
+          "can"
+        ]
+      },
+      "BookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "REQUEST",
+              "OFFER"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER"
+            ],
+            "description": "The viewer’s side"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListingDto"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "number"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "rentPaise": {
+            "type": "number"
+          },
+          "feePaise": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number",
+            "description": "Refundable"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "The current step times out then (the booking expires)"
+          },
+          "declineReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledBy": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "ADMIN"
+            ]
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source",
+          "role",
+          "listing",
+          "other",
+          "conversationId",
+          "startDate",
+          "endDate",
+          "days",
+          "pricePerDayPaise",
+          "rentPaise",
+          "feePaise",
+          "depositPaise",
+          "totalPaise",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BookingPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "OptionalReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      },
+      "ReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ShareChoiceDto": {
+        "type": "object",
+        "properties": {
+          "requiredDocId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "One of the booking’s `requiredDocs`"
+          },
+          "userDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A document from your vault"
+          }
+        },
+        "required": [
+          "requiredDocId",
+          "userDocumentId"
+        ]
+      },
+      "ShareDocumentsDto": {
+        "type": "object",
+        "properties": {
+          "shares": {
+            "description": "One vault document per required document",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareChoiceDto"
+            }
+          }
+        },
+        "required": [
+          "shares"
+        ]
+      },
+      "DocumentViewUrlDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Short-lived link (5 minutes)"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "watermark": {
+            "type": "string",
+            "description": "Draw this over the image"
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt",
+          "watermark"
+        ]
+      },
+      "AdminBookingPartyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "phone"
+        ]
+      },
+      "AdminBookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "REQUEST",
+              "OFFER"
+            ]
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListingDto"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/AdminBookingPartyDto"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/AdminBookingPartyDto"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "number"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source",
+          "listing",
+          "borrower",
+          "lender",
+          "startDate",
+          "endDate",
+          "days",
+          "totalPaise",
+          "createdAt"
+        ]
+      },
+      "AdminBookingPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminBookingDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminShareViewDto": {
+        "type": "object",
+        "properties": {
+          "viewerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "viewerType": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "ADMIN"
+            ]
+          },
+          "ip": {
+            "type": "string",
+            "nullable": true
+          },
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "viewerType",
+          "at"
+        ]
+      },
+      "AdminSharedDocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docType": {
+            "type": "string",
+            "enum": [
+              "AADHAAR_MASKED",
+              "PAN",
+              "DRIVING_LICENCE",
+              "PASSPORT",
+              "VOTER_ID",
+              "COLLEGE_ID",
+              "EMPLOYEE_ID",
+              "ADDRESS_PROOF",
+              "OTHER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "accessExpiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "purgedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminShareViewDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "docType",
+          "verified",
+          "status",
+          "views"
+        ]
+      },
+      "AdminBookingEventDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "ACCEPTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED",
+              "DOCS_SUBMITTED",
+              "DOCS_APPROVED",
+              "DOCS_REJECTED"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "ADMIN",
+              "SYSTEM"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who did it"
+          }
+        },
+        "required": [
+          "type",
+          "status",
+          "by",
+          "at"
+        ]
+      },
+      "AdminBookingDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "AWAITING_DOCS",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ACTIVE",
+              "RETURNED",
+              "COMPLETED",
+              "DISPUTED",
+              "DECLINED",
+              "EXPIRED",
+              "CANCELLED"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "REQUEST",
+              "OFFER"
+            ]
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListingDto"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/AdminBookingPartyDto"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/AdminBookingPartyDto"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "number"
+          },
+          "totalPaise": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pricePerDayPaise": {
+            "type": "number"
+          },
+          "rentPaise": {
+            "type": "number"
+          },
+          "feePaise": {
+            "type": "number"
+          },
+          "depositPaise": {
+            "type": "number"
+          },
+          "declineReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledBy": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "ADMIN"
+            ]
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "closedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "lenderCancellations": {
+            "type": "number",
+            "description": "Bookings this lender cancelled after accepting"
+          },
+          "requiredDocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingRequiredDocDto"
+            }
+          },
+          "sharedDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminSharedDocumentDto"
+            }
+          },
+          "events": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminBookingEventDto"
+            }
+          },
+          "cancellable": {
+            "type": "boolean",
+            "description": "Open: an admin may cancel it"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source",
+          "listing",
+          "borrower",
+          "lender",
+          "startDate",
+          "endDate",
+          "days",
+          "totalPaise",
+          "createdAt",
+          "conversationId",
+          "pricePerDayPaise",
+          "rentPaise",
+          "feePaise",
+          "depositPaise",
+          "lenderCancellations",
+          "requiredDocs",
+          "sharedDocuments",
+          "events",
+          "cancellable"
         ]
       }
     }

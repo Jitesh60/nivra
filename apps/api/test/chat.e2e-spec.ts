@@ -243,6 +243,7 @@ describe('Chat, offers & safety (e2e)', () => {
       expect((await http(app).get('/v1/me/unread').set(bearer(lender.accessToken))).body).toEqual({
         conversations: 1,
         messages: 3,
+        notifications: 0,
       });
       await http(app)
         .post(`/v1/conversations/${c.id}/read`)
@@ -252,6 +253,7 @@ describe('Chat, offers & safety (e2e)', () => {
       expect((await http(app).get('/v1/me/unread').set(bearer(lender.accessToken))).body).toEqual({
         conversations: 0,
         messages: 0,
+        notifications: 0,
       });
       const mine = await messages(borrower, c.id).expect(200);
       expect(mine.body.items.every((m: { readAt: string | null }) => m.readAt !== null)).toBe(true);
@@ -293,7 +295,7 @@ describe('Chat, offers & safety (e2e)', () => {
   });
 
   describe('offers', () => {
-    it('offer → counter → accept locks the deal', async () => {
+    it('offer → counter → accept makes the booking', async () => {
       const { lender, borrower, listingId } = await pair();
       const c = await start(borrower, listingId);
       const first = await offer(borrower, c.id, 5, 8, 12_000).expect(201);
@@ -353,7 +355,13 @@ describe('Chat, offers & safety (e2e)', () => {
       expect(latest).toMatchObject({ type: 'SYSTEM' });
       expect(latest.body).toMatch(/^Offer accepted: .* at ₹135\/day/);
 
-      // A later deal replaces this one.
+      // Accepting made a booking; once it's closed, a later deal replaces this one.
+      expect(conv.body.openBookingId).toEqual(expect.any(String));
+      await http(app)
+        .post(`/v1/bookings/${conv.body.openBookingId}/cancel`)
+        .set(bearer(borrower.accessToken))
+        .send({ reason: 'Different dates' })
+        .expect(200);
       const again = await offer(lender, c.id, 10, 11, 14_000).expect(201);
       await http(app)
         .post(`/v1/offers/${again.body.offer.id}/accept`)

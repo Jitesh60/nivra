@@ -116,12 +116,13 @@ export class PublicListingsController {
     @OptionalUser() auth?: UserAuth,
   ): Promise<PublicListingDto> {
     const listing = await this.listings.publicGet(id);
-    const [saved, favoriteCount] = await Promise.all([
+    const [saved, favoriteCount, held] = await Promise.all([
       this.engagement.isSaved(auth?.userId, id),
       this.engagement.favoriteCount(id),
+      this.listings.heldRanges(id),
       this.engagement.recordView(listing, auth?.userId, client),
     ]);
-    return this.presenter.public(listing, { saved, favoriteCount });
+    return this.presenter.public(listing, { saved, favoriteCount }, held);
   }
 
   @Get(':id/quote')
@@ -132,8 +133,16 @@ export class PublicListingsController {
     @Query() query: QuoteQueryDto,
   ): Promise<QuoteDto> {
     const dates = checkDates(query)!;
-    const listing = await this.listings.publicGet(id);
-    return quote(listing, dates.startDate, dates.endDate, todayUtc());
+    const [listing, held] = await Promise.all([
+      this.listings.publicGet(id),
+      this.listings.heldRanges(id),
+    ]);
+    return quote(
+      { ...listing, blocks: [...listing.blocks, ...held] },
+      dates.startDate,
+      dates.endDate,
+      todayUtc(),
+    );
   }
 }
 

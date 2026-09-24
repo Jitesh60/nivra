@@ -51,6 +51,9 @@ model User {
   blocksReceived        UserBlock[]    @relation("BlockBlocked")
   reports               Report[]
   deviceTokens          DeviceToken[]
+  borrowerBookings      Booking[]      @relation("BookingBorrower")
+  lenderBookings        Booking[]      @relation("BookingLender")
+  notifications         Notification[]
 
   @@map("users")
 }
@@ -292,8 +295,9 @@ model UserDocument {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewedBy AdminUser? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy AdminUser?             @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  shares     BookingDocumentShare[]
 
   @@index([userId])
   @@index([status, createdAt])
@@ -393,6 +397,7 @@ model Listing {
   favorites     Favorite[]
   views         ListingView[]
   conversations Conversation[]
+  bookings      Booking[]
 
   @@index([lenderId])
   @@index([status, createdAt])
@@ -435,7 +440,8 @@ model ListingRequiredDoc {
   /// Required for OTHER (CHECK in the migration), e.g. "Trek permit".
   note      String?
 
-  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  shares  BookingDocumentShare[]
 
   @@unique([listingId, docType])
   @@map("listing_required_docs")
@@ -445,7 +451,7 @@ enum BlockReason {
   OWNER_BLOCK
 }
 
-/// Dates the item can't be rented (inclusive). Bookings add their own blocks in Phase 6.
+/// Dates the lender blocked (inclusive). Held bookings are checked separately (see bookings/availability.ts).
 model AvailabilityBlock {
   id        String      @id @default(uuid(7)) @db.Uuid
   listingId String      @map("listing_id") @db.Uuid
@@ -508,6 +514,7 @@ model Conversation {
   lender   User      @relation("ConversationLender", fields: [lenderId], references: [id], onDelete: Cascade)
   messages Message[]
   offers   Offer[]
+  bookings Booking[]
 
   @@unique([listingId, borrowerId])
   @@index([borrowerId, lastMessageAt])
@@ -584,6 +591,7 @@ model Offer {
   parent       Offer?       @relation("OfferCounter", fields: [parentOfferId], references: [id], onDelete: SetNull)
   counters     Offer[]      @relation("OfferCounter")
   message      Message?
+  booking      Booking?
 
   @@index([conversationId, createdAt])
   @@map("offers")
@@ -662,4 +670,179 @@ model DeviceToken {
   @@index([userId])
   @@index([sessionId])
   @@map("device_tokens")
+}
+
+// ─── Phase 6: bookings, document sharing, notifications ──────────────────────
+
+/// See docs/ARCHITECTURE.md §5. Phase 6 reaches REQUESTED → AWAITING_DOCS →
+/// AWAITING_PAYMENT and the closed states; payment (Phase 7) and handover
+/// (Phase 8) add the rest. "Accepted" is an event, not a resting status.
+enum BookingStatus {
+  REQUESTED
+  AWAITING_DOCS
+  AWAITING_PAYMENT
+  CONFIRMED
+  ACTIVE
+  RETURNED
+  COMPLETED
+  DISPUTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum BookingSource {
+  /// "Request to book" from the item page, at the listed price.
+  REQUEST
+  /// An offer accepted in chat, at the agreed price (already accepted by both).
+  OFFER
+}
+
+enum BookingParty {
+  BORROWER
+  LENDER
+  ADMIN
+}
+
+/// A rental of one listing for inclusive dates. Money is in paise. The dates are
+/// held (no overlap, exclusion constraint in the migration) from AWAITING_PAYMENT on.
+model Booking {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  listingId        String        @map("listing_id") @db.Uuid
+  borrowerId       String        @map("borrower_id") @db.Uuid
+  lenderId         String        @map("lender_id") @db.Uuid
+  conversationId   String        @map("conversation_id") @db.Uuid
+  offerId          String?       @unique @map("offer_id") @db.Uuid
+  source           BookingSource
+  startsOn         DateTime      @map("starts_on") @db.Date
+  endsOn           DateTime      @map("ends_on") @db.Date
+  days             Int
+  pricePerDayPaise Int           @map("price_per_day_paise")
+  rentPaise        Int           @map("rent_paise")
+  feePaise         Int           @map("fee_paise")
+  depositPaise     Int           @map("deposit_paise")
+  totalPaise       Int           @map("total_paise")
+  status           BookingStatus
+  /// Deadline of the current step; the booking expires after it.
+  expiresAt        DateTime?     @map("expires_at")
+  declineReason    String?       @map("decline_reason")
+  cancelledById    String?       @map("cancelled_by_id") @db.Uuid
+  cancelledBy      BookingParty? @map("cancelled_by")
+  cancelReason     String?       @map("cancel_reason")
+  /// When it reached a closed state; document access ends then.
+  closedAt         DateTime?     @map("closed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  listing      Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  borrower     User                   @relation("BookingBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
+  lender       User                   @relation("BookingLender", fields: [lenderId], references: [id], onDelete: Cascade)
+  conversation Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  offer        Offer?                 @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  events       BookingEvent[]
+  shares       BookingDocumentShare[]
+
+  @@index([borrowerId, createdAt])
+  @@index([lenderId, createdAt])
+  @@index([listingId, status])
+  @@index([status, expiresAt])
+  @@map("bookings")
+}
+
+enum BookingEventType {
+  REQUESTED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+  DOCS_SUBMITTED
+  DOCS_APPROVED
+  DOCS_REJECTED
+}
+
+/// Append-only timeline of a booking.
+model BookingEvent {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  bookingId  String           @map("booking_id") @db.Uuid
+  type       BookingEventType
+  fromStatus BookingStatus?   @map("from_status")
+  toStatus   BookingStatus    @map("to_status")
+  actorType  ActorType        @map("actor_type")
+  actorId    String?          @map("actor_id") @db.Uuid
+  note       String?
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+  @@map("booking_events")
+}
+
+enum ShareStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+/// A copy of a vault document shared with one lender for one booking. The files
+/// are copied to `bookings/{bookingId}/…` in the private bucket and deleted
+/// `SHARE_RETENTION_DAYS` after the booking closes.
+model BookingDocumentShare {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  bookingId       String       @map("booking_id") @db.Uuid
+  requiredDocId   String?      @map("required_doc_id") @db.Uuid
+  userDocumentId  String?      @map("user_document_id") @db.Uuid
+  docType         DocumentType @map("doc_type")
+  label           String?
+  /// Whether Sajha had verified the vault document when it was shared.
+  verified        Boolean      @default(false)
+  frontKey        String?      @map("front_key")
+  backKey         String?      @map("back_key")
+  status          ShareStatus  @default(SUBMITTED)
+  accessExpiresAt DateTime?    @map("access_expires_at")
+  purgedAt        DateTime?    @map("purged_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  booking      Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  requiredDoc  ListingRequiredDoc? @relation(fields: [requiredDocId], references: [id], onDelete: SetNull)
+  userDocument UserDocument?       @relation(fields: [userDocumentId], references: [id], onDelete: SetNull)
+  accessLogs   DocumentAccessLog[]
+
+  @@index([bookingId])
+  @@index([accessExpiresAt, purgedAt])
+  @@map("booking_document_shares")
+}
+
+/// Every time a shared document is opened. The borrower sees these.
+model DocumentAccessLog {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  shareId    String    @map("share_id") @db.Uuid
+  viewerId   String    @map("viewer_id") @db.Uuid
+  viewerType ActorType @map("viewer_type")
+  ip         String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  share BookingDocumentShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([shareId, createdAt])
+  @@map("document_access_logs")
+}
+
+/// In-app notification (the bell). Push, when sent, carries the same text.
+model Notification {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  /// e.g. booking.requested, booking.docs_approved
+  type      String
+  title     String
+  body      String
+  /// e.g. {"bookingId": "…"}
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, id])
+  @@map("notifications")
 }

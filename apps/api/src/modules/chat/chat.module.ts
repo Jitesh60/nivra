@@ -14,5 +14,6 @@ import { OffersService } from './offers.service.js';
   imports: [AuthModule, MediaModule, NotificationsModule, SafetyModule],
   controllers: [ChatController],
   providers: [ChatPresenter, ConversationsService, MessagesService, OffersService, ChatGateway],
+  exports: [ConversationsService, MessagesService],
 })
 export class ChatModule {}

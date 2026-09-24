@@ -5,6 +5,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RateLimiter } from '../../redis/rate-limiter.js';
 import { assertVerified } from '../auth/verified.guard.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { BlocksService } from '../safety/blocks.service.js';
 import { ChatPresenter, type ConversationRow, conversationInclude } from './chat-presenter.js';
 import type {
@@ -31,6 +32,7 @@ export class ConversationsService {
     private readonly limiter: RateLimiter,
     private readonly blocks: BlocksService,
     private readonly presenter: ChatPresenter,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -154,6 +156,7 @@ export class ConversationsService {
     return {
       conversations: rows.length,
       messages: rows.reduce((sum, r) => sum + r._count._all, 0),
+      notifications: await this.notifications.unreadCount(userId),
     };
   }
 

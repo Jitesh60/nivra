@@ -1,13 +1,30 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiNoContentResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser, JwtAuthGuard, type UserAuth } from '../auth/jwt-auth.guard.js';
+import {
+  ListNotificationsQueryDto,
+  MarkNotificationsReadDto,
+  NotificationPageDto,
+} from './dto/notification.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 export class PushTokenDto {
@@ -43,5 +60,31 @@ export class DevicesController {
   @ApiNoContentResponse()
   async remove(@CurrentUser() auth: UserAuth): Promise<void> {
     await this.notifications.removeSessionTokens(auth.sessionId);
+  }
+}
+
+@ApiTags('me · notifications')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('me/notifications')
+export class NotificationsController {
+  constructor(private readonly notifications: NotificationsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'In-app notifications, newest first, with the unread count' })
+  @ApiOkResponse({ type: NotificationPageDto })
+  list(
+    @CurrentUser() auth: UserAuth,
+    @Query() query: ListNotificationsQueryDto,
+  ): Promise<NotificationPageDto> {
+    return this.notifications.list(auth.userId, query);
+  }
+
+  @Post('read')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Mark notifications read (up to one, or all)' })
+  @ApiNoContentResponse()
+  async read(@CurrentUser() auth: UserAuth, @Body() body: MarkNotificationsReadDto): Promise<void> {
+    await this.notifications.markRead(auth.userId, body.upTo);
   }
 }
