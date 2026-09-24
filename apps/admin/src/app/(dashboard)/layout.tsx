@@ -20,13 +20,13 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
         <p className="mb-4 px-3 text-sm font-semibold tracking-wide text-primary">Sajha Admin</p>
         {!me.mustChangePassword && <NavLinks items={items} />}
       </aside>
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-end gap-3 border-b bg-card px-6 py-3">
-          <div className="text-right text-sm leading-tight">
+          <div className="min-w-0 text-right text-sm leading-tight">
             <p className="font-medium" data-testid="admin-name">
               {me.name}
             </p>
-            <p className="text-muted-foreground">{me.email}</p>
+            <p className="truncate text-muted-foreground">{me.email}</p>
           </div>
           <Badge variant="secondary" data-testid="admin-role">
             {ROLE_LABEL[me.role]}

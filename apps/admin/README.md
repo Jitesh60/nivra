@@ -20,6 +20,7 @@ pnpm --filter @sajha/api seed:admin -- --email you@sajha.app --name "Your Name"
 - Tokens are kept in `httpOnly` cookies and the browser never talks to the API. Pages read through Server Components and write through Server Functions, using the typed `@sajha/api-client`.
 - `src/proxy.ts` sends signed-out visitors to `/login` and refreshes the access token before pages render.
 - Navigation per role: `src/lib/roles.ts`. The API enforces the same rules.
+- Document images are served by `src/app/(dashboard)/documents/[id]/image/route.ts`: it asks the API for a 5-minute signed URL (the API logs the view), fetches the bytes on the server and returns them with `Cache-Control: no-store`. The storage URL never reaches the browser.
 - UI components are in `src/components/ui` (shadcn/ui, see `components.json`). Add more with `pnpm dlx shadcn@latest add <component>`.
 
 ## Tests
@@ -27,13 +28,15 @@ pnpm --filter @sajha/api seed:admin -- --email you@sajha.app --name "Your Name"
 End-to-end with Playwright against a running API and database (seeds its own admins):
 
 ```bash
-pnpm infra:up && pnpm --filter @sajha/api prisma:deploy && pnpm --filter @sajha/api dev
+pnpm infra:up && pnpm --filter @sajha/api prisma:deploy
+OTP_DEV_BYPASS_CODE=000000 pnpm --filter @sajha/api dev   # the documents suite signs up app users
 pnpm --filter @sajha/admin build
 pnpm --filter @sajha/admin test:e2e
 # If Playwright's bundled Chromium isn't installed: PW_CHROMIUM_PATH=/path/to/chromium pnpm test:e2e
 ```
 
 Covered: wrong password, signed-out redirect, first login with 2FA setup and recovery codes, httpOnly cookies, silent token refresh, inviting an admin, forced password change, role-limited menu and 403, recovery-code sign-in (single use), disabling an admin signs them out.
+Documents (`e2e/documents.spec.ts`): an app user uploads IDs through presigned URLs, an Ops admin reviews them (the image streams through the admin server with `no-store`, with a watermark), approving flips the user's `idVerified`, rejecting records the reason, suspending revokes the user's sessions, and Support gets 403 on documents.
 
 ## API types
 

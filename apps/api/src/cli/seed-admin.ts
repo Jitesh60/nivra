@@ -3,6 +3,9 @@
  *
  *   pnpm --filter @sajha/api seed:admin -- --email you@sajha.app --name "Your Name"
  *
+ * `--role OPS|SUPPORT` seeds another role (used by end-to-end tests); normally
+ * a Super Admin invites other admins from the admin panel.
+ *
  * Without --password, a random temporary password is generated and printed once;
  * it must be changed after the first login. 2FA is set up on first login.
  */
@@ -10,10 +13,12 @@ import { parseArgs } from 'node:util';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config as loadEnv } from 'dotenv';
 import { randomToken } from '../common/crypto/crypto.js';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient, type AdminRole } from '../generated/prisma/client.js';
 import { hashPassword, PASSWORD_MIN_LENGTH } from '../modules/admin-auth/password.js';
 
 loadEnv({ quiet: true });
+
+const ROLES: AdminRole[] = ['SUPER_ADMIN', 'OPS', 'SUPPORT'];
 
 const { values } = parseArgs({
   // `pnpm seed:admin -- --email …` forwards the literal `--`; drop it.
@@ -22,6 +27,7 @@ const { values } = parseArgs({
     email: { type: 'string' },
     name: { type: 'string' },
     password: { type: 'string' },
+    role: { type: 'string', default: 'SUPER_ADMIN' },
   },
 });
 
@@ -29,7 +35,14 @@ async function main(): Promise<number> {
   const email = values.email?.trim().toLowerCase();
   const name = values.name?.trim();
   if (!email || !name) {
-    console.error('Usage: seed:admin -- --email <email> --name "<name>" [--password <password>]');
+    console.error(
+      'Usage: seed:admin -- --email <email> --name "<name>" [--password <password>] [--role SUPER_ADMIN|OPS|SUPPORT]',
+    );
+    return 1;
+  }
+  const role = values.role as AdminRole;
+  if (!ROLES.includes(role)) {
+    console.error(`--role must be one of ${ROLES.join(', ')}.`);
     return 1;
   }
   if (values.password && values.password.length < PASSWORD_MIN_LENGTH) {
@@ -54,7 +67,7 @@ async function main(): Promise<number> {
       data: {
         email,
         name,
-        role: 'SUPER_ADMIN',
+        role,
         passwordHash: await hashPassword(password),
         mustChangePassword: !values.password,
       },
@@ -65,10 +78,10 @@ async function main(): Promise<number> {
         action: 'admin.admins.seed',
         targetType: 'admin_user',
         targetId: admin.id,
-        metadata: { email },
+        metadata: { email, role },
       },
     });
-    console.log(`Created SUPER_ADMIN ${email} (${admin.id}).`);
+    console.log(`Created ${role} ${email} (${admin.id}).`);
     if (!values.password) {
       console.log(`Temporary password (shown once, change it after first login): ${password}`);
     }
