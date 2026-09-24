@@ -33,7 +33,7 @@ jobs:
         run: git diff --exit-code -- apps/mobile/lib/core/theme/tokens.g.dart
 
   api-e2e:
-    name: API · e2e (Postgres + Redis via Testcontainers)
+    name: API · e2e + coverage (Postgres, Redis, Mailpit via Testcontainers)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @sajha/api prisma:generate
-      - run: pnpm --filter @sajha/api test:e2e
+      - run: pnpm --filter @sajha/api test:cov
 
   mobile:
     name: Mobile · format, analyze, test

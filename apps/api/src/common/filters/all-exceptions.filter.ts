@@ -32,6 +32,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const res = host.switchToHttp().getResponse<Response>();
     const { status, body } = this.toResponse(exception);
 
+    const retryAfter = (body.error.details as { retryAfterSec?: unknown } | undefined)
+      ?.retryAfterSec;
+    if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
+
     if (status >= 500) {
       this.logger.error(exception instanceof Error ? exception.stack : String(exception));
     }

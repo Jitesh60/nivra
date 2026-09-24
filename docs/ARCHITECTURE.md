@@ -131,90 +131,22 @@ erDiagram
   ADMIN_USER ||--o{ AUDIT_LOG : performs
 ```
 
-### 3.2 Phase 1 tables (detailed)
+### 3.2 Phase 1 tables (built in Phase 1a)
 
-```prisma
-model User {
-  id               String    @id @db.Uuid            // UUID v7
-  phone            String    @unique                 // E.164, e.g. +919876543210
-  phoneVerifiedAt  DateTime?
-  email            String?   @unique                 // stored lower-cased
-  emailVerifiedAt  DateTime?
-  name             String?
-  status           UserStatus @default(ACTIVE)       // ACTIVE | SUSPENDED | BANNED | DELETED
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  sessions         Session[]
-}
+The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/schema.prisma). IDs are UUID v7 (time-sortable), and columns are snake_case in Postgres.
 
-model Session {                                      // one per device login
-  id               String    @id @db.Uuid
-  userId           String    @db.Uuid
-  familyId         String    @db.Uuid                // refresh-token rotation family
-  refreshTokenHash String    @unique                 // SHA-256 of opaque token
-  deviceId         String
-  deviceName       String?
-  platform         String?                           // android | ios
-  ip               String?
-  userAgent        String?
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  replacedById     String?   @db.Uuid
-  createdAt        DateTime  @default(now())
-  lastUsedAt       DateTime  @default(now())
-}
+| Table | Purpose | Key fields |
+|---|---|---|
+| `users` | App users (borrowers and lenders) | `phone` (E.164, unique), `phone_verified_at`, `email` (citext, unique), `email_verified_at`, `name`, `status` (ACTIVE/SUSPENDED/BANNED/DELETED), `deleted_at` |
+| `admin_users` | Sajha staff | `email` (citext, unique), `password_hash` (argon2id), `role` (SUPER_ADMIN/OPS/SUPPORT), `status` (ACTIVE/DISABLED), `must_change_password`, `failed_login_count`, `locked_until`, `totp_secret_enc` (AES-256-GCM), `totp_enabled_at`, `totp_last_time_step` (replay guard) |
+| `admin_recovery_codes` | One-time 2FA recovery codes | `code_hash` (SHA-256), `used_at` |
+| `sessions` | **One login on one device, for either realm** | `realm` (USER/ADMIN), `user_id` *or* `admin_user_id` (CHECK constraint: exactly one, matching the realm), `device_id`, `device_name`, `platform`, `ip`, `user_agent`, `expires_at`, `revoked_at`, `revoke_reason`, `last_used_at` |
+| `refresh_tokens` | Rotating refresh tokens inside a session | `session_id`, `token_hash` (SHA-256, unique), `expires_at`, `used_at` |
+| `otp_challenges` | SMS and email one-time codes | `channel` (SMS/EMAIL), `purpose` (LOGIN/VERIFY_EMAIL), `target`, `user_id`, `code_hash` (HMAC-SHA256 with `OTP_PEPPER`), `attempts`, `max_attempts`, `expires_at`, `consumed_at` |
+| `audit_logs` | Append-only security trail | `actor_type` (ADMIN/USER/SYSTEM), `actor_id`, `action` (e.g. `admin.login`, `admin.admins.create`, `user.account.delete`), `target_type`, `target_id`, `metadata`, `ip` |
+| `waitlist_entries` | Marketing waitlist (Phase 1d) | `email` (unique), `city`, `role`, `source` |
 
-model OtpChallenge {
-  id           String      @id @db.Uuid
-  channel      OtpChannel                             // SMS | EMAIL
-  purpose      OtpPurpose                             // LOGIN | VERIFY_EMAIL
-  target       String                                 // phone or email
-  userId       String?     @db.Uuid
-  codeHash     String                                 // HMAC-SHA256(code, OTP_PEPPER)
-  attempts     Int         @default(0)
-  maxAttempts  Int         @default(5)
-  expiresAt    DateTime
-  consumedAt   DateTime?
-  createdAt    DateTime    @default(now())
-  @@index([target, purpose, createdAt])
-}
-
-model AdminUser {
-  id             String     @id @db.Uuid
-  email          String     @unique
-  name           String
-  passwordHash   String                                // argon2id
-  role           AdminRole                             // SUPER_ADMIN | OPS | SUPPORT
-  totpSecretEnc  String?                               // AES-256-GCM encrypted
-  totpEnabledAt  DateTime?
-  status         AdminStatus @default(ACTIVE)
-  lastLoginAt    DateTime?
-  createdAt      DateTime   @default(now())
-}
-
-model AdminSession { /* same shape as Session, adminUserId instead of userId */ }
-
-model AuditLog {
-  id          String   @id @db.Uuid
-  actorType   String                                   // ADMIN | USER | SYSTEM
-  actorId     String?  @db.Uuid
-  action      String                                   // e.g. admin.login, admin.user.suspend, document.view
-  targetType  String?
-  targetId    String?
-  metadata    Json?
-  ip          String?
-  createdAt   DateTime @default(now())
-}
-
-model WaitlistEntry {                                  // Phase 1d
-  id        String   @id @db.Uuid
-  email     String   @unique
-  city      String?
-  role      String?                                    // borrower | lender | both
-  source    String?                                    // utm
-  createdAt DateTime @default(now())
-}
-```
+**Why sessions and refresh tokens are separate tables:** the session ID (`sid` in the access token) stays the same for the whole login, so guards can check on every request that the session is still live. Revoking a session signs that device out immediately, and rotating refresh tokens never invalidates in-flight access tokens.
 
 ### 3.3 Later tables (summary)
 
@@ -265,13 +197,13 @@ sequenceDiagram
   participant SMS as MSG91
 
   App->>API: POST /v1/auth/otp/request {phone}
-  API->>R: check limits (phone, IP, device) + 30s cooldown
+  API->>R: check lock, 30s cooldown, hourly limits (phone, IP)
   API->>DB: create OtpChallenge (codeHash, expires 5m)
-  API->>SMS: send code (via queue)
+  API->>SMS: send code
   API-->>App: 200 {challengeId, resendAfterSec: 30, expiresInSec: 300}
 
   App->>API: POST /v1/auth/otp/verify {challengeId, code, deviceId, deviceName, platform}
-  API->>DB: load challenge, compare hash (constant-time), attempts++
+  API->>DB: attempts++ (atomic, before comparing), compare HMAC (constant-time), consume
   API->>DB: upsert User(phone), set phoneVerifiedAt, create Session
   API-->>App: 200 {accessToken, refreshToken, user, isNewUser}
 
@@ -283,13 +215,13 @@ sequenceDiagram
 ```
 
 **OTP rules**
-- 6 random digits (`crypto.randomInt`), stored as `HMAC-SHA256(code, OTP_PEPPER)`, **never logged**
+- 6 random digits (`crypto.randomInt`), stored as `HMAC-SHA256(target:code, OTP_PEPPER)`, **never logged** (the log redacts `code`, `password`, `refreshToken`, `phone` and auth headers)
 - Valid for **5 minutes**, with **5 verify attempts** per challenge; a new request invalidates earlier open challenges for the same target and purpose
 - Resend **cooldown of 30 seconds**
-- Limits (Redis sliding window): **5 requests per phone per hour**, **20 per IP per hour**, **10 verify failures per phone per hour**, after which the phone is locked for 1 hour
+- Limits (Redis counters, 1-hour windows): **5 requests per phone per hour**, **20 per IP per hour**, **10 verify failures per phone per hour**, after which the phone is locked for 1 hour
 - Phone numbers are normalised to E.164 with `libphonenumber-js` (India `+91` only at launch)
 - The email must be unique; if it belongs to another user, the API returns `EMAIL_IN_USE`
-- In **local and test** environments, the fake SMS provider logs the code, and `OTP_DEV_BYPASS_CODE` (for example, `000000`) can be enabled for development only; it is refused at boot in production
+- Locally, `SMS_PROVIDER=console` prints the code to the API log, and emails go to Mailpit. `OTP_DEV_BYPASS_CODE` (for example, `000000`) can be set for development only. Both are refused at boot in staging and production.
 
 **Tokens**
 | Token | Format | Lifetime | Storage (mobile) |
@@ -297,10 +229,12 @@ sequenceDiagram
 | Access | JWT (HS256 → RS256 later), claims `sub`, `sid`, `typ:"user"` | 15 minutes | Memory |
 | Refresh | 256-bit random opaque string, DB stores SHA-256 hash | 30 days (sliding) | `flutter_secure_storage` |
 
-- **Rotation:** every `/refresh` call issues a new refresh token and revokes the old one (`replacedById`).
-- **Reuse detection:** if a revoked refresh token is presented, the **whole token family is revoked**, forcing a re-login on that device.
+- **Rotation:** every `/refresh` call marks the presented token used (`used_at`) and issues a new one in the same session. The two steps run in one transaction guarded by `used_at IS NULL`, so if two refreshes race with the same token, only one wins.
+- **Reuse detection:** presenting a refresh token that was **already used** means it was copied, so the **whole session is revoked** (`REFRESH_REUSED`) and that device must sign in again.
+- **Every authenticated request** checks the access token's session (`sid`) is still active and the user is `ACTIVE`, so logout, logout-all, "sign out that device" and suspension take effect immediately, not when the 15-minute token expires.
 - **Logout** revokes the current session; **logout-all** revokes every session.
-- A `SUSPENDED` or `BANNED` status blocks login and refresh (`ACCOUNT_SUSPENDED`).
+- A `SUSPENDED` or `BANNED` status blocks login, refresh and every authenticated call (`ACCOUNT_SUSPENDED`).
+- **Account deletion** (`DELETE /v1/me`) anonymises the row (`phone` → `deleted:<id>`, email and name cleared), revokes all sessions and writes an audit entry. Signing in with the same number later creates a new account.
 
 **User auth endpoints (Phase 1a)**
 | Method & path | Auth | Body → Response |
@@ -318,7 +252,22 @@ sequenceDiagram
 | `DELETE /v1/me/sessions/:id` | Bearer | → `204` |
 | `DELETE /v1/me` | Bearer | → `202` (account deletion request; soft delete + anonymise) |
 
-**Error codes:** `OTP_RATE_LIMITED`, `OTP_COOLDOWN`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_TOO_MANY_ATTEMPTS`, `PHONE_INVALID`, `EMAIL_IN_USE`, `TOKEN_INVALID`, `TOKEN_EXPIRED`, `REFRESH_REUSED`, `ACCOUNT_SUSPENDED`.
+**Error codes** (full list in `apps/api/src/common/errors/error-codes.ts`):
+
+| Code | HTTP | When |
+|---|---|---|
+| `PHONE_INVALID` | 400 | Not a valid Indian mobile number |
+| `OTP_COOLDOWN` | 429 | New code requested within 30s (`Retry-After` header set) |
+| `OTP_RATE_LIMITED` | 429 | Hourly limit per phone/email or IP reached, or the number is locked |
+| `OTP_INVALID` | 400 | Wrong code (`details.attemptsLeft`), or a challenge that isn't yours |
+| `OTP_EXPIRED` | 400 | Expired, already used, or replaced by a newer code |
+| `OTP_TOO_MANY_ATTEMPTS` | 429 | 5 wrong codes on this challenge |
+| `OTP_DELIVERY_FAILED` | 503 | SMS/email provider failed (cooldown is released so the user can retry) |
+| `EMAIL_IN_USE` | 409 | Email already belongs to another account |
+| `TOKEN_INVALID` / `TOKEN_EXPIRED` | 401 | Bad, revoked or expired token |
+| `REFRESH_REUSED` | 401 | Used refresh token presented again; session revoked |
+| `ACCOUNT_SUSPENDED` | 403 | User suspended/banned, or admin disabled |
+| `VALIDATION_FAILED` | 400 | Body failed validation (`details` maps field → messages) |
 
 ### 4.2 Admins — email + password + TOTP 2FA
 
@@ -329,16 +278,20 @@ sequenceDiagram
   participant API
   UI->>NX: POST /api/auth/login {email, password}
   NX->>API: POST /v1/admin/auth/login
-  API-->>NX: {mfaToken (5 min), mfaRequired: true}
+  API-->>NX: {mfaToken (5 min), mfaSetupRequired}
   UI->>NX: POST /api/auth/2fa {code}
   NX->>API: POST /v1/admin/auth/2fa/verify {mfaToken, code}
   API-->>NX: {accessToken, refreshToken, admin}
   NX-->>UI: Set-Cookie httpOnly, Secure, SameSite=Strict
 ```
 
-- Passwords are hashed with **argon2id**; lockout after 5 failures for 15 minutes; minimum length 12
-- **TOTP is mandatory.** First login forces setup (QR code + verify), and there are 8 one-time recovery codes (hashed)
-- Admin tokens use a separate secret and `typ:"admin"`; the access token lasts **10 minutes** and the refresh token **12 hours** (no sliding)
+- Passwords are hashed with **argon2id**; minimum length 12. An unknown email is checked against a dummy hash, so the response takes the same time either way.
+- **Lockout:** wrong passwords and wrong 2FA codes share one counter. 5 failures lock the account for 15 minutes (`ACCOUNT_LOCKED`, 429).
+- **TOTP is mandatory.** First login forces setup (QR code + verify) and returns 8 one-time recovery codes (stored as SHA-256). The TOTP secret is encrypted with `TOTP_ENC_KEY`, and the last accepted time step is stored so a code can't be replayed.
+- The password step returns only an `mfaToken` (5 minutes, `typ:"admin_mfa"`), never session tokens.
+- Admin tokens use a separate secret (`JWT_ADMIN_ACCESS_SECRET`) and `typ:"admin"`, so user and admin tokens are not interchangeable. The access token lasts **10 minutes** and the session **12 hours** (refresh never extends it).
+- **Invited admins** get a temporary password and `mustChangePassword`. Until they change it, every admin endpoint except `me`, `me/password` and `logout` returns `PASSWORD_CHANGE_REQUIRED`. Changing the password signs out their other sessions.
+- Disabling an admin revokes all their sessions. A Super Admin can't change their own role or status (`CANNOT_MODIFY_SELF`).
 - **RBAC:** `@Roles('SUPER_ADMIN')` etc. Permission matrix:
 
 | Capability | SUPER_ADMIN | OPS | SUPPORT |
@@ -351,7 +304,7 @@ sequenceDiagram
 | Resolve disputes, refunds, payouts | ✓ | ✓ | – |
 | View audit log | ✓ | – | – |
 
-- The first Super Admin is created by a CLI seed script (`pnpm --filter api seed:admin`). There is no public signup.
+- The first Super Admin is created by a CLI seed script (`pnpm --filter @sajha/api seed:admin -- --email … --name …`). There is no public signup.
 - Every admin login, logout, 2FA change and mutating action is written to `audit_logs`.
 
 **Admin auth endpoints (Phase 1a)**
@@ -359,10 +312,12 @@ sequenceDiagram
 |---|---|
 | `POST /v1/admin/auth/login` | `{email, password}` → `{mfaToken, mfaSetupRequired}` |
 | `POST /v1/admin/auth/2fa/setup` | `{mfaToken}` → `{otpauthUrl, qrDataUrl}` |
-| `POST /v1/admin/auth/2fa/verify` | `{mfaToken, code}` → `{accessToken, refreshToken, admin, recoveryCodes?}` |
+| `POST /v1/admin/auth/2fa/verify` | `{mfaToken, code \| recoveryCode}` → `{accessToken, refreshToken, expiresInSec, admin, recoveryCodes?}` |
 | `POST /v1/admin/auth/refresh` | `{refreshToken}` → tokens |
 | `POST /v1/admin/auth/logout` | → `204` |
 | `GET /v1/admin/me` | → `{admin}` |
+| `POST /v1/admin/me/password` | `{currentPassword, newPassword}` → `{admin}` |
+| `GET /v1/admin/me/sessions` · `DELETE /v1/admin/me/sessions/:id` | List own sessions / sign one out |
 | `GET/POST/PATCH /v1/admin/admins` | Super Admin: list, invite (temporary password), change role, disable |
 | `GET /v1/admin/users` | List and search app users (read-only in Phase 1) |
 
