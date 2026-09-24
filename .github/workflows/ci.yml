@@ -51,7 +51,7 @@ jobs:
       - run: pnpm --filter @sajha/api test:cov
 
   admin-e2e:
-    name: Admin · e2e (Playwright against the real API)
+    name: Browser e2e · admin + website (Playwright against the real API)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -76,6 +76,8 @@ jobs:
       OTP_PEPPER: ci-otp-pepper-0123456789abcdef0123456789
       TOTP_ENC_KEY: Y2ktdG90cC1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
       SAJHA_API_URL: http://localhost:3000
+      # The website's waitlist form calls the API from the browser.
+      CORS_ORIGINS: http://localhost:3001,http://localhost:3002
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -84,7 +86,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run build --filter=@sajha/api --filter=@sajha/admin
+      - run: pnpm turbo run build --filter=@sajha/api --filter=@sajha/admin --filter=@sajha/web
       - run: pnpm --filter @sajha/api prisma:deploy
       - name: Start API
         run: |
@@ -95,6 +97,9 @@ jobs:
       - run: pnpm --filter @sajha/admin test:e2e
         env:
           CI: 'true'
+      - run: pnpm --filter @sajha/web test:e2e
+        env:
+          CI: 'true'
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -102,6 +107,8 @@ jobs:
           path: |
             apps/admin/playwright-report
             apps/admin/test-results
+            apps/web/playwright-report
+            apps/web/test-results
             api.log
 
   mobile:

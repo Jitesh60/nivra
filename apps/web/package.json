@@ -7,15 +7,22 @@
     "build": "next build",
     "start": "next start -p 3002",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.81",
+    "@sajha/api-client": "workspace:*",
+    "@sajha/design-tokens": "workspace:*",
+    "clsx": "^2.1.1",
+    "motion": "^13.4.2",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "@sajha/design-tokens": "workspace:*"
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

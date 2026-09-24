@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: 'Overview' };
 
 const DESCRIPTIONS: Record<string, string> = {
   '/users': 'Search app users and see their verification status.',
+  '/waitlist': 'People waiting for launch, with CSV export.',
   '/admins': 'Invite admins, change roles, disable accounts.',
   '/account': 'Password and signed-in sessions.',
 };

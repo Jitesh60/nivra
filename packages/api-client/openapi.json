@@ -872,6 +872,121 @@
           "admin · users"
         ]
       }
+    },
+    "/v1/waitlist": {
+      "post": {
+        "operationId": "WaitlistController_join_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinWaitlistResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Join the launch waitlist (marketing website)",
+        "tags": [
+          "waitlist"
+        ]
+      }
+    },
+    "/v1/admin/waitlist": {
+      "get": {
+        "operationId": "AdminWaitlistController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · waitlist"
+        ]
+      }
+    },
+    "/v1/admin/waitlist/export.csv": {
+      "get": {
+        "operationId": "AdminWaitlistController_exportCsv_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Every waitlist entry as CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · waitlist"
+        ]
+      }
     }
   },
   "info": {
@@ -1540,6 +1655,116 @@
           }
         },
         "required": [
+          "items"
+        ]
+      },
+      "JoinWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "rahul@example.com"
+          },
+          "city": {
+            "type": "string",
+            "example": "Pune"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "BOTH"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "example": "instagram",
+            "description": "utm_source or referrer"
+          },
+          "website": {
+            "type": "string",
+            "description": "Honeypot. Hidden from people; bots fill it in. Must be empty."
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "JoinWaitlistResponseDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "alreadyJoined": {
+            "type": "boolean",
+            "description": "True if this email was already on the list"
+          }
+        },
+        "required": [
+          "ok",
+          "alreadyJoined"
+        ]
+      },
+      "WaitlistEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BORROWER",
+              "LENDER",
+              "BOTH"
+            ],
+            "nullable": true
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "createdAt"
+        ]
+      },
+      "WaitlistPageDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaitlistEntryDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "total",
           "items"
         ]
       }

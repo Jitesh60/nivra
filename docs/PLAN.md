@@ -45,7 +45,7 @@ This doc explains **how** we'll build what the [PRD](./PRD.md) describes: stack 
 Next.js (App Router) · TypeScript · Tailwind CSS · **shadcn/ui** · Server Components for reads and Server Functions for writes · **`@sajha/api-client`** (types generated from the API's OpenAPI document with `openapi-typescript`, calls through `openapi-fetch`) · Playwright end-to-end tests. TanStack Query/Table get added when a screen needs client-side caching or large interactive tables.
 
 ### 1.4 Marketing website — `apps/web`
-Next.js (App Router, static generation) · Tailwind CSS · **React Bits** · **shaders.com** components · **uiverse.io** components · Motion (Framer Motion) · next-seo/metadata · Playwright smoke tests. Deployed on Vercel or a similar host.
+Next.js (App Router, static generation) · Tailwind CSS · **Paper Shaders** (hero background) · **React Bits** effects · **uiverse.io**-style components · Motion · Next.js Metadata API (sitemap, robots, Open Graph) · Playwright testss. Deployed on Vercel or a similar host.
 
 ### 1.5 Third-party services (India)
 | Need | Provider | Fallback / notes |
@@ -63,9 +63,11 @@ Next.js (App Router, static generation) · Tailwind CSS · **React Bits** · **s
 
 [uiverse.io](https://uiverse.io/), [shaders.com](https://shaders.com/) and [reactbits.dev](https://reactbits.dev/) are **web** libraries: HTML/CSS, React components and WebGL shaders.
 
+> **Licensing (checked in Phase 1d):** shaders.com's package is free only for personal, non-commercial or evaluation use. A public commercial site needs a paid Pro/Team license, so the website uses **Paper Shaders** (`@paper-design/shaders-react`, Apache-2.0) for the hero instead. React Bits components (MIT + Commons Clause: fine inside a product, but they can't be resold as components) and uiverse snippets (MIT) are recreated in the repo with credit comments.
+
 | Target | How we use them |
 |---|---|
-| **Marketing website (Next.js)** | Use them directly. Copy React Bits components (via their CLI or shadcn registry) and shaders.com components, and port uiverse snippets into Tailwind/React components. |
+| **Marketing website (Next.js)** | Paper Shaders for the hero, React Bits effects and uiverse-style components recreated in `apps/web/src/components`. |
 | **Admin (Next.js)** | Use them sparingly (for example, the login-screen background and buttons). Admin should stay fast and plain. |
 | **Mobile (Flutter)** | They **cannot be imported into Flutter**, because Flutter doesn't render HTML/CSS/React. We recreate the **same visual language natively**: |
 | | • Shader backgrounds → GLSL fragment shaders loaded with Flutter's `FragmentProgram` (for example, gradient mesh or aurora on splash/onboarding/auth) |

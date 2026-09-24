@@ -10,6 +10,7 @@ import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
 import { SmsModule } from './providers/sms/sms.module.js';
@@ -37,6 +38,7 @@ import { RedisModule } from './redis/redis.module.js';
     UsersModule,
     AdminAuthModule,
     AdminModule,
+    WaitlistModule,
   ],
 })
 export class AppModule {}

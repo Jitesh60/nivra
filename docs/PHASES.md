@@ -177,7 +177,7 @@ flowchart LR
 **Scope**
 - Landing page sections from [PRD §9](./PRD.md#9-marketing-website): Hero, How it works (Borrower/Lender tabs), Categories, Why Sajha, Trust & safety, Become a lender (earnings calculator), FAQ, Waitlist/Download, Footer
 - **Effects:**
-  - **shaders.com**: animated hero background, with a static gradient poster fallback
+  - **Paper Shaders** (`@paper-design/shaders-react`, Apache-2.0): animated hero background, with a static gradient poster fallback. shaders.com was the original choice, but it needs a paid Pro/Team license for any public commercial site
   - **React Bits**: split/blur text headline, spotlight or tilted category cards, animated counters, magnet CTA button
   - **uiverse.io**: CTA buttons, toggles for the Borrower/Lender tab, loader on waitlist submit
 - Pages: `/`, `/how-it-works`, `/lend`, `/faq`, `/privacy`, `/terms`, `/contact`
