@@ -162,3 +162,31 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
+
+  mobile-android:
+    name: Mobile · Android release build (signing config, R8)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+      - run: flutter pub get
+      # Staging, debug-signed: proves the release build (R8, plugins) compiles.
+      # Prod store bundles need the upload key (docs/RELEASE.md).
+      - run: flutter build apk --release --flavor staging --dart-define-from-file=config/staging.json
+      - name: A prod release without the upload key is refused
+        run: |
+          if flutter build appbundle --release --flavor prod --dart-define-from-file=config/prod.json 2> build.log; then
+            echo "Expected the prod bundle to be refused without android/key.properties" && exit 1
+          fi
+          grep -q "Prod release builds need android/key.properties" build.log

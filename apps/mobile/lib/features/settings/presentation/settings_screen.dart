@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/links/links.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
 import '../../../shared/widgets/user_avatar.dart';
@@ -91,6 +92,14 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.documents),
           ),
+          ListTile(
+            key: const ValueKey('settings-notifications'),
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notifications'),
+            subtitle: const Text('Push, email and SMS'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.notificationSettings),
+          ),
           const Divider(),
           ListTile(
             key: const ValueKey('devices'),
@@ -123,6 +132,34 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           const Divider(),
+          for (final (key, icon, label, uri) in [
+            (
+              'link-help',
+              Icons.help_outline,
+              'Help and contact',
+              SajhaLinks.help,
+            ),
+            (
+              'link-terms',
+              Icons.description_outlined,
+              'Terms of use',
+              SajhaLinks.terms,
+            ),
+            (
+              'link-privacy',
+              Icons.privacy_tip_outlined,
+              'Privacy policy',
+              SajhaLinks.privacy,
+            ),
+          ])
+            ListTile(
+              key: ValueKey(key),
+              leading: Icon(icon),
+              title: Text(label),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              onTap: () => ref.read(linkOpenerProvider)(uri),
+            ),
+          const Divider(),
           ListTile(
             key: const ValueKey('delete-account'),
             leading: Icon(Icons.delete_forever_outlined, color: error),
@@ -139,6 +176,22 @@ class SettingsScreen extends ConsumerWidget {
                 await _run(context, controller.deleteAccount);
               }
             },
+          ),
+          ListTile(
+            key: const ValueKey('link-delete-info'),
+            dense: true,
+            title: const Text('What deleting your account removes'),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () => ref.read(linkOpenerProvider)(SajhaLinks.deleteAccount),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Sajha ${appVersion()}',
+              key: const ValueKey('app-version'),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/email_screen.dart';
@@ -39,6 +40,7 @@ import '../../features/listings/presentation/my_listings_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/settings/presentation/devices_screen.dart';
+import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import 'auth_redirect.dart';
@@ -54,6 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   late final GoRouter router;
   router = GoRouter(
     initialLocation: Routes.splash,
+    // Screen names as crash-report breadcrumbs (a no-op without Sentry).
+    observers: [SentryNavigatorObserver()],
     refreshListenable: authChanged,
     redirect: (context, state) {
       // When the auth state changes, go_router re-checks the current stack
@@ -210,6 +214,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.wishlist, builder: (_, _) => const WishlistScreen()),
       GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: Routes.devices, builder: (_, _) => const DevicesScreen()),
+      GoRoute(
+        path: Routes.notificationSettings,
+        builder: (_, _) => const NotificationSettingsScreen(),
+      ),
       GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
       GoRoute(
         path: Routes.myListings,

@@ -245,6 +245,11 @@ void main() {
     expect(h.api.requests, contains('POST /auth/logout-all'));
 
     h = await signedIn();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('delete-account')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const ValueKey('delete-account')));
     await settle(tester);
     await tapText(tester, 'Delete');

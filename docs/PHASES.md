@@ -776,3 +776,14 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
   - `pnpm audit --prod --audit-level high` in CI; the two advisories found (mysql2 and deepmerge-ts, both via the Prisma CLI) are overridden to fixed versions.
 - **Load tests** ([infra/load](../infra/load/README.md), results in [PERFORMANCE.md](PERFORMANCE.md)): k6 scripts for browsing and chat and a `seed:load` script (refuses any database not named for load or tests). On one shared 4-vCPU machine: browsing meets its targets up to about 75 requests a second with no errors up to about 95; chat meets them at 40 people sending about 16 messages a second. Unread counts got a partial index.
 - **Tests:** unit tests for the preference mapping, the email templates, IST date ranges, the Sentry scrubber and the production env rules; e2e (`test/launch.e2e-spec.ts`) for the preference endpoints, pushes stopping when turned off, the receipt, lender and refund emails in Mailpit (and none when opted out), the account-deletion email, analytics after a paid booking (cache, periods, auth), the public read limit and the health version; the rentals suite adds the dispute emails and SMS reminders turned off.
+
+### 9b — Mobile
+**Branch:** `phase/9b-launch-mobile`
+
+- **Notifications screen** (Settings → Notifications): push (bookings, messages, reminders), email (receipts and updates), SMS (overdue returns) and news from Sajha, backed by the 9a endpoints; flips save at once and roll back with a message if the API refuses.
+- **Help and legal:** Help, Terms and Privacy open the website; "What deleting your account removes" opens `/delete-account` (the page comes with 9c); the version shows at the bottom of Settings.
+- **Sentry** (`sentry_flutter`), off unless the build has `SENTRY_DSN`: PII scrubbed on the phone, the user identified by id only (cleared on sign-out), screen breadcrumbs, no screenshots.
+- **Brand:** an app icon (adaptive on Android, all iOS sizes) and a native splash, generated from SVGs in `assets/brand/`.
+- **Release:** Android release builds are signed with the Play upload key from `android/key.properties`; prod bundles refuse to build without it. A new CI job builds a staging release APK (R8 on) and checks the prod refusal.
+- **Store kit** (`apps/mobile/store/`): listing copy, Play Data safety answers, App Store privacy labels, content rating, and 5 screenshots generated from the real screens (`test/store`, off by default). [docs/RELEASE.md](RELEASE.md) is the step-by-step for keys, builds, staged rollout and the store forms.
+- **Tests:** the notifications flow (save, failure rolls back), the website links, and the Sentry scrubber.
