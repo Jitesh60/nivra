@@ -553,6 +553,13 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - **Inbox and badge:** `inboxProvider` and `unreadCountProvider` refetch on `message:new` / `message:read`.
   - **Push:** `PushService` is a no-op unless the build has `FIREBASE_*` settings. Then `FirebasePushService` initialises Firebase from them (no google-services files), registers the token via `PUT /v1/me/devices/push-token` after sign-in and on rotation, and opens `/chat/:id` when a notification is tapped.
   - **Routes:** guests reach chat through `requireSignIn(returnTo: /item/:id?chat=1)`. `/inbox` and `/chat/:id` need an account.
+- **Bookings** (Phase 6b, `features/bookings/`):
+  - `BookingsRepository` covers `/v1/bookings` and `/v1/me/notifications`.
+  - `bookingProvider(id)` is one booking page. It reloads on `booking:updated` for that id, and actions replace it with the API's answer. `bookingsProvider((role, scope))` is My bookings. `notificationsProvider` and `unreadNotificationsProvider` back the bell; `notification:new` refreshes them.
+  - Screens show buttons from the detail's `can` flags, so the rules live only in the API.
+  - "Request to book" follows the chat pattern for guests: `requireSignIn(returnTo: /item/:id?book=1&from=…&to=…)`. The item page reopens the request with those dates after sign-in.
+  - **Shared-document viewer:** `ScreenProtection` (`core/security/`) sits over the `sajha/secure` method channel. On Android it sets `FLAG_SECURE` for as long as the viewer is open. On iOS it reports `UIScreen.isCaptured` changes, and the viewer blurs while the screen is being recorded or mirrored. A watermark with the lender's name, the booking reference and the time is drawn over the image. Tests use a fake.
+  - A push tap with `bookingId` opens `/booking/:id`. Resuming the app refreshes the bell's badge.
 - **Discovery state** (Phase 4b):
   - **Search area:** `searchAreaProvider` (GPS or map, 1–25 km), saved in `AppPrefs`.
   - **Recently viewed:** the last 20 ids, on the device.

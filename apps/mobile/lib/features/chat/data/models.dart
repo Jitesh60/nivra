@@ -242,6 +242,7 @@ class Conversation {
     this.lastMessagePreview,
     this.pendingOffer,
     this.acceptedOffer,
+    this.openBookingId,
   });
 
   factory Conversation.fromJson(Map<String, dynamic> json) => Conversation(
@@ -260,6 +261,7 @@ class Conversation {
     acceptedOffer: json['acceptedOffer'] == null
         ? null
         : Offer.fromJson(json['acceptedOffer'] as Map<String, dynamic>),
+    openBookingId: json['openBookingId'] as String?,
   );
 
   final String id;
@@ -279,6 +281,9 @@ class Conversation {
   final bool canMessage;
   final Offer? pendingOffer;
   final Offer? acceptedOffer;
+
+  /// The booking in progress for this chat, if any.
+  final String? openBookingId;
 }
 
 class Page<T> {

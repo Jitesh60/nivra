@@ -7,6 +7,12 @@ import '../../features/auth/presentation/email_screen.dart';
 import '../../features/auth/presentation/name_screen.dart';
 import '../../features/auth/presentation/otp_screens.dart';
 import '../../features/auth/presentation/phone_screen.dart';
+import '../../features/bookings/presentation/booking_screen.dart';
+import '../../features/bookings/presentation/my_bookings_screen.dart';
+import '../../features/bookings/presentation/notifications_screen.dart';
+import '../../features/bookings/presentation/request_booking.dart';
+import '../../features/bookings/presentation/share_documents_screen.dart';
+import '../../features/bookings/presentation/shared_document_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/chat/presentation/inbox_screen.dart';
 import '../../features/documents/presentation/add_document_screen.dart';
@@ -98,7 +104,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           id: state.pathParameters['id']!,
           saveOnOpen: state.uri.queryParameters['save'] == '1',
           chatOnOpen: state.uri.queryParameters['chat'] == '1',
+          bookOnOpen: bookDates(state.uri.queryParameters),
         ),
+      ),
+      GoRoute(
+        path: Routes.bookings,
+        builder: (_, _) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.bookingPattern,
+        builder: (_, state) =>
+            BookingScreen(bookingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.bookingSharePattern,
+        builder: (_, state) =>
+            ShareDocumentsScreen(bookingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.bookingDocument,
+        redirect: (_, state) =>
+            state.extra is SharedDocumentArgs ? null : Routes.bookings,
+        builder: (_, state) =>
+            SharedDocumentScreen(args: state.extra! as SharedDocumentArgs),
+      ),
+      GoRoute(
+        path: Routes.notifications,
+        builder: (_, _) => const NotificationsScreen(),
       ),
       GoRoute(path: Routes.inbox, builder: (_, _) => const InboxScreen()),
       GoRoute(

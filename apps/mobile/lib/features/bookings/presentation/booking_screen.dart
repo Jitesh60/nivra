@@ -1,0 +1,376 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/network/api_exception.dart';
+import '../../../core/router/routes.dart';
+import '../../../core/theme/tokens.g.dart';
+import '../../chat/presentation/chat_format.dart' show ParticipantAvatar;
+import '../../listings/data/models.dart' show formatRupees;
+import '../application/bookings_providers.dart';
+import '../data/models.dart';
+import 'booking_format.dart';
+import 'reason_dialog.dart';
+import 'shared_document_screen.dart';
+
+/// One booking: where it is, what happens next, the money, documents and the
+/// timeline. Buttons come from the API's `can` flags.
+class BookingScreen extends ConsumerStatefulWidget {
+  const BookingScreen({required this.bookingId, super.key});
+
+  final String bookingId;
+
+  @override
+  ConsumerState<BookingScreen> createState() => _BookingScreenState();
+}
+
+class _BookingScreenState extends ConsumerState<BookingScreen> {
+  bool _busy = false;
+
+  BookingController get _controller =>
+      ref.read(bookingProvider(widget.bookingId).notifier);
+
+  Future<void> _run(Future<void> Function() action, String done) async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+      messenger.showSnackBar(SnackBar(content: Text(done)));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
+      await _controller.refresh();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _decline() async {
+    final reason = await askReason(
+      context,
+      title: 'Decline this request?',
+      message: 'The borrower will be told. A short reason helps them.',
+      confirmLabel: 'Decline',
+      required: false,
+    );
+    if (reason == null || !mounted) return;
+    await _run(() => _controller.decline(reason), 'Request declined');
+  }
+
+  Future<void> _cancel(Booking b) async {
+    final reason = await askReason(
+      context,
+      title: 'Cancel this booking?',
+      message: b.isBorrower
+          ? 'Nothing has been paid, so there’s nothing to refund.'
+          : 'Cancelling after accepting counts against you as a lender.',
+      confirmLabel: 'Cancel booking',
+    );
+    if (reason == null || !mounted) return;
+    await _run(() => _controller.cancel(reason), 'Booking cancelled');
+  }
+
+  Future<void> _rejectDocuments() async {
+    final reason = await askReason(
+      context,
+      title: 'Not accept these documents?',
+      message: 'The booking will be declined, and the borrower will see why.',
+      confirmLabel: 'Decline booking',
+    );
+    if (reason == null || !mounted) return;
+    await _run(() => _controller.rejectDocuments(reason), 'Booking declined');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(bookingProvider(widget.bookingId));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(switch (detail) {
+          AsyncData(:final value) => 'Booking ${value.booking.ref}',
+          _ => 'Booking',
+        }),
+      ),
+      body: switch (detail) {
+        AsyncData(:final value) => RefreshIndicator(
+          onRefresh: _controller.refresh,
+          child: _body(value),
+        ),
+        AsyncError(:final error) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(SajhaSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  error is ApiException
+                      ? error.friendlyMessage
+                      : 'Couldn’t load this booking.',
+                  key: const ValueKey('booking-error'),
+                  textAlign: TextAlign.center,
+                ),
+                TextButton(
+                  onPressed: () =>
+                      ref.invalidate(bookingProvider(widget.bookingId)),
+                  child: const Text('Try again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        _ => const Center(child: CircularProgressIndicator()),
+      },
+    );
+  }
+
+  Widget _body(BookingDetail d) {
+    final b = d.booking;
+    final text = Theme.of(context).textTheme;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final can = d.can;
+    final submitted = d.sharedDocuments.any(
+      (s) => s.status == ShareStatus.submitted,
+    );
+
+    return ListView(
+      padding: const EdgeInsets.all(SajhaSpacing.lg),
+      children: [
+        // The item and the other person.
+        Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(SajhaRadius.md),
+              child: SizedBox.square(
+                dimension: 64,
+                child: b.listing.thumbUrl == null
+                    ? const ColoredBox(color: SajhaColors.brand100)
+                    : Image.network(
+                        b.listing.thumbUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const ColoredBox(color: SajhaColors.brand100),
+                      ),
+              ),
+            ),
+            const SizedBox(width: SajhaSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(b.listing.title, style: text.titleMedium),
+                  Text(
+                    '${bookingDates(b)} · ${dayCount(b.days)}',
+                    key: const ValueKey('booking-dates'),
+                  ),
+                  const SizedBox(height: 4),
+                  StatusChip(b.status, key: const ValueKey('booking-status')),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: SajhaSpacing.md),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: ParticipantAvatar(person: b.other),
+          title: Text(b.other.displayName),
+          subtitle: Text(b.isBorrower ? 'Lender' : 'Borrower'),
+          trailing: OutlinedButton.icon(
+            key: const ValueKey('booking-chat'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+            onPressed: () => context.push(Routes.chat(b.conversationId)),
+            icon: const Icon(Icons.chat_bubble_outline, size: 18),
+            label: const Text('Chat'),
+          ),
+        ),
+
+        // What happens next.
+        Card(
+          margin: const EdgeInsets.symmetric(vertical: SajhaSpacing.sm),
+          child: Padding(
+            padding: const EdgeInsets.all(SajhaSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(nextStep(d), key: const ValueKey('booking-next-step')),
+                if (b.expiresAt != null && b.status.open) ...[
+                  const SizedBox(height: SajhaSpacing.xs),
+                  Countdown(
+                    until: b.expiresAt!,
+                    prefix: b.status == BookingStatus.awaitingPayment
+                        ? 'Dates held for'
+                        : 'Expires in',
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        // Actions.
+        if (can.accept)
+          FilledButton(
+            key: const ValueKey('booking-accept'),
+            onPressed: _busy
+                ? null
+                : () => _run(_controller.accept, 'Request accepted'),
+            child: const Text('Accept request'),
+          ),
+        if (can.decline)
+          TextButton(
+            key: const ValueKey('booking-decline'),
+            onPressed: _busy ? null : _decline,
+            child: const Text('Decline'),
+          ),
+        if (can.shareDocs)
+          FilledButton.icon(
+            key: const ValueKey('booking-share'),
+            onPressed: _busy
+                ? null
+                : () => context.push(Routes.bookingShare(b.id)),
+            icon: const Icon(Icons.badge_outlined),
+            label: const Text('Share documents'),
+          ),
+        if (can.reviewDocs) ...[
+          FilledButton(
+            key: const ValueKey('docs-approve'),
+            onPressed: _busy
+                ? null
+                : () =>
+                      _run(_controller.approveDocuments, 'Documents approved'),
+            child: const Text('Approve documents'),
+          ),
+          TextButton(
+            key: const ValueKey('docs-reject'),
+            onPressed: _busy ? null : _rejectDocuments,
+            child: const Text('Don’t accept'),
+          ),
+        ],
+
+        // Money.
+        const Divider(height: SajhaSpacing.xl),
+        Text('Price', style: text.titleSmall),
+        const SizedBox(height: SajhaSpacing.xs),
+        _line(
+          '${formatRupees(b.pricePerDayPaise)} × ${dayCount(b.days)}',
+          formatRupees(b.rentPaise),
+        ),
+        if (b.feePaise > 0) _line('Service fee', formatRupees(b.feePaise)),
+        _line('Refundable deposit', formatRupees(b.depositPaise)),
+        _line('Total', formatRupees(b.totalPaise), bold: true),
+        if (b.fromOffer)
+          Text(
+            'Price agreed in chat.',
+            style: text.bodySmall?.copyWith(color: muted),
+          ),
+
+        // Documents.
+        if (d.requiredDocs.isNotEmpty) ...[
+          const Divider(height: SajhaSpacing.xl),
+          Text('Documents', style: text.titleSmall),
+          const SizedBox(height: SajhaSpacing.xs),
+          if (d.sharedDocuments.isEmpty)
+            for (final r in d.requiredDocs)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.badge_outlined),
+                title: Text(r.title),
+                subtitle: const Text('Not shared yet'),
+              )
+          else
+            for (final s in d.sharedDocuments) _sharedTile(b, s),
+          if (b.isBorrower && d.sharedDocuments.isNotEmpty)
+            Text(
+              'Shared only with ${b.other.firstName} for this booking. '
+              'Access ends when the booking closes.',
+              style: text.bodySmall?.copyWith(color: muted),
+            ),
+          if (!b.isBorrower && submitted)
+            Text(
+              'Open each document before you decide. Screenshots are blocked '
+              'and every view is shown to the borrower.',
+              style: text.bodySmall?.copyWith(color: muted),
+            ),
+        ],
+
+        // Timeline.
+        const Divider(height: SajhaSpacing.xl),
+        Text('Timeline', style: text.titleSmall),
+        for (final (i, e) in d.events.indexed)
+          ListTile(
+            key: ValueKey('booking-event-$i'),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: const Icon(Icons.circle, size: 10),
+            title: Text(eventText(e, b)),
+            subtitle: Text(
+              [
+                whenText(e.at),
+                if (e.note != null && e.note != 'Offer agreed in chat')
+                  '“${e.note}”',
+              ].join(' · '),
+            ),
+          ),
+
+        if (can.cancel) ...[
+          const SizedBox(height: SajhaSpacing.lg),
+          OutlinedButton(
+            key: const ValueKey('booking-cancel'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: SajhaColors.danger,
+            ),
+            onPressed: _busy ? null : () => _cancel(b),
+            child: const Text('Cancel booking'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _sharedTile(Booking b, SharedDocument s) {
+    final status = switch (s.status) {
+      ShareStatus.submitted => 'Waiting for review',
+      ShareStatus.approved => 'Approved',
+      ShareStatus.rejected => 'Not accepted',
+    };
+    final views = s.views.isEmpty
+        ? (b.isBorrower ? 'Not opened yet' : null)
+        : 'Opened ${s.views.length} ${s.views.length == 1 ? 'time' : 'times'}, '
+              'last ${whenText(s.views.last.at)}';
+    return ListTile(
+      key: ValueKey('shared-${s.id}'),
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        s.verified ? Icons.verified_user_outlined : Icons.badge_outlined,
+      ),
+      title: Text(s.title),
+      subtitle: Text(
+        [status, if (s.verified) 'Verified by Sajha', ?views].join(' · '),
+      ),
+      trailing: s.viewable ? const Icon(Icons.chevron_right) : null,
+      onTap: s.viewable
+          ? () => context.push(
+              Routes.bookingDocument,
+              extra: SharedDocumentArgs(
+                bookingId: b.id,
+                shareId: s.id,
+                title: s.title,
+                hasBack: s.hasBack,
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _line(String label, String value, {bool bold = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Expanded(child: Text(label)),
+        Text(
+          value,
+          style: bold ? const TextStyle(fontWeight: FontWeight.w700) : null,
+        ),
+      ],
+    ),
+  );
+}

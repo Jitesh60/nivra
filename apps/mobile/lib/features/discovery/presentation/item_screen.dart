@@ -11,6 +11,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../chat/data/chat_repository.dart';
 import '../../chat/data/models.dart' show ReportTarget;
 import '../../chat/presentation/open_chat.dart';
+import '../../bookings/presentation/request_booking.dart';
 import '../../chat/presentation/report_sheet.dart';
 import '../../listings/data/models.dart';
 import '../../listings/presentation/listing_detail_view.dart';
@@ -41,13 +42,14 @@ ListingViewData viewDataFor(PublicListing l, {double? distanceKm}) =>
       distanceKm: distanceKm,
     );
 
-/// A listing's public page: photos, details, the lender, and the price for
-/// chosen dates. Chat and booking arrive in Phases 5–6.
+/// A listing's public page: photos, details, the lender, the price for
+/// chosen dates, Chat and "Request to book".
 class ItemScreen extends ConsumerStatefulWidget {
   const ItemScreen({
     required this.id,
     this.saveOnOpen = false,
     this.chatOnOpen = false,
+    this.bookOnOpen,
     super.key,
   });
 
@@ -58,6 +60,10 @@ class ItemScreen extends ConsumerStatefulWidget {
 
   /// Set when a guest tapped Chat and just signed in: open the chat.
   final bool chatOnOpen;
+
+  /// Set when a guest tapped "Request to book" for these dates and just
+  /// signed in: pick up the request where they left off.
+  final BlockedRange? bookOnOpen;
 
   @override
   ConsumerState<ItemScreen> createState() => _ItemScreenState();
@@ -87,6 +93,21 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
     if (!ref.read(signedInProvider) || _isMine(listing)) return;
     if (widget.chatOnOpen) {
       if (mounted) await openChat(context, ref, listing.id);
+      return;
+    }
+    final book = widget.bookOnOpen;
+    if (book != null) {
+      await _setDates(listing, book);
+      final q = _quote;
+      if (mounted && q != null && q.available) {
+        await requestBooking(
+          context,
+          ref,
+          listing: listing,
+          dates: book,
+          quote: q,
+        );
+      }
       return;
     }
     if (!widget.saveOnOpen || listing.saved) return;
@@ -150,7 +171,10 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
       selectable: selectable,
     );
     if (range == null || !mounted) return;
-    final dates = BlockedRange(range.start, range.end);
+    await _setDates(listing, BlockedRange(range.start, range.end));
+  }
+
+  Future<void> _setDates(PublicListing listing, BlockedRange dates) async {
     setState(() {
       _dates = dates;
       _quoting = true;
@@ -282,6 +306,15 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
               quote: _quote,
               hasDates: _dates != null,
               onChooseDates: () => _chooseDates(listing),
+              onRequest: _dates != null && _quote != null && _quote!.available
+                  ? () => requestBooking(
+                      context,
+                      ref,
+                      listing: listing,
+                      dates: _dates!,
+                      quote: _quote!,
+                    )
+                  : null,
             ),
     );
   }
@@ -294,6 +327,7 @@ class _BottomBar extends StatelessWidget {
     required this.hasDates,
     required this.onChooseDates,
     required this.onChat,
+    required this.onRequest,
   });
 
   final PublicListing listing;
@@ -301,6 +335,9 @@ class _BottomBar extends StatelessWidget {
   final bool hasDates;
   final VoidCallback onChooseDates;
   final VoidCallback onChat;
+
+  /// Null until there are dates with an available quote.
+  final VoidCallback? onRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +421,7 @@ class _BottomBar extends StatelessWidget {
                     child: FilledButton(
                       key: const ValueKey('request-booking'),
                       style: rowButton,
-                      onPressed: null,
+                      onPressed: onRequest,
                       child: const Text('Request to book'),
                     ),
                   ),
@@ -393,7 +430,9 @@ class _BottomBar extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: SajhaSpacing.xs),
                 child: Text(
-                  'Booking opens soon. Chat to agree dates and a price.',
+                  hasDates
+                      ? 'You won’t pay anything until the lender accepts.'
+                      : 'Pick dates to request, or chat to agree a price.',
                   style: text.bodySmall?.copyWith(color: muted),
                 ),
               ),

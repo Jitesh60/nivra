@@ -255,7 +255,8 @@ class _ChatViewState extends ConsumerState<_ChatView> {
       ),
       body: Column(
         children: [
-          if (c.acceptedOffer != null) _DealBanner(offer: c.acceptedOffer!),
+          if (c.openBookingId != null)
+            _DealBanner(offer: c.acceptedOffer, bookingId: c.openBookingId!),
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: (n) {
@@ -349,25 +350,38 @@ class _ChatStart extends StatelessWidget {
   );
 }
 
+/// The booking in progress for this chat (from a request or an agreed deal).
 class _DealBanner extends StatelessWidget {
-  const _DealBanner({required this.offer});
-  final Offer offer;
+  const _DealBanner({required this.offer, required this.bookingId});
+  final Offer? offer;
+  final String bookingId;
 
   @override
-  Widget build(BuildContext context) => Material(
-    key: const ValueKey('deal-banner'),
-    color: SajhaColors.brand50,
-    child: ListTile(
-      leading: const Icon(
-        Icons.handshake_outlined,
-        color: SajhaColors.brand700,
+  Widget build(BuildContext context) {
+    final o = offer;
+    return Material(
+      key: const ValueKey('deal-banner'),
+      color: SajhaColors.brand50,
+      child: ListTile(
+        leading: const Icon(
+          Icons.handshake_outlined,
+          color: SajhaColors.brand700,
+        ),
+        title: Text(
+          o == null
+              ? 'Booking in progress'
+              : 'Deal agreed: ${offerDates(o)} · ${formatRupees(o.pricePerDayPaise)}/day',
+        ),
+        subtitle: const Text('See what happens next'),
+        trailing: TextButton(
+          key: const ValueKey('open-booking'),
+          onPressed: () => context.push(Routes.booking(bookingId)),
+          child: const Text('Open booking'),
+        ),
+        onTap: () => context.push(Routes.booking(bookingId)),
       ),
-      title: Text(
-        'Deal agreed: ${offerDates(offer)} · ${formatRupees(offer.pricePerDayPaise)}/day',
-      ),
-      subtitle: const Text('Booking opens in the next update of Sajha.'),
-    ),
-  );
+    );
+  }
 }
 
 class _BlockedNotice extends StatelessWidget {
@@ -789,7 +803,7 @@ class _OfferCard extends StatelessWidget {
                 ),
                 if (o.status == OfferStatus.accepted)
                   Text(
-                    'Booking opens in the next update.',
+                    'Deal agreed. The booking has the next steps.',
                     style: TextStyle(color: muted),
                   ),
                 if (o.answerable && conversation.canMessage) ...[

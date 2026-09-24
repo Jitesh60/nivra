@@ -16,6 +16,8 @@ import 'package:sajha/core/network/auth_interceptor.dart';
 import 'package:sajha/core/network/token_manager.dart';
 import 'package:sajha/core/network/upload_client.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
+import 'package:sajha/features/bookings/data/bookings_repository.dart';
+import 'package:sajha/features/bookings/data/models.dart';
 import 'package:sajha/features/chat/data/chat_repository.dart';
 import 'package:sajha/features/chat/data/models.dart';
 import 'package:sajha/features/auth/data/auth_repository.dart';
@@ -258,6 +260,67 @@ void main() {
         'live-test-token-${DateTime.now().millisecondsSinceEpoch}',
         'android',
       );
+
+      // Request to book the same item: the booking page, lists and the
+      // bell parse, and the socket sends the change back. Cancelled after,
+      // since an account with a booking in progress can't be deleted.
+      final item = await discovery.listing(anyLive.first.id);
+      final from = DateTime.now().add(
+        Duration(days: item.advanceNoticeDays + 30),
+      );
+      final dates = listing.BlockedRange(
+        from,
+        from.add(Duration(days: item.minDays.clamp(1, 7) - 1)),
+      );
+      final quote = await discovery.quote(item.id, dates);
+      if (quote.available) {
+        final bookings = BookingsRepository(dio: api);
+        final requested = await bookings.request(
+          listingId: item.id,
+          start: dates.start,
+          end: dates.end,
+        );
+        final b = requested.booking;
+        expect(b.status, BookingStatus.requested);
+        expect(b.isBorrower, isTrue);
+        expect(b.totalPaise, quote.totalPaise);
+        expect(requested.can.cancel, isTrue);
+        expect(requested.can.accept, isFalse);
+        expect(requested.events.single.type, BookingEventType.requested);
+        expect(
+          requested.requiredDocs.map((d) => d.type),
+          item.requiredDocs.map((d) => d.type),
+        );
+        await _until(
+          () => events.any(
+            (e) =>
+                e.name == RealtimeEvents.bookingUpdated && e.data['id'] == b.id,
+          ),
+        );
+        final again = await bookings
+            .request(listingId: item.id, start: dates.start, end: dates.end)
+            .then<Object?>((_) => null, onError: (Object e) => e);
+        expect((again! as ApiException).code, 'BOOKING_OPEN_EXISTS');
+        final open = await bookings.list(
+          BookingRole.borrower,
+          BookingScope.open,
+        );
+        expect(open.items.first.id, b.id);
+        expect((await chat.conversation(b.conversationId)).openBookingId, b.id);
+
+        final cancelled = await bookings.cancel(b.id, 'Live test, sorry!');
+        expect(cancelled.booking.status, BookingStatus.cancelled);
+        expect(cancelled.booking.cancelledBy, 'BORROWER');
+        final past = await bookings.list(
+          BookingRole.borrower,
+          BookingScope.past,
+        );
+        expect(past.items.first.id, b.id);
+        final bell = await bookings.notifications();
+        expect(bell.unread, bell.items.where((n) => n.unread).length);
+        await bookings.markNotificationsRead();
+        expect(await bookings.unreadNotifications(), 0);
+      }
 
       await sub.cancel();
       socket.disconnect();

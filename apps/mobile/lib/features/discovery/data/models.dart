@@ -254,6 +254,11 @@ class LenderSummary {
   final bool emailVerified;
   final bool idVerified;
   final DateTime memberSince;
+
+  String get firstName {
+    final n = name?.trim();
+    return n == null || n.isEmpty ? 'The lender' : n.split(' ').first;
+  }
 }
 
 /// `GET /v1/listings/:id`: what anyone can see. The pickup point is

@@ -1,0 +1,412 @@
+/// Bookings, shared documents and in-app notifications, as the API returns
+/// them (see `/v1/bookings`, `/v1/me/notifications`). Money is in paise.
+library;
+
+import '../../chat/data/models.dart' show ChatParticipant;
+import '../../documents/data/models.dart' show DocumentType;
+import '../../listings/data/models.dart' show RequiredDocType;
+
+DateTime _date(Object? v) => DateTime.parse(v as String);
+DateTime? _dateOrNull(Object? v) =>
+    v == null ? null : DateTime.parse(v as String);
+
+enum BookingStatus {
+  requested('REQUESTED', 'Requested'),
+  awaitingDocs('AWAITING_DOCS', 'Waiting for documents'),
+  awaitingPayment('AWAITING_PAYMENT', 'Waiting for payment'),
+  confirmed('CONFIRMED', 'Confirmed'),
+  active('ACTIVE', 'In progress'),
+  returned('RETURNED', 'Returned'),
+  completed('COMPLETED', 'Completed'),
+  disputed('DISPUTED', 'Disputed'),
+  declined('DECLINED', 'Declined'),
+  expired('EXPIRED', 'Expired'),
+  cancelled('CANCELLED', 'Cancelled');
+
+  const BookingStatus(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static BookingStatus fromApi(String v) =>
+      values.firstWhere((s) => s.apiValue == v, orElse: () => expired);
+
+  /// Still in progress (not declined, expired, cancelled or completed).
+  bool get open =>
+      !const {declined, expired, cancelled, completed}.contains(this);
+}
+
+enum BookingRole { borrower, lender }
+
+enum BookingScope { open, past }
+
+class BookingListing {
+  const BookingListing({
+    required this.id,
+    required this.title,
+    this.thumbUrl,
+    this.areaLabel,
+  });
+
+  factory BookingListing.fromJson(Map<String, dynamic> json) => BookingListing(
+    id: json['id'] as String,
+    title: json['title'] as String,
+    thumbUrl: json['thumbUrl'] as String?,
+    areaLabel: json['areaLabel'] as String?,
+  );
+
+  final String id;
+  final String title;
+  final String? thumbUrl;
+  final String? areaLabel;
+}
+
+/// A booking as it appears in lists and live updates.
+class Booking {
+  const Booking({
+    required this.id,
+    required this.status,
+    required this.fromOffer,
+    required this.isBorrower,
+    required this.listing,
+    required this.other,
+    required this.conversationId,
+    required this.startDate,
+    required this.endDate,
+    required this.days,
+    required this.pricePerDayPaise,
+    required this.rentPaise,
+    required this.feePaise,
+    required this.depositPaise,
+    required this.totalPaise,
+    required this.createdAt,
+    this.expiresAt,
+    this.declineReason,
+    this.cancelledBy,
+    this.cancelReason,
+  });
+
+  factory Booking.fromJson(Map<String, dynamic> json) => Booking(
+    id: json['id'] as String,
+    status: BookingStatus.fromApi(json['status'] as String),
+    fromOffer: json['source'] == 'OFFER',
+    isBorrower: json['role'] == 'BORROWER',
+    listing: BookingListing.fromJson(json['listing'] as Map<String, dynamic>),
+    other: ChatParticipant.fromJson(json['other'] as Map<String, dynamic>),
+    conversationId: json['conversationId'] as String,
+    startDate: _date(json['startDate']),
+    endDate: _date(json['endDate']),
+    days: (json['days'] as num).toInt(),
+    pricePerDayPaise: (json['pricePerDayPaise'] as num).toInt(),
+    rentPaise: (json['rentPaise'] as num).toInt(),
+    feePaise: (json['feePaise'] as num).toInt(),
+    depositPaise: (json['depositPaise'] as num).toInt(),
+    totalPaise: (json['totalPaise'] as num).toInt(),
+    expiresAt: _dateOrNull(json['expiresAt']),
+    declineReason: json['declineReason'] as String?,
+    cancelledBy: json['cancelledBy'] as String?,
+    cancelReason: json['cancelReason'] as String?,
+    createdAt: _date(json['createdAt']),
+  );
+
+  final String id;
+  final BookingStatus status;
+
+  /// Made from an offer agreed in chat (already accepted by both).
+  final bool fromOffer;
+
+  /// The signed-in user is the borrower (else the lender).
+  final bool isBorrower;
+  final BookingListing listing;
+  final ChatParticipant other;
+  final String conversationId;
+  final DateTime startDate;
+  final DateTime endDate;
+  final int days;
+  final int pricePerDayPaise;
+  final int rentPaise;
+  final int feePaise;
+  final int depositPaise;
+  final int totalPaise;
+
+  /// The current step times out then, and the booking expires.
+  final DateTime? expiresAt;
+  final String? declineReason;
+
+  /// BORROWER, LENDER or ADMIN.
+  final String? cancelledBy;
+  final String? cancelReason;
+  final DateTime createdAt;
+
+  /// "#4F2A9C": the end of the id (its start is a timestamp).
+  String get ref =>
+      '#${id.replaceAll('-', '').substring(id.replaceAll('-', '').length - 6).toUpperCase()}';
+}
+
+/// What the viewer can do now (from the API's rules).
+class BookingActions {
+  const BookingActions({
+    this.accept = false,
+    this.decline = false,
+    this.cancel = false,
+    this.shareDocs = false,
+    this.reviewDocs = false,
+  });
+
+  factory BookingActions.fromJson(Map<String, dynamic> json) => BookingActions(
+    accept: json['accept'] as bool,
+    decline: json['decline'] as bool,
+    cancel: json['cancel'] as bool,
+    shareDocs: json['shareDocs'] as bool,
+    reviewDocs: json['reviewDocs'] as bool,
+  );
+
+  final bool accept;
+  final bool decline;
+  final bool cancel;
+  final bool shareDocs;
+  final bool reviewDocs;
+}
+
+/// A document the lender asks for, and which vault documents count.
+class BookingRequiredDoc {
+  const BookingRequiredDoc({
+    required this.id,
+    required this.type,
+    required this.accepts,
+    this.note,
+  });
+
+  factory BookingRequiredDoc.fromJson(Map<String, dynamic> json) =>
+      BookingRequiredDoc(
+        id: json['id'] as String,
+        type: RequiredDocType.fromApi(json['docType'] as String),
+        note: json['note'] as String?,
+        accepts: [
+          for (final t in json['accepts'] as List)
+            DocumentType.fromApi(t as String),
+        ],
+      );
+
+  final String id;
+  final RequiredDocType type;
+  final String? note;
+
+  /// Empty means any type.
+  final List<DocumentType> accepts;
+
+  String get title =>
+      type == RequiredDocType.other && note != null ? note! : type.label;
+
+  bool acceptsType(DocumentType t) => accepts.isEmpty || accepts.contains(t);
+}
+
+class DocumentView {
+  const DocumentView({required this.at, this.viewerName});
+
+  factory DocumentView.fromJson(Map<String, dynamic> json) => DocumentView(
+    viewerName: json['viewerName'] as String?,
+    at: _date(json['at']),
+  );
+
+  final String? viewerName;
+  final DateTime at;
+}
+
+enum ShareStatus {
+  submitted,
+  approved,
+  rejected;
+
+  static ShareStatus fromApi(String v) => switch (v) {
+    'APPROVED' => approved,
+    'REJECTED' => rejected,
+    _ => submitted,
+  };
+}
+
+/// A document shared with the lender for this booking.
+class SharedDocument {
+  const SharedDocument({
+    required this.id,
+    required this.type,
+    required this.verified,
+    required this.status,
+    required this.hasBack,
+    required this.viewable,
+    required this.views,
+    this.requiredDocId,
+    this.label,
+  });
+
+  factory SharedDocument.fromJson(Map<String, dynamic> json) => SharedDocument(
+    id: json['id'] as String,
+    requiredDocId: json['requiredDocId'] as String?,
+    type: DocumentType.fromApi(json['docType'] as String),
+    label: json['label'] as String?,
+    verified: json['verified'] as bool,
+    status: ShareStatus.fromApi(json['status'] as String),
+    hasBack: json['hasBack'] as bool,
+    viewable: json['viewable'] as bool,
+    views: [
+      for (final v in json['views'] as List)
+        DocumentView.fromJson(v as Map<String, dynamic>),
+    ],
+  );
+
+  final String id;
+  final String? requiredDocId;
+  final DocumentType type;
+  final String? label;
+
+  /// Sajha had verified it when it was shared.
+  final bool verified;
+  final ShareStatus status;
+  final bool hasBack;
+
+  /// The lender can open it now.
+  final bool viewable;
+
+  /// Who opened it (the borrower's view only).
+  final List<DocumentView> views;
+
+  String get title =>
+      type == DocumentType.other && label != null ? label! : type.label;
+}
+
+enum BookingEventType {
+  requested('REQUESTED'),
+  accepted('ACCEPTED'),
+  declined('DECLINED'),
+  expired('EXPIRED'),
+  cancelled('CANCELLED'),
+  docsSubmitted('DOCS_SUBMITTED'),
+  docsApproved('DOCS_APPROVED'),
+  docsRejected('DOCS_REJECTED');
+
+  const BookingEventType(this.apiValue);
+  final String apiValue;
+
+  static BookingEventType fromApi(String v) =>
+      values.firstWhere((t) => t.apiValue == v, orElse: () => requested);
+}
+
+/// Who did something: BORROWER, LENDER, ADMIN (Sajha) or SYSTEM.
+class BookingEvent {
+  const BookingEvent({
+    required this.type,
+    required this.status,
+    required this.by,
+    required this.at,
+    this.note,
+  });
+
+  factory BookingEvent.fromJson(Map<String, dynamic> json) => BookingEvent(
+    type: BookingEventType.fromApi(json['type'] as String),
+    status: BookingStatus.fromApi(json['status'] as String),
+    by: json['by'] as String,
+    note: json['note'] as String?,
+    at: _date(json['at']),
+  );
+
+  final BookingEventType type;
+  final BookingStatus status;
+  final String by;
+  final String? note;
+  final DateTime at;
+}
+
+/// A booking with everything its page shows.
+class BookingDetail {
+  const BookingDetail({
+    required this.booking,
+    required this.requiredDocs,
+    required this.sharedDocuments,
+    required this.events,
+    required this.can,
+  });
+
+  factory BookingDetail.fromJson(Map<String, dynamic> json) => BookingDetail(
+    booking: Booking.fromJson(json),
+    requiredDocs: [
+      for (final d in json['requiredDocs'] as List)
+        BookingRequiredDoc.fromJson(d as Map<String, dynamic>),
+    ],
+    sharedDocuments: [
+      for (final d in json['sharedDocuments'] as List)
+        SharedDocument.fromJson(d as Map<String, dynamic>),
+    ],
+    events: [
+      for (final e in json['events'] as List)
+        BookingEvent.fromJson(e as Map<String, dynamic>),
+    ],
+    can: BookingActions.fromJson(json['can'] as Map<String, dynamic>),
+  );
+
+  final Booking booking;
+  final List<BookingRequiredDoc> requiredDocs;
+  final List<SharedDocument> sharedDocuments;
+
+  /// Oldest first.
+  final List<BookingEvent> events;
+  final BookingActions can;
+}
+
+/// A short-lived link to a shared document, and the watermark to draw over it.
+class DocumentLink {
+  const DocumentLink({
+    required this.url,
+    required this.expiresAt,
+    required this.watermark,
+  });
+
+  factory DocumentLink.fromJson(Map<String, dynamic> json) => DocumentLink(
+    url: json['url'] as String,
+    expiresAt: _date(json['expiresAt']),
+    watermark: json['watermark'] as String,
+  );
+
+  final String url;
+  final DateTime expiresAt;
+  final String watermark;
+}
+
+/// One entry in the bell.
+class AppNotification {
+  const AppNotification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.body,
+    required this.createdAt,
+    this.bookingId,
+    this.readAt,
+  });
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) =>
+      AppNotification(
+        id: json['id'] as String,
+        type: json['type'] as String,
+        title: json['title'] as String,
+        body: json['body'] as String,
+        bookingId: json['bookingId'] as String?,
+        readAt: _dateOrNull(json['readAt']),
+        createdAt: _date(json['createdAt']),
+      );
+
+  final String id;
+  final String type;
+  final String title;
+  final String body;
+  final String? bookingId;
+  final DateTime? readAt;
+  final DateTime createdAt;
+
+  bool get unread => readAt == null;
+}
+
+class NotificationPage {
+  const NotificationPage(this.items, this.nextCursor, this.unread);
+  final List<AppNotification> items;
+  final String? nextCursor;
+  final int unread;
+}

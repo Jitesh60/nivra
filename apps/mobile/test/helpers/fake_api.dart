@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+part 'fake_bookings.dart';
 part 'fake_chat.dart';
 
 /// In-memory stand-in for the Sajha API, plugged into Dio as its HTTP adapter.
@@ -162,6 +163,10 @@ class FakeSajhaApi implements HttpClientAdapter {
     return _newSession(user.id).refresh;
   }
 
+  /// A signed-in session for an existing user (e.g. a seeded lender).
+  String seedSessionFor(String phone) =>
+      _newSession(_users.values.firstWhere((u) => u.phone == phone).id).refresh;
+
   /// Makes every access token issued so far fail with TOKEN_EXPIRED.
   void expireAccessTokens() =>
       _expiredAccess.addAll(_sessions.values.expand((s) => s.access));
@@ -258,6 +263,9 @@ class FakeSajhaApi implements HttpClientAdapter {
 
   /// Chats, offers, blocks, reports and push tokens (see fake_chat.dart).
   final chat = FakeChat();
+
+  /// Bookings and notifications (see fake_bookings.dart).
+  final bookingState = FakeBookings();
 
   /// The user the app is signed in as (the last authenticated caller).
   String? appUserId;
@@ -630,6 +638,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       target.revoked = true;
       return (204, null);
     }
+    final bookingResult = _bookings(method, path, body, query, user);
+    if (bookingResult != null) return bookingResult;
     final chatResult = _chat(method, path, body, query, user);
     if (chatResult != null) return chatResult;
     return _error(404, 'NOT_FOUND', 'Cannot $method $path');

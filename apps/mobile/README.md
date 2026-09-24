@@ -67,7 +67,7 @@ The `dev` Android flavor may use plain HTTP to `10.0.2.2` / `localhost` (`androi
 - **Chat:** "Chat" on an item opens the conversation (guests sign in first). The inbox is the chat icon on home, with an unread badge.
   - Messages arrive live over Socket.IO (`<API_BASE_URL>/ws`) while the app is open.
   - Phone numbers and emails from the other person show as `•••` until a booking is confirmed.
-  - Offers (dates and a price per day) can be accepted, countered or declined; an accepted offer is the deal Phase 6 books.
+  - Offers (dates and a price per day) can be accepted, countered or declined. An accepted offer becomes a booking; the chat shows **Open booking**.
   - Report and block are in the chat's menu; long-press a message to report it.
 - **Push is off until Firebase is set up.** To turn it on:
   1. Create a Firebase project and add the Android app, with each flavor's application ID (`com.sajha.app[.dev|.staging]`).
@@ -75,7 +75,20 @@ The `dev` Android flavor may use plain HTTP to `10.0.2.2` / `localhost` (`androi
   3. Give the API the matching service account (`PUSH_PROVIDER=fcm`, see `apps/api/README.md`).
 
   iOS also needs the Push Notifications capability, the remote-notification background mode, an APNs key in Firebase, and an iOS app id (set up on a Mac).
-- **Live contract test:** it chats over the real socket as a borrower. It opens a chat on a live listing, sends a message and gets it back live, makes an offer, and registers a push token.
+- **Live contract test:** it chats over the real socket as a borrower. It opens a chat on a live listing, sends a message and gets it back live, makes an offer, and registers a push token. It then requests to book the same item (and gets `booking:updated` live), lists and cancels the booking, and reads the notifications.
+
+## Bookings (Phase 6b)
+
+- **Request to book:** pick dates on an item, then "Request to book". A sheet shows the price, the refundable deposit and the documents the lender asks for.
+  - Guests sign in first and come back to the same request (`/item/:id?book=1&from=…&to=…`).
+  - People without a verified email are asked to verify it.
+- **My bookings** is the calendar icon on home, and in Profile. It has Borrowing and Lending tabs, each with In progress and Past.
+- **The booking page** shows the status, what happens next with a countdown, the price, documents, the timeline and a link to the chat. Buttons (accept, decline, share documents, approve, don't accept, cancel) come from the API's `can` flags.
+- **Documents:** the borrower picks a matching document from their vault for each one asked for, agrees to share it for this booking only, and later sees each time the lender opened it.
+- **The lender's viewer** loads a 5-minute link and draws a watermark with their name and the booking.
+  - **Android:** it sets `FLAG_SECURE` (screenshots and recordings show black) through the `sajha/secure` channel in `MainActivity.kt`.
+  - **iOS** can't block screenshots. `AppDelegate.swift` reports screen recording or mirroring, and the viewer blurs the document meanwhile. Check this on a device when the iOS build is set up on a Mac.
+- **Notifications:** the bell on home, with an unread badge that updates live (`notification:new`). Opening the list marks them read, and tapping one opens its booking. A tapped push with a `bookingId` opens the booking too.
 
 ## Structure
 

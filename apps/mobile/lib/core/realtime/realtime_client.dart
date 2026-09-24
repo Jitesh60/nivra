@@ -14,7 +14,16 @@ abstract final class RealtimeEvents {
   static const messageRead = 'message:read';
   static const offerUpdated = 'offer:updated';
   static const typing = 'typing';
-  static const all = [messageNew, messageRead, offerUpdated, typing];
+  static const bookingUpdated = 'booking:updated';
+  static const notificationNew = 'notification:new';
+  static const all = [
+    messageNew,
+    messageRead,
+    offerUpdated,
+    typing,
+    bookingUpdated,
+    notificationNew,
+  ];
 }
 
 class RealtimeEvent {
@@ -25,7 +34,7 @@ class RealtimeEvent {
   String? get conversationId => data['conversationId'] as String?;
 }
 
-/// Live chat updates. The app only listens; messages are sent over REST.
+/// Live chat, booking and notification updates. The app only listens; messages are sent over REST.
 /// Faked in tests.
 abstract interface class RealtimeClient {
   Stream<RealtimeEvent> get events;

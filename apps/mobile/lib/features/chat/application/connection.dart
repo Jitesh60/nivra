@@ -8,6 +8,7 @@ import '../../../core/push/push_service.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/router/routes.dart';
+import '../../bookings/application/bookings_providers.dart';
 import '../../discovery/application/discovery_providers.dart';
 import '../data/chat_repository.dart';
 import 'inbox.dart';
@@ -33,7 +34,8 @@ final realtimeConnectionProvider = Provider<void>((ref) {
       apply();
       ref
         ..invalidate(unreadCountProvider)
-        ..invalidate(inboxProvider);
+        ..invalidate(inboxProvider)
+        ..invalidate(unreadNotificationsProvider);
     },
     onPause: () {
       foreground = false;
@@ -48,7 +50,7 @@ final realtimeConnectionProvider = Provider<void>((ref) {
 });
 
 /// Registers this device for push once signed in (and again when the token
-/// rotates), and opens the chat when a notification is tapped.
+/// rotates), and opens the chat or booking when a notification is tapped.
 final pushRegistrationProvider = Provider<void>((ref) {
   final push = ref.watch(pushServiceProvider);
 
@@ -70,9 +72,13 @@ final pushRegistrationProvider = Provider<void>((ref) {
   }, fireImmediately: true);
   final refreshes = push.tokenRefreshes.listen((t) => unawaited(register(t)));
   final opened = push.opened.listen((open) {
-    final id = open.conversationId;
-    if (id != null && ref.read(signedInProvider)) {
-      ref.read(routerProvider).push(Routes.chat(id));
+    if (!ref.read(signedInProvider)) return;
+    final booking = open.bookingId;
+    final chat = open.conversationId;
+    if (booking != null) {
+      ref.read(routerProvider).push(Routes.booking(booking));
+    } else if (chat != null) {
+      ref.read(routerProvider).push(Routes.chat(chat));
     }
   });
   ref.onDispose(() {

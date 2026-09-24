@@ -7,6 +7,7 @@ import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
+import 'package:sajha/core/security/screen_protection.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
 
@@ -154,4 +155,29 @@ class FakePushService implements PushService {
 
   @override
   Stream<PushOpen> get opened => openedController.stream;
+}
+
+/// Records when a screen asks for screenshot protection.
+class FakeScreenProtection implements ScreenProtection {
+  bool protected = false;
+  final calls = <String>[];
+  final _captured = ValueNotifier(false);
+
+  @override
+  ValueListenable<bool> get captured => _captured;
+
+  /// Simulates a screen recording starting or stopping (iOS).
+  set recording(bool on) => _captured.value = on;
+
+  @override
+  Future<void> protect() async {
+    protected = true;
+    calls.add('protect');
+  }
+
+  @override
+  Future<void> release() async {
+    protected = false;
+    calls.add('release');
+  }
 }

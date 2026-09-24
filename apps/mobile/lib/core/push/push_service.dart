@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// What a tapped notification points to.
 class PushOpen {
-  const PushOpen({this.conversationId});
+  const PushOpen({this.conversationId, this.bookingId});
   final String? conversationId;
+  final String? bookingId;
 
-  static PushOpen fromData(Map<String, dynamic> data) =>
-      PushOpen(conversationId: data['conversationId'] as String?);
+  static PushOpen fromData(Map<String, dynamic> data) => PushOpen(
+    conversationId: data['conversationId'] as String?,
+    bookingId: data['bookingId'] as String?,
+  );
 }
 
 /// Push notifications. The default does nothing, so the app runs without
