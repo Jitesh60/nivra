@@ -29,11 +29,11 @@ This doc explains **how** we'll build what the [PRD](./PRD.md) describes: stack 
 | State management | **Riverpod** (with `riverpod_generator`) |
 | Navigation | **go_router** (with auth redirect guards) |
 | HTTP | **dio**, with interceptors for auth, token refresh and logging |
-| Models | **freezed** + **json_serializable** |
+| Models | Hand-written immutable classes with `fromJson` (no code generation yet; switch to **freezed** + **json_serializable** when models grow) |
 | Secure storage | **flutter_secure_storage** (refresh token) |
 | Realtime | **socket_io_client** |
 | Push | **firebase_messaging** + **flutter_local_notifications** |
-| OTP auto-fill | **sms_autofill** (Android SMS Retriever), iOS `oneTimeCode` autofill hint |
+| OTP auto-fill | `AutofillHints.oneTimeCode` (iOS and Gboard code suggestions); Android SMS Retriever later, once the DLT template carries the app hash |
 | Media | **image_picker**, **image_cropper**, **cached_network_image** |
 | Maps | **google_maps_flutter** + **geolocator** |
 | Payments | **razorpay_flutter** |

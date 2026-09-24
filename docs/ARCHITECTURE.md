@@ -408,7 +408,7 @@ lib/
 ├── main.dart / app.dart          # ProviderScope, MaterialApp.router, theme
 ├── core/
 │   ├── config/                   # env (dev/staging/prod via --dart-define)
-│   ├── network/                  # dio client, AuthInterceptor, RefreshInterceptor, error mapping
+│   ├── network/                  # dio client, AuthInterceptor, TokenManager (single-flight refresh), ApiException
 │   ├── storage/                  # secure storage wrapper
 │   ├── router/                   # go_router + auth redirect
 │   ├── theme/                    # design tokens → ThemeData, typography
@@ -416,7 +416,7 @@ lib/
 ├── features/
 │   ├── onboarding/
 │   ├── auth/
-│   │   ├── data/                 # AuthApi, AuthRepository, DTOs (freezed)
+│   │   ├── data/                 # AuthRepository, models (hand-written fromJson)
 │   │   ├── application/          # AuthController (Riverpod AsyncNotifier), session state
 │   │   └── presentation/         # PhoneScreen, OtpScreen, EmailScreen, ProfileSetupScreen
 │   ├── home/ listings/ search/ chat/ bookings/ profile/ ...   # later phases
@@ -424,8 +424,8 @@ lib/
 shaders/                          # GLSL fragment shaders (declared in pubspec `shaders:`)
 ```
 
-- **Auth state** is a Riverpod `AsyncNotifier<AuthState>` (`unknown | unauthenticated | needsProfile | authenticated`). The go_router `redirect` reads it.
-- The **RefreshInterceptor** queues concurrent 401s, refreshes once, retries the queued requests, and logs out on refresh failure.
+- **Auth state** is a Riverpod `Notifier<AuthState>` with a sealed state: `AuthUnknown` (checking the stored session, or offline with a retry), `Unauthenticated` (with an optional "why you were signed out" message) and `Authenticated` (which knows whether the name and email steps are still due). All redirect rules live in one pure function, `authRedirect()`, which is unit-tested; go_router re-runs it whenever the auth state changes.
+- **Tokens:** the access token is kept in memory and the refresh token in `flutter_secure_storage`. `AuthInterceptor` adds the token and, on a 401, asks `TokenManager` to refresh. The refresh is single-flight, so concurrent 401s share one refresh call (the server rotates refresh tokens, so two parallel refreshes would sign the device out). The request is then retried once. If the server says the session is gone (revoked, expired or suspended), the app signs out with a message. If the refresh fails only because of the network, the session is kept.
 - Environments are selected with `--dart-define-from-file=config/<env>.json` (`ENV`, `API_BASE_URL`). Android has `dev`/`staging`/`prod` product flavors (separate app IDs `com.sajha.app[.dev|.staging]`); matching iOS schemes are added when the iOS build is set up on a Mac.
 
 ## 10. Admin architecture (`apps/admin`)
