@@ -73,6 +73,47 @@ describe('validateEnv', () => {
     ).toThrow(/S3_PRIVATE_SSE/);
   });
 
+  describe('in production', () => {
+    const production = {
+      ...valid,
+      NODE_ENV: 'production',
+      CORS_ORIGINS: 'https://admin.sajha.app,https://sajha.app',
+      SMS_PROVIDER: 'msg91',
+      MSG91_AUTH_KEY: 'k',
+      MSG91_OTP_TEMPLATE_ID: 't',
+      PUSH_PROVIDER: 'fcm',
+      FCM_PROJECT_ID: 'sajha',
+      FCM_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: 'a@b.c', private_key: 'k' }),
+      EMAIL_PROVIDER: 'resend',
+      RESEND_API_KEY: 're_x',
+      S3_PRIVATE_SSE: 'aws:kms',
+      PAYMENT_PROVIDER: 'razorpay',
+      RAZORPAY_KEY_ID: 'rzp_live_x',
+      RAZORPAY_KEY_SECRET: 's',
+      RAZORPAY_WEBHOOK_SECRET: 'w',
+      SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1',
+    };
+
+    it('accepts a complete production setup', () => {
+      expect(validateEnv(production)).toMatchObject({
+        NODE_ENV: 'production',
+        SWAGGER_ENABLED: false,
+      });
+    });
+
+    it.each([
+      ['PUSH_PROVIDER', { PUSH_PROVIDER: 'console' }],
+      ['EMAIL_PROVIDER', { EMAIL_PROVIDER: 'smtp' }],
+      ['SWAGGER_ENABLED', { SWAGGER_ENABLED: 'true' }],
+      ['CORS_ORIGINS', { CORS_ORIGINS: '' }],
+      ['CORS_ORIGINS', { CORS_ORIGINS: '*' }],
+      ['OTP_DEV_BYPASS_CODE', { OTP_DEV_BYPASS_CODE: '000000' }],
+      ['PAYMENT_PROVIDER', { PAYMENT_PROVIDER: 'fake' }],
+    ])('refuses a development-only %s', (key, change) => {
+      expect(() => validateEnv({ ...production, ...change })).toThrow(new RegExp(key));
+    });
+  });
+
   it('requires separate public and private buckets', () => {
     expect(() => validateEnv({ ...valid, S3_PRIVATE_BUCKET: valid.S3_PUBLIC_BUCKET })).toThrow(
       /S3_PRIVATE_BUCKET/,

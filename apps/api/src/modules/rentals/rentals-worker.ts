@@ -6,6 +6,7 @@ import type { Env } from '../../config/env.js';
 import { bullConnection } from '../bookings/booking-queue.js';
 import { RemindersService } from './reminders.service.js';
 import { ReviewsService } from './reviews.service.js';
+import { reportJobFailure } from '../../common/observability/report.js';
 
 const QUEUE = 'rentals';
 
@@ -41,9 +42,10 @@ export class RentalsWorker implements OnApplicationBootstrap, OnApplicationShutd
     this.worker = new Worker(QUEUE, (job) => this.process(job), {
       connection: this.connections[1]!,
     });
-    this.worker.on('failed', (job, err) =>
-      this.logger.warn(`Rental job ${job?.name} failed: ${err.message}`),
-    );
+    this.worker.on('failed', (job, err) => {
+      this.logger.warn(`Rental job ${job?.name} failed: ${err.message}`);
+      reportJobFailure(QUEUE, job, err);
+    });
     for (const name of Object.values(RentalJob)) {
       await this.queue.upsertJobScheduler(name, { every: 60 * 60_000 }, { name });
     }

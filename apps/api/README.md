@@ -123,6 +123,18 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - **Overdue SMS** need `MSG91_OVERDUE_TEMPLATE_ID` (a DLT template with `##item##` and `##days##`) when `SMS_PROVIDER=msg91`; without it they're skipped.
 - Design: [docs/ARCHITECTURE.md §5](../../docs/ARCHITECTURE.md#5-booking-lifecycle).
 
+## Launch hardening (Phase 9a)
+
+| Endpoint | What |
+|---|---|
+| `GET/PUT /v1/me/notification-preferences` | Push (bookings, chat, reminders), email (booking updates), SMS (return reminders), marketing |
+| `GET /v1/admin/analytics?days=7\|30\|90` | Dashboard numbers by IST day with the previous period, a snapshot and the booking funnel (all admin roles; cached 5 minutes) |
+
+- Emails (receipts, refunds, dispute decisions, account deletion) go through the `email` queue; the job worker sends them. Locally they land in Mailpit (http://localhost:8025).
+- `SENTRY_DSN` turns on error reporting (scrubbed of personal data); `GIT_SHA` is shown by `/v1/health`.
+- `PUBLIC_READ_LIMIT_PER_MIN` caps public reads per IP.
+- Security review: [docs/SECURITY.md](../../docs/SECURITY.md). Load tests: [infra/load](../../infra/load/README.md), results in [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md).
+
 ## Tests
 
 | Command | What |

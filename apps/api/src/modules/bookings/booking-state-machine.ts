@@ -13,9 +13,23 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { dateRange, rupees } from '../chat/chat-presenter.js';
 import { ConversationsService } from '../chat/conversations.service.js';
 import { MessagesService } from '../chat/messages.service.js';
+import {
+  bookingReceiptMessage,
+  disputeSettledMessage,
+  lenderBookedMessage,
+} from '../../providers/email/templates.js';
+import { LISTING_RULES } from '../listings/listing-rules.js';
+import { Mailer } from '../mail/mailer.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { commissionOn } from '../payments/ledger.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
-import { BookingPresenter, bookingInclude, type BookingRow, stateOf } from './booking-presenter.js';
+import {
+  BookingPresenter,
+  bookingInclude,
+  bookingRef,
+  type BookingRow,
+  stateOf,
+} from './booking-presenter.js';
 import { BookingQueue } from './booking-queue.js';
 import {
   type Actor,
@@ -95,6 +109,7 @@ export class BookingStateMachine {
     private readonly messages: MessagesService,
     private readonly realtime: RealtimeService,
     private readonly notifications: NotificationsService,
+    private readonly mailer: Mailer,
     config: ConfigService<Env, true>,
   ) {
     this.windows = {
@@ -205,6 +220,7 @@ export class BookingStateMachine {
       }
       if (opts.chatNote) await this.chatNote(t);
       await this.notify(t);
+      await this.email(t);
     } catch (err) {
       this.logger.warn(
         `After-change work for booking ${b.id} failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -238,6 +254,73 @@ export class BookingStateMachine {
     const message = await this.messages.post(c, senderId, { type: 'SYSTEM', body });
     await this.conversations.touch(c.id, body, message.createdAt);
     await this.messages.broadcast(c, message, { push: false });
+  }
+
+  /** Receipts and outcomes by email, to people with a verified email who want them. */
+  private async email(t: Transition): Promise<void> {
+    const b = t.booking;
+    if (t.event === 'PAID') {
+      const [borrower, lender] = await Promise.all([
+        this.mailer.forBookings(b.borrowerId),
+        this.mailer.forBookings(b.lenderId),
+      ]);
+      if (borrower) {
+        await this.mailer.send(
+          `receipt-${b.id}`,
+          bookingReceiptMessage({
+            to: borrower.email,
+            name: borrower.name,
+            ref: bookingRef(b.id),
+            listingTitle: b.listing.title,
+            area: b.listing.areaLabel,
+            start: b.startsOn,
+            end: b.endsOn,
+            days: b.days,
+            pricePerDayPaise: b.pricePerDayPaise,
+            rentPaise: b.rentPaise,
+            feePaise: b.feePaise,
+            depositPaise: b.depositPaise,
+            totalPaise: b.totalPaise,
+            lenderName: firstName(b.lender.name, 'the lender'),
+          }),
+        );
+      }
+      if (lender) {
+        await this.mailer.send(
+          `booked-${b.id}`,
+          lenderBookedMessage({
+            to: lender.email,
+            name: lender.name,
+            listingTitle: b.listing.title,
+            start: b.startsOn,
+            end: b.endsOn,
+            earningsPaise: b.rentPaise - commissionOn(b.rentPaise, LISTING_RULES.commissionBps),
+            borrowerName: firstName(b.borrower.name, 'the borrower'),
+          }),
+        );
+      }
+    }
+    if (t.event === 'DISPUTE_RESOLVED') {
+      for (const [userId, borrower] of [
+        [b.borrowerId, true],
+        [b.lenderId, false],
+      ] as const) {
+        const to = await this.mailer.forBookings(userId);
+        if (!to) continue;
+        await this.mailer.send(
+          `dispute-${b.id}-${borrower ? 'borrower' : 'lender'}`,
+          disputeSettledMessage({
+            to: to.email,
+            name: to.name,
+            listingTitle: b.listing.title,
+            borrower,
+            depositPaise: b.depositPaise,
+            lenderGetsPaise: b.keptPaise,
+            note: t.note ?? null,
+          }),
+        );
+      }
+    }
   }
 
   private async notify(t: Transition): Promise<void> {

@@ -8,6 +8,8 @@ import type {
   NotificationDto,
   NotificationPageDto,
 } from './dto/notification.dto.js';
+import type { UpdateNotificationPreferencesDto } from './dto/preferences.dto.js';
+import { allowsPush, DEFAULT_PREFERENCES, type Preferences } from './preferences.js';
 
 /** Socket event carrying a new in-app notification. */
 export const NOTIFICATION_NEW = 'notification:new';
@@ -53,13 +55,39 @@ export class NotificationsService {
     await this.prisma.deviceToken.deleteMany({ where: { sessionId } });
   }
 
+  /** The user's choices, or the defaults when they never changed any. */
+  async preferences(userId: string): Promise<Preferences> {
+    const row = await this.prisma.notificationPreferences.findUnique({ where: { userId } });
+    if (!row) return { ...DEFAULT_PREFERENCES };
+    const { userId: _, updatedAt: __, ...prefs } = row;
+    return prefs;
+  }
+
+  async updatePreferences(
+    userId: string,
+    change: UpdateNotificationPreferencesDto,
+  ): Promise<Preferences> {
+    const data = Object.fromEntries(
+      Object.entries(change).filter(([, v]) => typeof v === 'boolean'),
+    ) as Partial<Preferences>;
+    await this.prisma.notificationPreferences.upsert({
+      where: { userId },
+      create: { userId, ...DEFAULT_PREFERENCES, ...data },
+      update: data,
+    });
+    return this.preferences(userId);
+  }
+
   /**
    * Pushes to the user's signed-in devices, unless they have the app open
-   * (then the socket already delivered it). Never throws: a failed push must
-   * not fail the action that caused it.
+   * (then the socket already delivered it) or they turned this kind of push
+   * off (the type is in `message.data.type`). Never throws: a failed push
+   * must not fail the action that caused it.
    */
   async notifyIfAway(userId: string, message: PushMessage): Promise<void> {
     try {
+      const type = message.data?.type;
+      if (type && !allowsPush(await this.preferences(userId), type)) return;
       if (await this.realtime.isOnline(userId)) return;
       const now = new Date();
       const tokens = await this.prisma.deviceToken.findMany({

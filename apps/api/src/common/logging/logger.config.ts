@@ -14,6 +14,10 @@ export const REDACT_PATHS = [
   'req.body.password',
   'req.body.refreshToken',
   'req.body.phone',
+  'req.body.email',
+  'req.body.accountNumber',
+  'req.body.pan',
+  'req.headers["x-razorpay-signature"]',
 ];
 
 export function loggerConfig(env: Pick<Env, 'LOG_LEVEL' | 'NODE_ENV'>): Params {

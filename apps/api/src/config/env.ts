@@ -95,6 +95,16 @@ export const envSchema = z.object({
   S3_PRIVATE_SSE: z.enum(['AES256', 'aws:kms', 'none']).default('none'),
 
   // ── Bookings & jobs ──
+  /** Requests a minute per IP to public reads (search, home, listings, reviews). */
+  PUBLIC_READ_LIMIT_PER_MIN: z.coerce.number().int().positive().default(120),
+
+  /** Sentry error reporting; off when unset. Read in instrument.ts before boot. */
+  SENTRY_DSN: optional(z.url()),
+  SENTRY_ENVIRONMENT: optional(z.string()),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
+  /** The deployed commit, shown by /v1/health and tagged on Sentry errors. */
+  GIT_SHA: optional(z.string().max(64)),
+
   /** Run the BullMQ worker (booking timers, purge) in this process. */
   JOBS_WORKER: z
     .enum(['true', 'false'])
@@ -149,6 +159,21 @@ const envRules = envSchema.superRefine((env, ctx) => {
   }
   if (env.SMS_PROVIDER === 'console' && productionLike(env)) {
     issue('SMS_PROVIDER', 'console provider is for development only');
+  }
+  if (env.PUSH_PROVIDER === 'console' && productionLike(env)) {
+    issue('PUSH_PROVIDER', 'console provider is for development only');
+  }
+  if (env.EMAIL_PROVIDER === 'smtp' && productionLike(env)) {
+    issue('EMAIL_PROVIDER', 'smtp (Mailpit) is for development only; use resend');
+  }
+  if (env.SWAGGER_ENABLED && env.NODE_ENV === 'production') {
+    issue('SWAGGER_ENABLED', 'must be off in production');
+  }
+  if (env.CORS_ORIGINS.length === 0 && productionLike(env)) {
+    issue('CORS_ORIGINS', 'list the admin and website origins');
+  }
+  if (env.CORS_ORIGINS.some((o) => o === '*') && productionLike(env)) {
+    issue('CORS_ORIGINS', 'must not be * (credentials are allowed)');
   }
   if (env.SMS_PROVIDER === 'msg91') {
     if (!env.MSG91_AUTH_KEY) issue('MSG91_AUTH_KEY', 'required when SMS_PROVIDER=msg91');

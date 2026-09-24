@@ -77,7 +77,9 @@ export class RemindersService {
         if (first) {
           sent++;
           try {
-            await this.sms.sendOverdue(b.borrower.phone, title, days);
+            // The in-app and push reminder above still go; SMS is the borrower's choice.
+            const prefs = await this.notifications.preferences(b.borrowerId);
+            if (prefs.smsReminders) await this.sms.sendOverdue(b.borrower.phone, title, days);
           } catch (err) {
             this.logger.warn(
               `Overdue SMS for ${b.id} failed: ${err instanceof Error ? err.message : String(err)}`,

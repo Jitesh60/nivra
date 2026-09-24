@@ -64,6 +64,7 @@ import { ListingPresenter } from './listing-presenter.js';
 import { LISTING_RULES as R, todayUtc } from './listing-rules.js';
 import { quote } from './pricing.js';
 import { ListingsService } from './listings.service.js';
+import { PublicReadLimitGuard } from '../../common/http/public-read-limit.guard.js';
 
 @ApiTags('config')
 @Controller('config')
@@ -86,7 +87,7 @@ export class ConfigController {
 }
 
 @ApiTags('listings')
-@UseGuards(OptionalJwtGuard)
+@UseGuards(PublicReadLimitGuard, OptionalJwtGuard)
 @Controller('listings')
 export class PublicListingsController {
   constructor(

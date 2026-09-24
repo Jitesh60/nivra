@@ -25,6 +25,10 @@ import {
   MarkNotificationsReadDto,
   NotificationPageDto,
 } from './dto/notification.dto.js';
+import {
+  NotificationPreferencesDto,
+  UpdateNotificationPreferencesDto,
+} from './dto/preferences.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 export class PushTokenDto {
@@ -86,5 +90,32 @@ export class NotificationsController {
   @ApiNoContentResponse()
   async read(@CurrentUser() auth: UserAuth, @Body() body: MarkNotificationsReadDto): Promise<void> {
     await this.notifications.markRead(auth.userId, body.upTo);
+  }
+}
+
+@ApiTags('me · notifications')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('me/notification-preferences')
+export class NotificationPreferencesController {
+  constructor(private readonly notifications: NotificationsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'What you want to hear about by push, email and SMS (in-app always shows)',
+  })
+  @ApiOkResponse({ type: NotificationPreferencesDto })
+  get(@CurrentUser() auth: UserAuth): Promise<NotificationPreferencesDto> {
+    return this.notifications.preferences(auth.userId);
+  }
+
+  @Put()
+  @ApiOperation({ summary: 'Change some switches; the rest stay as they are' })
+  @ApiOkResponse({ type: NotificationPreferencesDto })
+  update(
+    @CurrentUser() auth: UserAuth,
+    @Body() body: UpdateNotificationPreferencesDto,
+  ): Promise<NotificationPreferencesDto> {
+    return this.notifications.updatePreferences(auth.userId, body);
   }
 }

@@ -47,6 +47,7 @@ import {
 import { DisputesService } from './disputes.service.js';
 import { HandoverService } from './handover.service.js';
 import { ReviewsService } from './reviews.service.js';
+import { PublicReadLimitGuard } from '../../common/http/public-read-limit.guard.js';
 
 const MOVED = 'BOOKING_INVALID_TRANSITION (it has moved on)';
 
@@ -205,6 +206,7 @@ export class RentalsController {
 }
 
 @ApiTags('reviews')
+@UseGuards(PublicReadLimitGuard)
 @Controller()
 export class ReviewsController {
   constructor(private readonly reviews: ReviewsService) {}

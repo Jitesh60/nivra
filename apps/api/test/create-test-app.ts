@@ -53,6 +53,8 @@ export async function createTestApp(): Promise<TestApp> {
     // Tests run booking jobs directly (BookingWorker.process) instead of waiting for delays.
     JOBS_WORKER: 'false',
     PAYMENT_PROVIDER: 'fake',
+    // Suites share 127.0.0.1; the rate-limit test fills one forwarded IP's counter instead.
+    PUBLIC_READ_LIMIT_PER_MIN: '100000',
     ...TEST_ENV,
   });
 

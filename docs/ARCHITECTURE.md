@@ -76,7 +76,9 @@ src/
     ├── search/             # text + geo + date search, home feed, wishlist, views   (Phase 4a)
     ├── chat/               # conversations, messages, offers, masking, /ws gateway (Phase 5a)
     ├── realtime/           # RealtimeService (emit, presence), Redis Socket.IO adapter (Phase 5a)
-    ├── notifications/      # device tokens, push when away, in-app notifications    (Phase 5a, 6a)
+    ├── notifications/      # device tokens, push when away, in-app notifications, preferences (5a, 6a, 9a)
+    ├── mail/               # transactional email queue (BullMQ `email`) + worker       (Phase 9a)
+    ├── analytics/          # admin dashboard numbers, IST days, cached 5 min           (Phase 9a)
     ├── safety/             # blocks, reports, admin reports + audited transcripts  (Phase 5a)
     ├── bookings/           # state machine, requests, document sharing, timers (BullMQ) (Phase 6a)
     ├── payments/           # Razorpay orders, webhooks, refunds, ledger             (Phase 7)
@@ -209,7 +211,8 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `listings` (8a additions) | ratingAvg, ratingCount (borrowers' published reviews) |
 | `transfers` (8a addition) | fromDeposit (deposit kept after the rental; one per booking) |
 | `reports` | reporterId, targetType, targetId, reason, status |
-| `notifications` (6a) | userId, type (e.g. `booking.requested`), title, body, data (`{bookingId}`), readAt, createdAt |
+| `notifications` (6a) | userId, type (e.g. `booking.requested`), title, body, data (`{bookingId}`), readAt, createdAt; partial index on userId where unread (9a) |
+| `notification_preferences` (9a) | userId (PK), pushBookings, pushChat, pushReminders, emailBookings, smsReminders (all default on), marketing (default off); no row = defaults |
 | `device_tokens` | userId, sessionId, fcmToken, platform |
 
 **Double-booking guard** (raw SQL in a migration; bookings, like availability blocks, are whole days):
@@ -685,17 +688,21 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 - Performance budget: LCP < 2.5s on 4G. Shaders are lazy-loaded client components with a static poster first.
 - The waitlist form posts to `POST /v1/waitlist` (rate limited, with a honeypot field)
 
-## 12. Security checklist
+## 12. Security
 
-- HTTPS everywhere; HSTS; CORS allow-list (admin and web origins only); Helmet headers
-- Secrets only from env or a secret manager; separate JWT secrets for users and admins; `OTP_PEPPER`; `DOC_ENC_KEY`
-- Rate limits: global per-IP, OTP-specific, and login-specific
-- Input validation on every DTO; Prisma parameterised queries; raw SQL only through tagged templates
-- PII redaction in logs; Sentry scrubbing
-- Least-privilege IAM for S3; private bucket blocks public access
-- Audit log for admin actions and document views
-- Dependency scanning (Dependabot) and `pnpm audit` in CI
-- Mobile: certificate pinning (later), `FLAG_SECURE` on document screens, no tokens in logs
+The ASVS L1 review, requirement by requirement, is in [SECURITY.md](SECURITY.md). In short:
+
+- HTTPS everywhere; CORS allow-list (refused empty or `*` outside development); Helmet headers.
+- Secrets only from env, validated at boot; staging and production refuse every development setting (OTP bypass, console SMS/push, SMTP email, fake payments, unencrypted documents, Swagger in production).
+- Rate limits: OTP (per number, per IP, cooldown, lockout), admin login lockout, bookings, chats, messages, reports, waitlist, and public reads per IP (`PUBLIC_READ_LIMIT_PER_MIN`, Phase 9a).
+- Input validation on every DTO; Prisma parameterised queries; raw SQL only through tagged templates.
+- PII redaction in logs; **Sentry** (API, when `SENTRY_DSN` is set) reports 5xx errors and failed jobs after `scrubEvent` drops bodies, cookies, auth headers and user details but the id, and masks phones, emails and codes.
+- Private bucket with SSE for documents; field encryption for addresses and TOTP secrets.
+- Audit log for admin actions, document and transcript views, refunds and dispute decisions.
+- `pnpm audit --prod --audit-level high` in CI.
+- Mobile: `FLAG_SECURE` on document screens, no tokens in logs; certificate pinning deferred (see SECURITY.md).
+
+**Notifications and email (Phase 9a).** In-app notifications always arrive. Push is skipped when the user turned off the kind (`pushSwitchFor`: bookings, chat, reminders), overdue SMS when `smsReminders` is off. Emails (receipt and lender confirmation on payment, refund issued, dispute decided, account deleted) are rendered by one layout (`providers/email/layout.ts`: HTML + text, brand colours, why-you-got-this footer) and queued on BullMQ `email` (5 tries, exponential backoff, once-only job ids), only to verified addresses, and only with `emailBookings` on (account deletion always sends). Verification codes still send at once.
 
 ## 13. Deployment (target)
 

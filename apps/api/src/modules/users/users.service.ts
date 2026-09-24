@@ -11,6 +11,8 @@ import { processAvatar } from '../media/image-pipeline.js';
 import { invalid, UploadsService } from '../media/uploads.service.js';
 import { ListingsService } from '../listings/listings.service.js';
 import { SessionsService } from '../sessions/sessions.service.js';
+import { accountDeletedMessage } from '../../providers/email/templates.js';
+import { Mailer } from '../mail/mailer.service.js';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +23,7 @@ export class UsersService {
     private readonly uploads: UploadsService,
     private readonly storage: StorageService,
     private readonly listings: ListingsService,
+    private readonly mailer: Mailer,
   ) {}
 
   /** Name lives on User; city and bio on Profile (created on first use). Empty strings clear. */
@@ -113,6 +116,8 @@ export class UsersService {
         HttpStatus.CONFLICT,
       );
     }
+    // Read before the address is wiped, to confirm the deletion.
+    const confirmTo = await this.mailer.verified(userId);
     const [profile, documents] = await Promise.all([
       this.prisma.profile.findUnique({ where: { userId }, select: { avatarKey: true } }),
       this.prisma.userDocument.findMany({
@@ -139,6 +144,7 @@ export class UsersService {
       });
       await tx.profile.deleteMany({ where: { userId } });
       await tx.deviceToken.deleteMany({ where: { userId } });
+      await tx.notificationPreferences.deleteMany({ where: { userId } });
       // The bank details' name and last digits (Razorpay keeps the account).
       await tx.payoutAccount.deleteMany({ where: { userId } });
       await tx.userDocument.updateMany({
@@ -157,5 +163,11 @@ export class UsersService {
       'private',
       documents.flatMap((d) => [d.frontKey, d.backKey]),
     );
+    if (confirmTo) {
+      await this.mailer.send(
+        `deleted-${userId}`,
+        accountDeletedMessage(confirmTo.email, confirmTo.name),
+      );
+    }
   }
 }

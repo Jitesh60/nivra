@@ -54,6 +54,7 @@ model User {
   borrowerBookings      Booking[]         @relation("BookingBorrower")
   lenderBookings        Booking[]         @relation("BookingLender")
   notifications         Notification[]
+  notificationPrefs     NotificationPreferences?
   payoutAccount         PayoutAccount?
   transfers             Transfer[]
   conditionReports      ConditionReport[]
@@ -973,7 +974,33 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, id])
+  /// Plus a partial index on (user_id) WHERE read_at IS NULL for unread counts (migration SQL).
   @@map("notifications")
+}
+
+// ─── Phase 9: launch ─────────────────────────────────────────────────────────
+
+/// What a user wants to hear about, per channel. No row = the defaults.
+/// In-app notifications, codes and security or legal messages always go out.
+model NotificationPreferences {
+  userId        String   @id @map("user_id") @db.Uuid
+  /// Push: requests, acceptances, payments, handover and return, disputes, refunds.
+  pushBookings  Boolean  @default(true) @map("push_bookings")
+  /// Push: new chat messages.
+  pushChat      Boolean  @default(true) @map("push_chat")
+  /// Push: pickup and return reminders.
+  pushReminders Boolean  @default(true) @map("push_reminders")
+  /// Email: receipts, refunds and dispute outcomes (to a verified email).
+  emailBookings Boolean  @default(true) @map("email_bookings")
+  /// SMS: overdue return reminders.
+  smsReminders  Boolean  @default(true) @map("sms_reminders")
+  /// News and offers from Sajha (off until the user opts in).
+  marketing     Boolean  @default(false)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // ─── Phase 7: payments, refunds, payouts, ledger ─────────────────────────────
