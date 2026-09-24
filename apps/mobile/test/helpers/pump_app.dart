@@ -6,7 +6,9 @@ import 'package:sajha/app.dart';
 import 'package:sajha/core/config/app_config.dart';
 import 'package:sajha/core/config/providers.dart';
 import 'package:sajha/core/device/device_info.dart';
+import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
+import 'package:sajha/features/listings/presentation/pickup_map.dart';
 import 'package:sajha/core/network/api_client.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
@@ -21,7 +23,9 @@ class TestHarness {
     InMemorySessionStorage? storage,
     FakeAppPrefs? prefs,
     FakePhotoPicker? picker,
+    FakeLocationService? location,
   }) : api = api ?? FakeSajhaApi(),
+       location = location ?? FakeLocationService(),
        picker = picker ?? FakePhotoPicker(),
        storage = storage ?? InMemorySessionStorage(),
        prefs = prefs ?? FakeAppPrefs();
@@ -30,6 +34,7 @@ class TestHarness {
   final InMemorySessionStorage storage;
   final FakeAppPrefs prefs;
   final FakePhotoPicker picker;
+  final FakeLocationService location;
   late ProviderContainer container;
 
   List<Override> get overrides => [
@@ -41,6 +46,8 @@ class TestHarness {
     appPrefsProvider.overrideWithValue(prefs),
     deviceInfoProvider.overrideWithValue(FakeDeviceInfo()),
     photoPickerProvider.overrideWithValue(picker),
+    locationServiceProvider.overrideWithValue(location),
+    mapTilesEnabledProvider.overrideWithValue(false),
   ];
 
   /// Boots the whole app and lets the splash finish.

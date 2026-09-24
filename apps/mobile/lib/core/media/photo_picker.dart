@@ -14,6 +14,9 @@ abstract interface class PhotoPicker {
   /// Returns the image bytes, or null when the user cancels.
   /// [squareCrop] opens a 1:1 cropper (profile photos).
   Future<Uint8List?> pick(PhotoSource source, {bool squareCrop = false});
+
+  /// Several photos from the gallery (at most [limit]); empty when cancelled.
+  Future<List<Uint8List>> pickMany({required int limit});
 }
 
 class DevicePhotoPicker implements PhotoPicker {
@@ -51,6 +54,19 @@ class DevicePhotoPicker implements PhotoPicker {
       ],
     );
     return cropped?.readAsBytes();
+  }
+
+  @override
+  Future<List<Uint8List>> pickMany({required int limit}) async {
+    if (limit < 1) return const [];
+    final files = await _picker.pickMultiImage(
+      maxWidth: 2400,
+      maxHeight: 2400,
+      imageQuality: 88,
+      limit: limit,
+      requestFullMetadata: false,
+    );
+    return Future.wait(files.take(limit).map((f) => f.readAsBytes()));
   }
 }
 

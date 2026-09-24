@@ -3,7 +3,16 @@
 enum AppEnv { dev, staging, prod }
 
 class AppConfig {
-  const AppConfig({required this.env, required this.apiBaseUrl});
+  const AppConfig({
+    required this.env,
+    required this.apiBaseUrl,
+    this.mapTileUrl = osmTileUrl,
+  });
+
+  /// OpenStreetMap's public tiles: fine for development and light use. Point
+  /// MAP_TILE_URL at a paid or self-hosted tile server before launch
+  /// (https://operations.osmfoundation.org/policies/tiles/).
+  static const osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   /// Reads the values compiled into this build. Defaults target a local API
   /// from the Android emulator (10.0.2.2 is the host machine).
@@ -13,9 +22,17 @@ class AppConfig {
       'API_BASE_URL',
       defaultValue: 'http://10.0.2.2:3000',
     ),
+    mapTileUrl: const String.fromEnvironment(
+      'MAP_TILE_URL',
+      defaultValue: osmTileUrl,
+    ),
   );
 
-  factory AppConfig.parse({required String env, required String apiBaseUrl}) {
+  factory AppConfig.parse({
+    required String env,
+    required String apiBaseUrl,
+    String mapTileUrl = osmTileUrl,
+  }) {
     final parsed = AppEnv.values.where((e) => e.name == env).firstOrNull;
     if (parsed == null) {
       throw ArgumentError.value(
@@ -32,11 +49,25 @@ class AppConfig {
         'must be an absolute URL',
       );
     }
-    return AppConfig(env: parsed, apiBaseUrl: apiBaseUrl);
+    if (!mapTileUrl.contains('{z}') || !mapTileUrl.startsWith('http')) {
+      throw ArgumentError.value(
+        mapTileUrl,
+        'MAP_TILE_URL',
+        'must be a tile URL template with {z}/{x}/{y}',
+      );
+    }
+    return AppConfig(
+      env: parsed,
+      apiBaseUrl: apiBaseUrl,
+      mapTileUrl: mapTileUrl,
+    );
   }
 
   final AppEnv env;
   final String apiBaseUrl;
+
+  /// Map tile URL template for the pickup-location map.
+  final String mapTileUrl;
 
   bool get isProd => env == AppEnv.prod;
 }

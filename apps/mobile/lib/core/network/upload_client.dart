@@ -6,7 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
 
-enum UploadPurpose { avatar, document }
+enum UploadPurpose {
+  avatar('AVATAR'),
+  document('DOCUMENT'),
+  listingPhoto('LISTING_PHOTO');
+
+  const UploadPurpose(this.apiValue);
+  final String apiValue;
+}
 
 /// "image/jpeg" etc. from the file's first bytes, or null if it isn't a
 /// JPEG, PNG or WebP (the only types the API accepts).
@@ -55,7 +62,7 @@ class UploadClient {
       ticket = (await _api.post<Map<String, dynamic>>(
         '/uploads',
         data: {
-          'purpose': purpose.name.toUpperCase(),
+          'purpose': purpose.apiValue,
           'contentType': contentType,
           'sizeBytes': bytes.length,
         },

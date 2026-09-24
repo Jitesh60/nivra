@@ -17,6 +17,88 @@ class FakeSajhaApi implements HttpClientAdapter {
   final _expiredAccess = <String>{};
   final _uploads = <String, _Upload>{}; // by key
   final documents = <String, FakeDocument>{}; // by id
+  final listings = <String, FakeListing>{}; // by id
+
+  /// Lenders whose listings go live without review (an admin approved one).
+  final trustedLenders = <String>{};
+
+  static const categories = [
+    {
+      'id': 'cat-trek',
+      'name': 'Trekking & outdoor gear',
+      'slug': 'trekking-outdoor',
+      'icon': 'hiking',
+    },
+    {
+      'id': 'cat-camera',
+      'name': 'Cameras & electronics',
+      'slug': 'cameras-electronics',
+      'icon': 'photo_camera',
+    },
+  ];
+
+  static const rules = {
+    'commissionBps': 1000,
+    'pricePerDayPaise': {'min': 1000, 'max': 1000000},
+    'depositPaise': {'min': 0, 'max': 5000000},
+    'weeklyDiscountPct': {'min': 0, 'max': 50},
+    'rentalDays': {'min': 1, 'max': 90},
+    'advanceNoticeDays': {'min': 0, 'max': 7},
+    'photos': {'min': 1, 'max': 8},
+    'maxBlockedRanges': 50,
+  };
+
+  /// Admin approval, as the admin panel would do it.
+  void approveListing(String id) {
+    final l = listings[id]!..status = 'LIVE';
+    trustedLenders.add(l.lenderId);
+  }
+
+  void rejectListing(String id, String reason) => listings[id]!
+    ..status = 'REJECTED'
+    ..rejectionReason = reason;
+
+  /// A listing with one photo in [status], owned by the only seeded user.
+  FakeListing seedListing({
+    String status = 'LIVE',
+    String title = 'Quechua trekking tent',
+    String? rejectionReason,
+  }) {
+    final lender = _users.values.first;
+    final l = FakeListing('listing-${++_seq}', lender.id)
+      ..fields.addAll({
+        'categoryId': 'cat-trek',
+        'title': title,
+        'description': 'Two-person tent, used on three treks. Pegs included.',
+        'condition': 'GOOD',
+        'pricePerDayPaise': 15000,
+        'weeklyDiscountPct': 10,
+        'depositPaise': 100000,
+        'minDays': 1,
+        'maxDays': 30,
+        'advanceNoticeDays': 1,
+        'lat': 18.5074,
+        'lng': 73.8077,
+        'areaLabel': 'Kothrud, Pune',
+      })
+      ..status = status
+      ..rejectionReason = rejectionReason
+      ..photos.add(_newPhoto());
+    listings[l.id] = l;
+    return l;
+  }
+
+  Map<String, dynamic> _newPhoto() {
+    final id = 'photo-${++_seq}';
+    return {
+      'id': id,
+      'url': 'http://cdn.test/listings/$id.webp',
+      'thumbUrl': 'http://cdn.test/listings/$id-thumb.webp',
+      'width': 1600,
+      'height': 1200,
+    };
+  }
+
   int _seq = 0;
   bool offline = false;
 
@@ -136,6 +218,10 @@ class FakeSajhaApi implements HttpClientAdapter {
     String? auth,
   ) {
     switch ('$method $path') {
+      case 'GET /categories':
+        return (200, [for (final c in categories) c]);
+      case 'GET /config':
+        return (200, rules);
       case 'POST /auth/otp/request':
         final phone = body['phone'] as String;
         if (!RegExp(r'^\+91[6-9]\d{9}$').hasMatch(phone)) {
@@ -245,6 +331,24 @@ class FakeSajhaApi implements HttpClientAdapter {
       case 'DELETE /me/avatar':
         user.avatarUrl = null;
         return (200, {'user': user.json});
+      case 'GET /me/listings':
+        return (
+          200,
+          [
+            for (final l in listings.values.toList().reversed)
+              if (l.lenderId == user.id && l.status != 'DELETED') l.json,
+          ],
+        );
+      case 'POST /me/listings':
+        if (!user.emailVerified) {
+          return _error(403, 'VERIFICATION_REQUIRED', 'Verify', {
+            'missing': ['email'],
+          });
+        }
+        final l = FakeListing('listing-${++_seq}', user.id)
+          ..fields.addAll(body);
+        listings[l.id] = l;
+        return (201, l.json);
       case 'GET /me/documents':
         return (
           200,
@@ -326,6 +430,72 @@ class FakeSajhaApi implements HttpClientAdapter {
               },
           ],
         );
+    }
+    if (path.startsWith('/me/listings/')) {
+      final parts = path.split('/'); // ['', 'me', 'listings', id, ...]
+      final l = listings[parts[3]];
+      if (l == null || l.lenderId != user.id || l.status == 'DELETED') {
+        return _error(404, 'NOT_FOUND', 'Listing not found');
+      }
+      final action = parts.skip(4).join('/');
+      (int, Object?) conflict() =>
+          _error(409, 'LISTING_STATUS_CONFLICT', 'Wrong status');
+      switch ('$method $action') {
+        case 'GET ':
+          return (200, l.json);
+        case 'PATCH ':
+          l.fields.addAll(body);
+          if (l.status == 'REJECTED') {
+            l
+              ..status = 'DRAFT'
+              ..rejectionReason = null;
+          }
+          return (200, l.json);
+        case 'POST photos':
+          if (_claim(user, body['key'], 'LISTING_PHOTO') == null) {
+            return _error(400, 'UPLOAD_NOT_FOUND', 'Upload not found');
+          }
+          if (l.photos.length >= 8) {
+            return _error(409, 'LISTING_PHOTO_LIMIT', 'Too many');
+          }
+          l.photos.add(_newPhoto());
+          return (201, l.json);
+        case 'PUT photos/order':
+          final ids = (body['ids'] as List).cast<String>();
+          l.photos.sort(
+            (a, b) => ids.indexOf(a['id']).compareTo(ids.indexOf(b['id'])),
+          );
+          return (200, l.json);
+        case 'PUT blocks':
+          l.blocks = List.of(body['ranges'] as List);
+          return (200, l.json);
+        case 'PUT required-docs':
+          l.requiredDocs = List.of(body['items'] as List);
+          return (200, l.json);
+        case 'POST publish':
+          if (l.status != 'DRAFT') return conflict();
+          if (l.photos.isEmpty || l.fields['lat'] == null) {
+            return _error(400, 'LISTING_INCOMPLETE', 'Incomplete');
+          }
+          final trusted = trustedLenders.contains(user.id);
+          l.status = trusted ? 'LIVE' : 'PENDING';
+          return (200, {'listing': l.json, 'inReview': !trusted});
+        case 'POST pause':
+          if (l.status != 'LIVE') return conflict();
+          l.status = 'PAUSED';
+          return (200, l.json);
+        case 'POST unpause':
+          if (l.status != 'PAUSED') return conflict();
+          l.status = 'LIVE';
+          return (200, l.json);
+        case 'DELETE ':
+          l.status = 'DELETED';
+          return (204, null);
+      }
+      if (method == 'DELETE' && parts.length == 6 && parts[4] == 'photos') {
+        l.photos.removeWhere((p) => p['id'] == parts[5]);
+        return (200, l.json);
+      }
     }
     if (path.startsWith('/me/documents/')) {
       final parts = path.split('/'); // ['', 'me', 'documents', id, 'view'?]
@@ -510,5 +680,58 @@ class FakeDocument {
     'expiresOn': expiresOn,
     'createdAt': '2026-09-24T10:00:00.000Z',
     'reviewedAt': status == 'PENDING' ? null : '2026-09-24T11:00:00.000Z',
+  };
+}
+
+class FakeListing {
+  FakeListing(this.id, this.lenderId);
+  final String id;
+  final String lenderId;
+  final fields = <String, dynamic>{};
+  final photos = <Map<String, dynamic>>[];
+  List<dynamic> blocks = [];
+  List<dynamic> requiredDocs = [];
+  String status = 'DRAFT';
+  String? rejectionReason;
+
+  String get title => fields['title'] as String;
+
+  Map<String, dynamic> get json => {
+    'id': id,
+    'category': FakeSajhaApi.categories.firstWhere(
+      (c) => c['id'] == fields['categoryId'],
+    ),
+    'title': fields['title'],
+    'description': fields['description'],
+    'condition': fields['condition'],
+    'brand': (fields['brand'] as String?)?.isEmpty ?? true
+        ? null
+        : fields['brand'],
+    'size': (fields['size'] as String?)?.isEmpty ?? true
+        ? null
+        : fields['size'],
+    'pricePerDayPaise': fields['pricePerDayPaise'],
+    'weeklyDiscountPct': fields['weeklyDiscountPct'] ?? 0,
+    'depositPaise': fields['depositPaise'],
+    'minDays': fields['minDays'] ?? 1,
+    'maxDays': fields['maxDays'] ?? 30,
+    'advanceNoticeDays': fields['advanceNoticeDays'] ?? 1,
+    'lat': fields['lat'],
+    'lng': fields['lng'],
+    'areaLabel': fields['areaLabel'],
+    'exactAddress': (fields['exactAddress'] as String?)?.isEmpty ?? true
+        ? null
+        : fields['exactAddress'],
+    'status': status,
+    'rejectionReason': rejectionReason,
+    'photos': photos,
+    'requiredDocs': [
+      for (final d in requiredDocs)
+        {'docType': (d as Map)['docType'], 'note': d['note']},
+    ],
+    'blocks': blocks,
+    'publishedAt': null,
+    'createdAt': '2026-09-24T10:00:00.000Z',
+    'updatedAt': '2026-09-24T10:00:00.000Z',
   };
 }

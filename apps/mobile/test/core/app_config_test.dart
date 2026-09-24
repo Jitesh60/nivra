@@ -25,5 +25,28 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('defaults map tiles to OpenStreetMap; a custom template must be a tile URL', () {
+      expect(
+        AppConfig.parse(env: 'dev', apiBaseUrl: 'http://x.test').mapTileUrl,
+        AppConfig.osmTileUrl,
+      );
+      expect(
+        AppConfig.parse(
+          env: 'prod',
+          apiBaseUrl: 'https://api.sajha.app',
+          mapTileUrl: 'https://tiles.example.com/{z}/{x}/{y}.png',
+        ).mapTileUrl,
+        'https://tiles.example.com/{z}/{x}/{y}.png',
+      );
+      expect(
+        () => AppConfig.parse(
+          env: 'dev',
+          apiBaseUrl: 'http://x.test',
+          mapTileUrl: 'tiles.example.com',
+        ),
+        throwsArgumentError,
+      );
+    });
   });
 }

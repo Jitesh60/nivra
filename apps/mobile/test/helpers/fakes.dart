@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:latlong2/latlong.dart';
 import 'package:sajha/core/device/device_info.dart';
+import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
@@ -54,6 +56,28 @@ class FakePhotoPicker implements PhotoPicker {
   @override
   Future<Uint8List?> pick(PhotoSource source, {bool squareCrop = false}) async {
     calls.add((source: source, squareCrop: squareCrop));
+    return next;
+  }
+
+  /// What the next multi-pick returns.
+  List<Uint8List> nextMany = [fakeJpeg(), fakeJpeg(3000)];
+  int manyCalls = 0;
+
+  @override
+  Future<List<Uint8List>> pickMany({required int limit}) async {
+    manyCalls++;
+    return nextMany.take(limit).toList();
+  }
+}
+
+class FakeLocationService implements LocationService {
+  /// What the next lookup returns.
+  LocationResult next = const LocationResult.found(LatLng(18.5074, 73.8077));
+  int calls = 0;
+
+  @override
+  Future<LocationResult> current() async {
+    calls++;
     return next;
   }
 }

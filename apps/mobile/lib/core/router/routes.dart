@@ -13,6 +13,10 @@ abstract final class Routes {
   static const documents = '/documents';
   static const documentsAdd = '/documents/add';
   static const documentView = '/documents/view';
+  static const myListings = '/listings';
+  static const newListing = '/listings/new';
+  static const editListing = '/listings/edit';
+  static const listingPreview = '/listings/preview';
 
   /// Reachable without signing in.
   static const public = {onboarding, login, loginVerify};
