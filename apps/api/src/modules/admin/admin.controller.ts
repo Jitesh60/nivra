@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -24,12 +26,15 @@ import {
   type AdminAuth,
 } from '../admin-auth/admin-jwt.guard.js';
 import { AdminDto } from '../admin-auth/dto/admin-auth.dto.js';
-import { UserDto } from '../users/dto/user.dto.js';
-import { AdminUsersService } from './admin-users.service.js';
+import { DocumentDto } from '../documents/dto/document.dto.js';
+import { UserPresenter } from '../users/user-presenter.js';
+import { AdminUsersService, type UserAction } from './admin-users.service.js';
 import { AdminsService } from './admins.service.js';
 import {
+  AdminUserDetailDto,
   CreateAdminDto,
   CreateAdminResponseDto,
+  UserActionDto,
   ListUsersQueryDto,
   UpdateAdminDto,
   UserPageDto,
@@ -79,13 +84,87 @@ export class AdminsController {
 @UseGuards(AdminJwtGuard)
 @Controller('admin/users')
 export class AdminUsersController {
-  constructor(private readonly users: AdminUsersService) {}
+  constructor(
+    private readonly users: AdminUsersService,
+    private readonly presenter: UserPresenter,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List and search app users (read-only)' })
   @ApiOkResponse({ type: UserPageDto })
   async list(@Query() query: ListUsersQueryDto): Promise<UserPageDto> {
     const page = await this.users.list(query);
-    return { items: page.items.map(UserDto.from), nextCursor: page.nextCursor };
+    return { items: page.items.map((u) => this.presenter.present(u)), nextCursor: page.nextCursor };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'User detail: profile, badges, documents, sessions, activity' })
+  @ApiOkResponse({ type: AdminUserDetailDto })
+  async detail(@Param('id', new ParseUUIDPipe()) id: string): Promise<AdminUserDetailDto> {
+    const d = await this.users.detail(id);
+    return {
+      user: this.presenter.present(d.user),
+      documents: d.documents.map(DocumentDto.from),
+      activeSessions: d.activeSessions,
+      activity: d.activity.map((a) => ({
+        action: a.action,
+        actorType: a.actorType,
+        actorId: a.actorId,
+        metadata: a.metadata,
+        createdAt: a.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  @Post(':id/suspend')
+  @Roles('SUPER_ADMIN', 'OPS')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Suspend (signs the user out everywhere)' })
+  @ApiOkResponse({ type: AdminUserDetailDto })
+  suspend(
+    @CurrentAdmin() a: AdminAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() b: UserActionDto,
+    @Client() c: ClientInfo,
+  ) {
+    return this.act(a, id, 'suspend', b.reason, c);
+  }
+
+  @Post(':id/ban')
+  @Roles('SUPER_ADMIN', 'OPS')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Ban (signs the user out everywhere)' })
+  @ApiOkResponse({ type: AdminUserDetailDto })
+  ban(
+    @CurrentAdmin() a: AdminAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() b: UserActionDto,
+    @Client() c: ClientInfo,
+  ) {
+    return this.act(a, id, 'ban', b.reason, c);
+  }
+
+  @Post(':id/reactivate')
+  @Roles('SUPER_ADMIN', 'OPS')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AdminUserDetailDto })
+  reactivate(
+    @CurrentAdmin() a: AdminAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() b: UserActionDto,
+    @Client() c: ClientInfo,
+  ) {
+    return this.act(a, id, 'reactivate', b.reason, c);
+  }
+
+  private async act(
+    auth: AdminAuth,
+    id: string,
+    action: UserAction,
+    reason: string,
+    client: ClientInfo,
+  ) {
+    await this.users.setStatus(auth.adminId, id, action, reason, client);
+    return this.detail(id);
   }
 }

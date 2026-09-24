@@ -15,7 +15,9 @@ Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.m
 | **1b** | **Auth — Mobile** | `phase/1b-auth-mobile` | mobile |
 | **1c** | **Auth — Admin** | `phase/1c-auth-admin` | admin |
 | **1d** | **Marketing website v1** | `phase/1d-marketing-web` | web, api (waitlist) |
-| 2 | Profiles & verification | `phase/2-profiles-verification` | api, mobile, admin |
+| 2a | Profiles & verification — API | `phase/2a-profiles-api` | api |
+| 2b | Profiles & verification — Mobile | `phase/2b-profiles-mobile` | mobile |
+| 2c | Profiles & verification — Admin | `phase/2c-profiles-admin` | admin |
 | 3 | Listings & categories | `phase/3-listings` | api, mobile, admin |
 | 4 | Discovery & search | `phase/4-discovery` | api, mobile |
 | 5 | Chat, offers & notifications | `phase/5-chat-offers` | api, mobile, admin |
@@ -196,12 +198,35 @@ flowchart LR
 ---
 
 ## Phase 2 — Profiles & verification
-**Branch:** `phase/2-profiles-verification`
+Delivered as three sub-phases, each with its own branch and PR. **Done when:** a user uploads an ID, an admin approves it, and the ID badge shows in the app; every document view appears in the audit log.
 
-- **API:** `profiles` (bio, avatar via presigned upload, city and location), `documents` vault (upload ID documents to the private bucket, status PENDING/APPROVED/REJECTED), verified-ID badge, `VerifiedGuard`
-- **Mobile:** profile view and edit, avatar crop and upload, "My documents" vault (add, view, delete), masked-Aadhaar guidance, badge display
-- **Admin:** document review queue (view-only viewer, approve or reject with a reason, access logged), user detail page, suspend or ban user
-- **Done when:** a user uploads an ID, an admin approves it, and the ID badge shows in the app; every document view appears in the audit log
+**Decisions:** the ID badge is earned by **any** admin-approved, non-expired document (college and employee IDs count). The profile stores the **city only**; GPS pickup location arrives with listings in Phase 3.
+
+### 2a — API
+**Branch:** `phase/2a-profiles-api`
+
+- `profiles` (name, city, bio, avatar); `user_documents` vault (PENDING/APPROVED/REJECTED; one live document per type)
+- Uploads: `POST /v1/uploads` presigned PUT to a `tmp/` key in the private bucket (the type and size are signed). The server finalises by checking magic bytes and re-encoding with sharp (EXIF/GPS stripped): avatar → 512 px WebP in the public bucket, document → JPEG in the private bucket
+- `GET/PATCH /v1/me` returns `city`, `bio`, `avatarUrl` and `idVerified`; `PUT/DELETE /v1/me/avatar`; `/v1/me/documents` (list, add, 5-minute signed view, delete)
+- Admin: `/v1/admin/documents` queue, view, approve and reject (SUPER_ADMIN, OPS); `GET /v1/admin/users/:id` detail; suspend, ban and reactivate (revokes sessions)
+- Every upload, view and review is audited. `VerifiedGuard` / `@RequireVerified()` are ready for Phase 3 routes
+- **Done when:** e2e against real Postgres, Redis and SeaweedFS covers presign → PUT → finalise, the document lifecycle and the badge, privacy and RBAC, and suspend/ban; coverage ≥ 80%; the OpenAPI client is regenerated
+
+### 2b — Mobile
+**Branch:** `phase/2b-profiles-mobile`
+
+- Profile view and edit (avatar crop and upload, name, city, bio), badges row (Phone / Email / ID)
+- "My documents": list with status and rejection reason, add flow with masked-Aadhaar guidance, view, delete
+- **Done when:** widget tests cover the avatar and add-document flows, and the live contract test does a real upload
+
+### 2c — Admin
+**Branch:** `phase/2c-profiles-admin`
+
+- Document review queue and review page (the image streams through the admin server, so the storage URL never reaches the browser; watermark; approve, or reject with a reason)
+- User detail page (profile, badges, documents, sessions, activity) with suspend, ban and reactivate
+- **Done when:** Playwright approves a document and the user's `idVerified` flips to true; SUPPORT gets 403 on documents
+
+**Later:** purging rejected documents after 30 days (BullMQ jobs, Phase 5), `FLAG_SECURE` when lenders view documents (Phase 6), PDF documents.
 
 ## Phase 3 — Listings & categories
 **Branch:** `phase/3-listings`

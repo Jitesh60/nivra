@@ -34,6 +34,15 @@ export async function createTestApp(): Promise<TestApp> {
     SMTP_HOST: inject('smtpHost'),
     SMTP_PORT: String(inject('smtpPort')),
     OTP_DEV_BYPASS_CODE: '',
+    S3_ENDPOINT: inject('s3Endpoint'),
+    S3_REGION: 'ap-south-1',
+    S3_ACCESS_KEY_ID: 'sajha',
+    S3_SECRET_ACCESS_KEY: 'sajha-s3-secret',
+    S3_FORCE_PATH_STYLE: 'true',
+    S3_PUBLIC_BUCKET: 'sajha-public-media',
+    S3_PRIVATE_BUCKET: 'sajha-private-docs',
+    S3_PUBLIC_BASE_URL: `${inject('s3Endpoint')}/sajha-public-media`,
+    S3_PRIVATE_SSE: 'none',
     ...TEST_ENV,
   });
 

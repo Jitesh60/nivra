@@ -26,12 +26,19 @@ pnpm dev                          # http://localhost:3000 (watch mode)
   Flow: `POST /v1/admin/auth/login` → `POST /v1/admin/auth/2fa/setup` (first time: scan the QR) → `POST /v1/admin/auth/2fa/verify` → change the temporary password with `POST /v1/admin/me/password`.
 - Design and error codes: [docs/ARCHITECTURE.md §4](../../docs/ARCHITECTURE.md#4-authentication--authorization).
 
+## Profiles, uploads & documents (Phase 2a)
+
+- Storage is S3-compatible (SeaweedFS locally at http://localhost:9000; `pnpm infra:up` creates both buckets). Configure it with the `S3_*` variables in `.env.example`.
+- Uploads: `POST /v1/uploads` → PUT the bytes to the returned URL with the returned headers → pass the `key` to `PUT /v1/me/avatar` or `POST /v1/me/documents`. The API re-encodes every image (EXIF stripped).
+- Admin review: `/v1/admin/documents` (SUPER_ADMIN, OPS); user detail and suspend/ban/reactivate under `/v1/admin/users/:id`.
+- Design: [docs/ARCHITECTURE.md §8](../../docs/ARCHITECTURE.md#8-files--the-document-vault).
+
 ## Tests
 
 | Command | What |
 |---|---|
 | `pnpm test` | Unit tests (`src/**/*.spec.ts`, Vitest) |
-| `pnpm test:e2e` | Boots the real app against PostGIS, Redis and Mailpit containers started by Testcontainers (needs Docker) |
+| `pnpm test:e2e` | Boots the real app against PostGIS, Redis, Mailpit and SeaweedFS containers started by Testcontainers (needs Docker) |
 | `pnpm test:cov` | e2e with coverage; fails below 80% for `src/modules` |
 
 ## Conventions

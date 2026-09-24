@@ -7,6 +7,11 @@ const valid = {
   JWT_ADMIN_ACCESS_SECRET: 'b'.repeat(32),
   OTP_PEPPER: 'c'.repeat(32),
   TOTP_ENC_KEY: Buffer.alloc(32, 1).toString('base64'),
+  S3_ACCESS_KEY_ID: 'key',
+  S3_SECRET_ACCESS_KEY: 'secret',
+  S3_PUBLIC_BUCKET: 'public-media',
+  S3_PRIVATE_BUCKET: 'private-docs',
+  S3_PUBLIC_BASE_URL: 'http://localhost:9000/public-media',
 };
 
 describe('validateEnv', () => {
@@ -52,6 +57,24 @@ describe('validateEnv', () => {
 
   it('rejects a TOTP key that is not 32 bytes', () => {
     expect(() => validateEnv({ ...valid, TOTP_ENC_KEY: 'c2hvcnQ=' })).toThrow(/TOTP_ENC_KEY/);
+  });
+
+  it('requires document encryption outside development', () => {
+    expect(() =>
+      validateEnv({
+        ...valid,
+        NODE_ENV: 'staging',
+        SMS_PROVIDER: 'msg91',
+        MSG91_AUTH_KEY: 'k',
+        MSG91_OTP_TEMPLATE_ID: 't',
+      }),
+    ).toThrow(/S3_PRIVATE_SSE/);
+  });
+
+  it('requires separate public and private buckets', () => {
+    expect(() => validateEnv({ ...valid, S3_PRIVATE_BUCKET: valid.S3_PUBLIC_BUCKET })).toThrow(
+      /S3_PRIVATE_BUCKET/,
+    );
   });
 
   it('treats empty optional values as unset', () => {

@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,8 +23,8 @@ import { Client, type ClientInfo } from '../../common/http/client-info.js';
 import { UserResponseDto } from '../auth/dto/auth.dto.js';
 import { CurrentUser, JwtAuthGuard, type UserAuth } from '../auth/jwt-auth.guard.js';
 import { SessionsService } from '../sessions/sessions.service.js';
-import { SessionDto, UpdateMeDto } from './dto/me.dto.js';
-import { UserDto } from './dto/user.dto.js';
+import { SessionDto, SetAvatarDto, UpdateMeDto } from './dto/me.dto.js';
+import { UserPresenter } from './user-presenter.js';
 import { UsersService } from './users.service.js';
 
 @ApiTags('me')
@@ -34,19 +35,42 @@ export class MeController {
   constructor(
     private readonly users: UsersService,
     private readonly sessions: SessionsService,
+    private readonly presenter: UserPresenter,
   ) {}
 
   @Get()
   @ApiOkResponse({ type: UserResponseDto })
   async me(@CurrentUser() auth: UserAuth): Promise<UserResponseDto> {
-    return { user: UserDto.from(await this.users.get(auth.userId)) };
+    return { user: await this.presenter.load(auth.userId) };
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Update profile fields (name)' })
+  @ApiOperation({ summary: 'Update name, city and bio' })
   @ApiOkResponse({ type: UserResponseDto })
   async update(@CurrentUser() auth: UserAuth, @Body() body: UpdateMeDto): Promise<UserResponseDto> {
-    return { user: UserDto.from(await this.users.updateName(auth.userId, body.name)) };
+    await this.users.updateProfile(auth.userId, body);
+    return { user: await this.presenter.load(auth.userId) };
+  }
+
+  @Put('avatar')
+  @ApiOperation({
+    summary: 'Set the avatar from an upload (purpose AVATAR); it becomes a 512×512 WebP',
+  })
+  @ApiOkResponse({ type: UserResponseDto })
+  async setAvatar(
+    @CurrentUser() auth: UserAuth,
+    @Body() body: SetAvatarDto,
+  ): Promise<UserResponseDto> {
+    await this.users.setAvatar(auth.userId, body.key);
+    return { user: await this.presenter.load(auth.userId) };
+  }
+
+  @Delete('avatar')
+  @ApiOperation({ summary: 'Remove the avatar' })
+  @ApiOkResponse({ type: UserResponseDto })
+  async removeAvatar(@CurrentUser() auth: UserAuth): Promise<UserResponseDto> {
+    await this.users.removeAvatar(auth.userId);
+    return { user: await this.presenter.load(auth.userId) };
   }
 
   @Get('sessions')

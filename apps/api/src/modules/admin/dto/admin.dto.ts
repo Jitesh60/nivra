@@ -13,6 +13,7 @@ import {
   Min,
 } from 'class-validator';
 import { AdminDto } from '../../admin-auth/dto/admin-auth.dto.js';
+import { DocumentDto } from '../../documents/dto/document.dto.js';
 import { UserDto } from '../../users/dto/user.dto.js';
 
 const ROLES = ['SUPER_ADMIN', 'OPS', 'SUPPORT'] as const;
@@ -88,4 +89,31 @@ export class ListUsersQueryDto {
 export class UserPageDto {
   @ApiProperty({ type: [UserDto] }) items: UserDto[];
   @ApiPropertyOptional({ type: String, nullable: true, format: 'uuid' }) nextCursor: string | null;
+}
+
+export class UserActionDto {
+  @ApiProperty({ example: 'Repeated no-shows reported by three lenders' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @Length(3, 300)
+  reason: string;
+}
+
+export class ActivityDto {
+  @ApiProperty() action: string;
+  @ApiProperty({ enum: ['ADMIN', 'USER', 'SYSTEM'] }) actorType: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) actorId: string | null;
+  @ApiPropertyOptional({ type: Object, nullable: true }) metadata: unknown;
+  @ApiProperty({ type: String, format: 'date-time' }) createdAt: string;
+}
+
+export class AdminUserDetailDto {
+  @ApiProperty({ type: UserDto }) user: UserDto;
+  @ApiProperty({ type: [DocumentDto] }) documents: DocumentDto[];
+  @ApiProperty() activeSessions: number;
+  @ApiProperty({
+    type: [ActivityDto],
+    description: 'Latest 50 audit entries by or about this user',
+  })
+  activity: ActivityDto[];
 }

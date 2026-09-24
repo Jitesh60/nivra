@@ -119,7 +119,7 @@ sajha/
 1. **One branch per phase or sub-phase**, created from the latest `main`:
    - `phase/0-foundation`
    - `phase/1a-auth-backend`, `phase/1b-auth-mobile`, `phase/1c-auth-admin`, `phase/1d-marketing-web`
-   - `phase/2-profiles-verification`, … (see [PHASES](./PHASES.md) for every branch name)
+   - `phase/2a-profiles-api`, … (see [PHASES](./PHASES.md) for every branch name)
 2. Work-in-progress commits inside a phase are fine.
 3. **At the end of every phase, commit and push**: when the phase's acceptance criteria pass, make the final commit, run `git push -u origin <branch>`, and open a **PR into `main`**.
 4. The PR description lists what was built, how to run it, and a checked acceptance-criteria list.
