@@ -131,7 +131,7 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Cancel with a reason. Borrower: any time before payment. Lender: after accepting (it counts against them).',
+      'Cancel with a reason. Borrower: until handover (after payment, refunded by the policy; see cancel-preview). Lender: after accepting (the borrower gets everything back; it counts against the lender).',
   })
   @ApiOkResponse({ type: BookingDetailDto })
   @ApiConflictResponse({ type: ErrorResponse, description: TRANSITION_CONFLICT })

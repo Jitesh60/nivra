@@ -7,7 +7,8 @@ import { configureApp } from './app.setup.js';
 import type { Env } from './config/env.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: the payment webhook's signature is over the exact bytes Razorpay sent.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
   configureApp(app);
 

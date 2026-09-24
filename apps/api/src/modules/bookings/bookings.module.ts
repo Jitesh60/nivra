@@ -23,6 +23,6 @@ import { BookingsService } from './bookings.service.js';
     BookingDocumentsService,
     BookingWorker,
   ],
-  exports: [BookingsService],
+  exports: [BookingsService, BookingStateMachine, BookingPresenter],
 })
 export class BookingsModule {}

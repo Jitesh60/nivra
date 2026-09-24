@@ -74,8 +74,11 @@ export class ChatPresenter {
     };
   }
 
-  /** The message as [viewerId] may see it. */
-  async message(m: MessageRow, viewerId: string): Promise<MessageDto> {
+  /**
+   * The message as [viewerId] may see it. [revealed]: the booking is paid, so
+   * contact details are no longer hidden from the other person.
+   */
+  async message(m: MessageRow, viewerId: string, revealed = false): Promise<MessageDto> {
     const mine = m.senderId === viewerId;
     const [imageUrl, thumbUrl] = await Promise.all([
       m.imageKey ? this.storage.presignGet(m.imageKey, CHAT_IMAGE_URL_TTL_SEC) : null,
@@ -88,8 +91,8 @@ export class ChatPresenter {
       mine,
       type: m.type,
       // TEXT: the other person only ever gets the masked text. SYSTEM: written by us.
-      body: m.type === 'TEXT' ? (mine ? m.body : m.maskedBody) : m.body,
-      masked: m.masked,
+      body: m.type === 'TEXT' ? (mine || revealed ? m.body : m.maskedBody) : m.body,
+      masked: revealed ? false : m.masked,
       imageUrl,
       thumbUrl,
       offer: m.offer ? this.offer(m.offer, viewerId) : null,

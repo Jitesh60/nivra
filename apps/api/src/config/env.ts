@@ -114,6 +114,23 @@ export const envSchema = z.object({
   BOOKING_PAYMENT_TTL_MIN: z.coerce.number().int().positive().default(120),
   /** Shared document copies are deleted this long after the booking closes. */
   SHARE_RETENTION_DAYS: z.coerce.number().int().nonnegative().default(30),
+
+  // ── Payments (Razorpay) ──
+  /** `fake` mimics Razorpay without the network (development and tests). */
+  PAYMENT_PROVIDER: z.enum(['fake', 'razorpay']).default('fake'),
+  RAZORPAY_KEY_ID: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('rzp_test_fakekey'),
+  ),
+  RAZORPAY_KEY_SECRET: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('fake-razorpay-key-secret'),
+  ),
+  /** The secret set on the webhook in the Razorpay dashboard. */
+  RAZORPAY_WEBHOOK_SECRET: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('fake-razorpay-webhook-secret'),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -150,6 +167,20 @@ const envRules = envSchema.superRefine((env, ctx) => {
       } catch {
         issue('FCM_SERVICE_ACCOUNT_JSON', 'must be the service account JSON');
       }
+    }
+  }
+  if (env.PAYMENT_PROVIDER === 'fake' && productionLike(env)) {
+    issue('PAYMENT_PROVIDER', 'the fake payment provider is for development only');
+  }
+  if (env.PAYMENT_PROVIDER === 'razorpay') {
+    if (env.RAZORPAY_KEY_ID.startsWith('rzp_test_fake')) {
+      issue('RAZORPAY_KEY_ID', 'required when PAYMENT_PROVIDER=razorpay');
+    }
+    if (env.RAZORPAY_KEY_SECRET.startsWith('fake-')) {
+      issue('RAZORPAY_KEY_SECRET', 'required when PAYMENT_PROVIDER=razorpay');
+    }
+    if (env.RAZORPAY_WEBHOOK_SECRET.startsWith('fake-')) {
+      issue('RAZORPAY_WEBHOOK_SECRET', 'required when PAYMENT_PROVIDER=razorpay');
     }
   }
   if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {

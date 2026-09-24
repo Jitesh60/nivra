@@ -196,9 +196,12 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `booking_events` (6a) | bookingId, type (REQUESTED/ACCEPTED/DECLINED/EXPIRED/CANCELLED/DOCS_SUBMITTED/DOCS_APPROVED/DOCS_REJECTED), fromStatus, toStatus, actorType (USER/ADMIN/SYSTEM), actorId, note, createdAt; append-only |
 | `booking_document_shares` (6a) | bookingId, requiredDocId, userDocumentId (set null if the vault copy is deleted), docType, label, verified (Sajha had approved it), frontKey/backKey (the booking's own copies), status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
 | `document_access_logs` (6a) | shareId, viewerId, viewerType, ip, createdAt |
-| `payments` | bookingId, razorpayOrderId, razorpayPaymentId, amountPaise, status, raw |
-| `ledger_entries` | bookingId, type (RENT/FEE/DEPOSIT_HOLD/DEPOSIT_REFUND/DEPOSIT_CAPTURE/LATE_FEE/PAYOUT/REFUND), amountPaise, direction, externalRef |
-| `payout_accounts` | userId, razorpayLinkedAccountId, status |
+| `payments` (7a) | bookingId, provider (razorpay/fake), orderId (unique), paymentId (unique), amountPaise, currency, method, status (CREATED/CAPTURED/FAILED/PARTIALLY_REFUNDED/REFUNDED), failureReason, capturedAt |
+| `refunds` (7a) | paymentId, bookingId, providerRefundId (unique), amountPaise, breakdown (rent/fee/deposit), kind (CANCELLATION/LATE_PAYMENT/MANUAL), status (PENDING/PROCESSED/FAILED), attempts, adminId |
+| `payout_accounts` (7a) | userId (unique), providerAccountId (Route linked account), status (PENDING/NEEDS_CLARIFICATION/ACTIVATED/REJECTED), beneficiaryName, bankLast4, ifsc, panLast4, email; full numbers go to Razorpay only |
+| `transfers` (7a) | bookingId, lenderId, paymentId, providerTransferId, amountPaise, onHold, status (AWAITING_ACCOUNT/ON_HOLD/RELEASED/REVERSED/FAILED), attempts |
+| `ledger_entries` (7a) | txnId, bookingId, type (PAYMENT_CAPTURED/REFUND/REFUND_GOODWILL/TRANSFER/TRANSFER_REVERSAL), account (GATEWAY/DEPOSIT_HELD/LENDER_PAYABLE/PLATFORM_REVENUE/GOODWILL), debitPaise, creditPaise, externalRef; append-only, each txn balanced (deferred trigger) |
+| `webhook_events` (7a) | provider, eventId (unique per provider), type, receivedAt, processedAt |
 | `condition_reports` | bookingId, stage (HANDOVER/RETURN), byUserId, photoKeys[], notes |
 | `reviews` | bookingId, authorId, subjectId, rating, comment, publishedAt |
 | `disputes` | bookingId, openedBy, reason, status, resolution, capturePaise, resolvedBy |
@@ -395,6 +398,7 @@ stateDiagram-v2
 ```
 
 - Transitions live in **one `BookingStateMachine` service** (`modules/bookings/booking-state-machine.ts`). Each transition runs inside a DB transaction with `SELECT … FOR UPDATE`, checks the pure rules in `booking-rules.ts`, updates the booking and writes a `booking_events` row. After the commit it schedules the next timer, posts a SYSTEM note in the booking's chat, emits `booking:updated` to both people and sends notifications. Failures after the commit are logged, never thrown.
+- **Payment (Phase 7a):** `confirmPayment` (SYSTEM) moves AWAITING_PAYMENT → CONFIRMED when the payment is captured, which writes a `PAID` event. The borrower and lender can cancel a CONFIRMED booking until handover, with refunds by the policy (§6).
 - **As built in Phase 6:**
   - "Accepted" is an event, not a status: accepting moves straight to `AWAITING_DOCS` or `AWAITING_PAYMENT`.
   - An offer accepted in chat creates the booking already accepted, inside the offer's transaction.
@@ -428,10 +432,28 @@ sequenceDiagram
   API->>RZ: refund deposit (minus late fee / damage capture) to borrower
 ```
 
-- The **webhook is the source of truth**; the client verify call only gives a faster UI.
-- Webhook handling is idempotent on `event.id` and `payment_id`.
-- Every rupee movement is a **ledger entry**. The admin finance screen reconciles ledger totals against Razorpay settlements.
-- Lenders complete **Razorpay Route linked-account onboarding** (bank account + PAN) before their first payout; earnings can accrue in the meantime.
+- The **webhook is the source of truth**; the client verify call (HMAC of `order_id|payment_id` with the key secret) only gives a faster UI. Both call `PaymentsService.capture`, which locks the payment row, so whichever comes first confirms and the other is a no-op.
+- Webhooks are checked with HMAC-SHA256 over the **raw body** (the app is created with `rawBody: true`). Each event is stored in `webhook_events` (by `x-razorpay-event-id`) before it's applied, so a retried event is skipped.
+- **Providers:** `PaymentProvider` (`providers/payments/`) is either `RazorpayProvider` (REST with basic auth: orders, refunds, v2 accounts and stakeholders and products for Route, payment transfers with `on_hold`, reversals, release) or `FakePaymentProvider`.
+  - The fake is for development, tests and CI. It uses the same signatures, instant refunds and auto-activated accounts, and can fail on demand in tests.
+  - `POST /v1/dev/payments/:orderId/checkout` (fake only, never in staging or production) plays checkout and sends the signed webhook.
+- **Ledger** (`payments/ledger.ts`, double entry; C is 10% of rent):
+
+  | When | Debit | Credit |
+  |---|---|---|
+  | Payment captured | GATEWAY (rent + fee + deposit) | DEPOSIT_HELD deposit · LENDER_PAYABLE rent − C · PLATFORM_REVENUE C + fee |
+  | Refund | DEPOSIT_HELD · LENDER_PAYABLE · PLATFORM_REVENUE (the commission follows the rent refunded) | GATEWAY |
+  | Goodwill refund (admin) | GOODWILL | GATEWAY |
+  | Transfer to the lender | LENDER_PAYABLE | GATEWAY |
+  | Transfer reversed | GATEWAY | LENDER_PAYABLE |
+
+  Postings are written when the provider accepts the refund or transfer, never before. A deferred trigger rejects any unbalanced transaction, and another makes the table append-only. `GET /v1/admin/ledger/summary` reports balances and reconciliation checks.
+- **Cancelling after payment:** `BookingStateMachine.onTransition` lets payments react.
+  - A CANCELLED booking that was CONFIRMED is refunded by `refundFor()` (the borrower's tier; the lender or admin gives everything back).
+  - The held transfer is reversed, and the lender's share of any rent kept is sent at once (`onHold: false`).
+  - A payment that arrives after the booking stopped waiting is refunded in full (LATE_PAYMENT).
+- **Route payouts:** lenders set up a linked account (`PUT /v1/me/payout-account`). Transfers wait in AWAITING_ACCOUNT until `account.activated`, and are released after the return in Phase 8.
+- **Failures:** a failed provider call is saved with the reason and retried by the `payments` sweep (every 5 minutes, up to 5 attempts; refunds only when Razorpay never accepted them). The sweep also refunds cancelled paid bookings that were missed.
 
 ## 7. Chat & realtime (Phase 5a)
 

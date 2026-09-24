@@ -36,6 +36,7 @@ const EVENT_FOR: Record<BookingAction, BookingEventType> = {
   submitDocs: 'DOCS_SUBMITTED',
   approveDocs: 'DOCS_APPROVED',
   rejectDocs: 'DOCS_REJECTED',
+  confirmPayment: 'PAID',
   expire: 'EXPIRED',
 };
 
@@ -55,6 +56,9 @@ export interface TransitionOptions {
   onlyIf?: (booking: BookingRow) => boolean;
 }
 
+/** Called after every committed change (e.g. payments refunds a cancelled paid booking). */
+export type TransitionListener = (t: Transition) => Promise<void>;
+
 export interface Transition {
   booking: BookingRow;
   event: BookingEventType;
@@ -73,6 +77,7 @@ export interface Transition {
 @Injectable()
 export class BookingStateMachine {
   private readonly logger = new Logger(BookingStateMachine.name);
+  private readonly listeners: TransitionListener[] = [];
   readonly windows: Windows;
 
   constructor(
@@ -90,6 +95,11 @@ export class BookingStateMachine {
       docsMin: config.get('BOOKING_DOCS_TTL_MIN', { infer: true }),
       paymentMin: config.get('BOOKING_PAYMENT_TTL_MIN', { infer: true }),
     };
+  }
+
+  /** Registers work to run after each committed change (errors are logged, not thrown). */
+  onTransition(listener: TransitionListener): void {
+    this.listeners.push(listener);
   }
 
   async transition(
@@ -193,6 +203,16 @@ export class BookingStateMachine {
         `After-change work for booking ${b.id} failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+    // Money work (refunds, transfers) must run even if a notification failed.
+    for (const listener of this.listeners) {
+      try {
+        await listener(t);
+      } catch (err) {
+        this.logger.error(
+          `Listener after booking ${b.id} ${t.event} failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
   }
 
   /** A line in the chat, so the conversation stays the record of the deal. */
@@ -287,6 +307,21 @@ export class BookingStateMachine {
           `${lender} didn’t accept your documents for ${title}, so the booking is closed.${t.note ? ` “${t.note}”` : ''}`,
           true,
         );
+      case 'PAID':
+        await send(
+          b.borrowerId,
+          'booking.confirmed',
+          'Booking confirmed',
+          `You’ve paid for ${title}, ${dates}. The pickup address is in the booking.`,
+          true,
+        );
+        return send(
+          b.lenderId,
+          'booking.confirmed',
+          'Booking confirmed',
+          `${borrower} paid for ${title}, ${dates}.`,
+          true,
+        );
       case 'EXPIRED': {
         const why = expiryReason(t);
         for (const userId of [b.borrowerId, b.lenderId]) {
@@ -342,6 +377,8 @@ function chatText(t: Transition): string {
       return 'Documents approved. The dates are held for payment.';
     case 'DOCS_REJECTED':
       return `Documents not accepted${reason}. The booking is closed.`;
+    case 'PAID':
+      return 'Payment received. The booking is confirmed, and contact details are now visible.';
     case 'EXPIRED':
       return `Booking expired: ${expiryReason(t)}.`;
     case 'CANCELLED': {

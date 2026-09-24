@@ -51,6 +51,7 @@ export class MessagesService {
     query: ListMessagesQueryDto,
   ): Promise<MessagePageDto> {
     await this.conversations.participants(conversationId, viewerId);
+    const revealed = await this.conversations.revealed(conversationId);
     const rows = await this.prisma.message.findMany({
       where: { conversationId, ...(query.before ? { id: { lt: query.before } } : {}) },
       orderBy: { id: 'desc' },
@@ -59,7 +60,7 @@ export class MessagesService {
     });
     const page = rows.slice(0, query.limit);
     return {
-      items: await Promise.all(page.map((m) => this.presenter.message(m, viewerId))),
+      items: await Promise.all(page.map((m) => this.presenter.message(m, viewerId, revealed))),
       nextCursor: rows.length > query.limit ? page[page.length - 1]!.id : null,
     };
   }
@@ -96,7 +97,10 @@ export class MessagesService {
 
     let message: MessageRow;
     if (dto.type === 'TEXT') {
-      const { text, masked } = maskContacts(body);
+      // Once the booking is paid, contact details are shared as typed.
+      const { text, masked } = (await this.conversations.revealed(c.id))
+        ? { text: body, masked: false }
+        : maskContacts(body);
       message = await this.create(c, senderId, dto.clientId, {
         type: 'TEXT',
         body,
@@ -156,9 +160,10 @@ export class MessagesService {
     opts: { push: boolean } = { push: true },
   ): Promise<void> {
     const recipientId = otherParty(c, message.senderId);
+    const revealed = await this.conversations.revealed(c.id);
     const [forSender, forRecipient] = await Promise.all([
       this.presenter.message(message, message.senderId),
-      this.presenter.message(message, recipientId),
+      this.presenter.message(message, recipientId, revealed),
     ]);
     this.realtime.toUser(message.senderId, ChatEvent.MESSAGE_NEW, forSender);
     this.realtime.toUser(recipientId, ChatEvent.MESSAGE_NEW, forRecipient);
