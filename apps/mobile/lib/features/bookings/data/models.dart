@@ -151,6 +151,14 @@ class BookingActions {
     this.shareDocs = false,
     this.reviewDocs = false,
     this.pay = false,
+    this.handover = false,
+    this.returnItem = false,
+    this.noShow = false,
+    this.dispute = false,
+    this.showCode = false,
+    this.addPhotos = false,
+    this.respond = false,
+    this.review = false,
   });
 
   factory BookingActions.fromJson(Map<String, dynamic> json) => BookingActions(
@@ -160,6 +168,14 @@ class BookingActions {
     shareDocs: json['shareDocs'] as bool,
     reviewDocs: json['reviewDocs'] as bool,
     pay: json['pay'] as bool? ?? false,
+    handover: json['handover'] as bool? ?? false,
+    returnItem: json['return'] as bool? ?? false,
+    noShow: json['noShow'] as bool? ?? false,
+    dispute: json['dispute'] as bool? ?? false,
+    showCode: json['showCode'] as bool? ?? false,
+    addPhotos: json['addPhotos'] as bool? ?? false,
+    respond: json['respond'] as bool? ?? false,
+    review: json['review'] as bool? ?? false,
   );
 
   final bool accept;
@@ -170,6 +186,28 @@ class BookingActions {
 
   /// Borrower: pay now.
   final bool pay;
+
+  /// Lender: confirm the handover with the borrower's code.
+  final bool handover;
+
+  /// Borrower: confirm the return with the lender's code.
+  final bool returnItem;
+
+  /// Lender: the borrower didn't come for the pickup.
+  final bool noShow;
+
+  /// Lender: report a problem (claim from the deposit).
+  final bool dispute;
+
+  /// Show your code: the borrower's at handover, the lender's at return.
+  final bool showCode;
+  final bool addPhotos;
+
+  /// Borrower: reply to the lender's claim.
+  final bool respond;
+
+  /// Rate the other person.
+  final bool review;
 }
 
 /// A document the lender asks for, and which vault documents count.
@@ -287,7 +325,13 @@ enum BookingEventType {
   docsSubmitted('DOCS_SUBMITTED'),
   docsApproved('DOCS_APPROVED'),
   docsRejected('DOCS_REJECTED'),
-  paid('PAID');
+  paid('PAID'),
+  handedOver('HANDED_OVER'),
+  returned('RETURNED'),
+  noShow('NO_SHOW'),
+  disputed('DISPUTED'),
+  completed('COMPLETED'),
+  disputeResolved('DISPUTE_RESOLVED');
 
   const BookingEventType(this.apiValue);
   final String apiValue;
@@ -331,6 +375,10 @@ class BookingDetail {
     required this.can,
     this.payment,
     this.pickupAddress,
+    this.rental,
+    this.conditionReports = const [],
+    this.dispute,
+    this.reviews = const BookingReviews(),
   });
 
   factory BookingDetail.fromJson(Map<String, dynamic> json) => BookingDetail(
@@ -352,6 +400,19 @@ class BookingDetail {
         ? null
         : BookingPayment.fromJson(json['payment'] as Map<String, dynamic>),
     pickupAddress: json['pickupAddress'] as String?,
+    rental: json['rental'] == null
+        ? null
+        : RentalInfo.fromJson(json['rental'] as Map<String, dynamic>),
+    conditionReports: [
+      for (final r in json['conditionReports'] as List? ?? const [])
+        ConditionReport.fromJson(r as Map<String, dynamic>),
+    ],
+    dispute: json['dispute'] == null
+        ? null
+        : BookingDispute.fromJson(json['dispute'] as Map<String, dynamic>),
+    reviews: json['reviews'] == null
+        ? const BookingReviews()
+        : BookingReviews.fromJson(json['reviews'] as Map<String, dynamic>),
   );
 
   final Booking booking;
@@ -367,6 +428,306 @@ class BookingDetail {
 
   /// The exact pickup address: the borrower's, once confirmed.
   final String? pickupAddress;
+
+  /// Handover, return and the late fee (paid bookings).
+  final RentalInfo? rental;
+
+  /// Condition photos at handover and return, per person.
+  final List<ConditionReport> conditionReports;
+  final BookingDispute? dispute;
+  final BookingReviews reviews;
+}
+
+/// The rental: when it changed hands, when it's due, the late fee.
+class RentalInfo {
+  const RentalInfo({
+    required this.dueAt,
+    required this.lateDays,
+    required this.lateFeePaise,
+    required this.keptPaise,
+    this.handedOverAt,
+    this.returnedAt,
+    this.claimUntil,
+    this.completedAt,
+    this.noShowAt,
+  });
+
+  factory RentalInfo.fromJson(Map<String, dynamic> json) => RentalInfo(
+    handedOverAt: _dateOrNull(json['handedOverAt']),
+    dueAt: _date(json['dueAt']),
+    returnedAt: _dateOrNull(json['returnedAt']),
+    claimUntil: _dateOrNull(json['claimUntil']),
+    lateDays: (json['lateDays'] as num).toInt(),
+    lateFeePaise: (json['lateFeePaise'] as num).toInt(),
+    keptPaise: (json['keptPaise'] as num).toInt(),
+    completedAt: _dateOrNull(json['completedAt']),
+    noShowAt: _dateOrNull(json['noShowAt']),
+  );
+
+  final DateTime? handedOverAt;
+
+  /// Due back by (midnight IST after the last day).
+  final DateTime dueAt;
+  final DateTime? returnedAt;
+
+  /// The lender can report a problem until then.
+  final DateTime? claimUntil;
+
+  /// So far, while the item is still out.
+  final int lateDays;
+  final int lateFeePaise;
+
+  /// Deposit the lender kept (late fee plus any dispute award).
+  final int keptPaise;
+  final DateTime? completedAt;
+  final DateTime? noShowAt;
+}
+
+enum RentalStage {
+  handover('HANDOVER', 'At handover'),
+  returned('RETURN', 'At return');
+
+  const RentalStage(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static RentalStage fromApi(String v) =>
+      values.firstWhere((s) => s.apiValue == v, orElse: () => handover);
+}
+
+class ConditionPhoto {
+  const ConditionPhoto({required this.url, required this.thumbUrl});
+
+  factory ConditionPhoto.fromJson(Map<String, dynamic> json) => ConditionPhoto(
+    url: json['url'] as String,
+    thumbUrl: json['thumbUrl'] as String,
+  );
+
+  /// Short-lived links (10 minutes).
+  final String url;
+  final String thumbUrl;
+}
+
+List<ConditionPhoto> _photos(Object? list) => [
+  for (final p in list as List? ?? const [])
+    ConditionPhoto.fromJson(p as Map<String, dynamic>),
+];
+
+class ConditionReport {
+  const ConditionReport({
+    required this.stage,
+    required this.byBorrower,
+    required this.photos,
+    required this.at,
+    this.note,
+  });
+
+  factory ConditionReport.fromJson(Map<String, dynamic> json) =>
+      ConditionReport(
+        stage: RentalStage.fromApi(json['stage'] as String),
+        byBorrower: json['by'] == 'BORROWER',
+        photos: _photos(json['photos']),
+        note: json['note'] as String?,
+        at: _date(json['at']),
+      );
+
+  final RentalStage stage;
+  final bool byBorrower;
+  final List<ConditionPhoto> photos;
+  final String? note;
+  final DateTime at;
+}
+
+enum DisputeReason {
+  damage('DAMAGE', 'Damaged'),
+  missingParts('MISSING_PARTS', 'Parts missing'),
+  notReturned('NOT_RETURNED', 'Not returned'),
+  other('OTHER', 'Something else');
+
+  const DisputeReason(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static DisputeReason fromApi(String v) =>
+      values.firstWhere((r) => r.apiValue == v, orElse: () => other);
+}
+
+/// The lender's claim on the deposit, the borrower's reply and Sajha's decision.
+class BookingDispute {
+  const BookingDispute({
+    required this.reason,
+    required this.description,
+    required this.claimPaise,
+    required this.evidence,
+    required this.responsePhotos,
+    required this.resolved,
+    required this.createdAt,
+    this.responseNote,
+    this.respondedAt,
+    this.keptPaise,
+    this.resolutionNote,
+    this.resolvedAt,
+  });
+
+  factory BookingDispute.fromJson(Map<String, dynamic> json) => BookingDispute(
+    reason: DisputeReason.fromApi(json['reason'] as String),
+    description: json['description'] as String,
+    claimPaise: (json['claimPaise'] as num).toInt(),
+    evidence: _photos(json['evidence']),
+    responseNote: json['responseNote'] as String?,
+    responsePhotos: _photos(json['responsePhotos']),
+    respondedAt: _dateOrNull(json['respondedAt']),
+    resolved: json['status'] == 'RESOLVED',
+    keptPaise: (json['keptPaise'] as num?)?.toInt(),
+    resolutionNote: json['resolutionNote'] as String?,
+    resolvedAt: _dateOrNull(json['resolvedAt']),
+    createdAt: _date(json['createdAt']),
+  );
+
+  final DisputeReason reason;
+  final String description;
+  final int claimPaise;
+  final List<ConditionPhoto> evidence;
+  final String? responseNote;
+  final List<ConditionPhoto> responsePhotos;
+  final DateTime? respondedAt;
+  final bool resolved;
+
+  /// What Sajha let the lender keep.
+  final int? keptPaise;
+  final String? resolutionNote;
+  final DateTime? resolvedAt;
+  final DateTime createdAt;
+}
+
+class BookingReview {
+  const BookingReview({
+    required this.rating,
+    required this.createdAt,
+    this.comment,
+    this.publishedAt,
+  });
+
+  factory BookingReview.fromJson(Map<String, dynamic> json) => BookingReview(
+    rating: (json['rating'] as num).toInt(),
+    comment: json['comment'] as String?,
+    createdAt: _date(json['createdAt']),
+    publishedAt: _dateOrNull(json['publishedAt']),
+  );
+
+  final int rating;
+  final String? comment;
+  final DateTime createdAt;
+
+  /// Null while hidden (until both have reviewed, or 7 days).
+  final DateTime? publishedAt;
+}
+
+class BookingReviews {
+  const BookingReviews({this.mine, this.theirs, this.reviewUntil});
+
+  factory BookingReviews.fromJson(Map<String, dynamic> json) => BookingReviews(
+    mine: json['mine'] == null
+        ? null
+        : BookingReview.fromJson(json['mine'] as Map<String, dynamic>),
+    theirs: json['theirs'] == null
+        ? null
+        : BookingReview.fromJson(json['theirs'] as Map<String, dynamic>),
+    reviewUntil: _dateOrNull(json['reviewUntil']),
+  );
+
+  final BookingReview? mine;
+
+  /// The other person's, once published.
+  final BookingReview? theirs;
+  final DateTime? reviewUntil;
+}
+
+/// The code the viewer shows the other person (`GET /bookings/:id/code`).
+class BookingCode {
+  const BookingCode({
+    required this.stage,
+    required this.code,
+    required this.qr,
+  });
+
+  factory BookingCode.fromJson(Map<String, dynamic> json) => BookingCode(
+    stage: RentalStage.fromApi(json['stage'] as String),
+    code: json['code'] as String,
+    qr: json['qr'] as String,
+  );
+
+  final RentalStage stage;
+  final String code;
+
+  /// What the QR holds: `sajha://booking/<id>/<stage>/<code>`.
+  final String qr;
+}
+
+/// The 6 digits out of a scanned QR (or null if it isn't one of ours).
+String? codeFromQr(String raw, {required String bookingId}) {
+  final m = RegExp(r'^sajha://booking/([^/]+)/(HANDOVER|RETURN)/(\d{6})$')
+      .firstMatch(raw.trim());
+  if (m == null || m.group(1) != bookingId) return null;
+  return m.group(3);
+}
+
+/// A published review of a person or an item.
+class PublicReview {
+  const PublicReview({
+    required this.id,
+    required this.rating,
+    required this.byBorrower,
+    required this.listingTitle,
+    required this.publishedAt,
+    this.comment,
+    this.authorName,
+    this.authorAvatarUrl,
+  });
+
+  factory PublicReview.fromJson(Map<String, dynamic> json) => PublicReview(
+    id: json['id'] as String,
+    rating: (json['rating'] as num).toInt(),
+    comment: json['comment'] as String?,
+    byBorrower: json['authorRole'] == 'BORROWER',
+    authorName: json['authorName'] as String?,
+    authorAvatarUrl: json['authorAvatarUrl'] as String?,
+    listingTitle: json['listingTitle'] as String,
+    publishedAt: _date(json['publishedAt']),
+  );
+
+  final String id;
+  final int rating;
+  final String? comment;
+  final bool byBorrower;
+  final String? authorName;
+  final String? authorAvatarUrl;
+  final String listingTitle;
+  final DateTime publishedAt;
+}
+
+class ReviewPage {
+  const ReviewPage({
+    required this.items,
+    required this.ratingCount,
+    this.ratingAvg,
+    this.nextCursor,
+  });
+
+  factory ReviewPage.fromJson(Map<String, dynamic> json) => ReviewPage(
+    ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+    ratingCount: (json['ratingCount'] as num).toInt(),
+    items: [
+      for (final r in json['items'] as List)
+        PublicReview.fromJson(r as Map<String, dynamic>),
+    ],
+    nextCursor: json['nextCursor'] as String?,
+  );
+
+  final double? ratingAvg;
+  final int ratingCount;
+  final List<PublicReview> items;
+  final String? nextCursor;
 }
 
 enum PaymentStatus {
@@ -390,7 +751,8 @@ enum PaymentStatus {
 enum RefundKind {
   cancellation('CANCELLATION'),
   latePayment('LATE_PAYMENT'),
-  manual('MANUAL');
+  manual('MANUAL'),
+  depositReturn('DEPOSIT_RETURN');
 
   const RefundKind(this.apiValue);
   final String apiValue;

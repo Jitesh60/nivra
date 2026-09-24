@@ -55,6 +55,24 @@ abstract final class Routes {
   static const bookingPayingPattern = '/booking/:id/paying';
   static String bookingPaying(String id) => '/booking/$id/paying';
 
+  /// The rental (Phase 8): the code you show, confirming a handover or
+  /// return, a dispute or your side of it, and a review.
+  static const bookingCodePattern = '/booking/:id/code';
+  static String bookingCode(String id) => '/booking/$id/code';
+  static const bookingHandoverPattern = '/booking/:id/handover';
+  static String bookingHandover(String id) => '/booking/$id/handover';
+  static const bookingReturnPattern = '/booking/:id/return';
+  static String bookingReturn(String id) => '/booking/$id/return';
+  static const bookingDisputePattern = '/booking/:id/dispute';
+  static String bookingDispute(String id) => '/booking/$id/dispute';
+  static const bookingRespondPattern = '/booking/:id/respond';
+  static String bookingRespond(String id) => '/booking/$id/respond';
+  static const bookingReviewPattern = '/booking/:id/review';
+  static String bookingReview(String id) => '/booking/$id/review';
+
+  /// Full-screen photos (args in `extra`).
+  static const photos = '/photos';
+
   static const earnings = '/earnings';
   static const payouts = '/payouts';
 

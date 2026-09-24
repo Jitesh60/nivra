@@ -619,6 +619,10 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - `PaymentGateway` is `RazorpayGateway` (`razorpay_flutter`), faked in tests. `payForBooking()` picks the test sheet when the API's provider is `fake`.
   - `PaymentProcessingScreen` verifies, then watches `bookingProvider(id)` until it's paid and confirmed. The webhook's `booking:updated` confirms it even if verify failed on the network.
   - `earningsProvider` reloads on `booking:updated`.
+- **Rentals** (Phase 8b, `features/rentals/`, `core/scanner/`):
+  - `RentalsRepository` covers `/bookings/:id/code`, `handover`, `return`, `photos`, `no-show`, `dispute`, `dispute/response` and `review`, and the public review lists. Condition photos upload with the `CONDITION_PHOTO` purpose first.
+  - `CodeScanner` (`mobile_scanner`) scans the QR; tests fake it. `codeFromQr` only accepts this booking's `sajha://booking/<id>/<stage>/<code>`.
+  - Screens push the API's answer into `bookingProvider(id)` (`replace`). The show-code screen pops when `booking:updated` shows the step is done.
 - **Discovery state** (Phase 4b):
   - **Search area:** `searchAreaProvider` (GPS or map, 1–25 km), saved in `AppPrefs`.
   - **Recently viewed:** the last 20 ids, on the device.

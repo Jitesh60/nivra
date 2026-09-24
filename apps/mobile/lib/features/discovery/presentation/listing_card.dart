@@ -68,24 +68,32 @@ class ListingCardTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text.rich(
               TextSpan(
-                children: withDates
-                    ? [
-                        TextSpan(
-                          text: formatRupees(card.rentPaise!),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        TextSpan(
-                          text:
-                              ' for ${card.days} ${card.days == 1 ? 'day' : 'days'}',
-                        ),
-                      ]
-                    : [
-                        TextSpan(
-                          text: formatRupees(card.pricePerDayPaise),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const TextSpan(text: ' / day'),
-                      ],
+                children: [
+                  ...withDates
+                      ? [
+                          TextSpan(
+                            text: formatRupees(card.rentPaise!),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          TextSpan(
+                            text:
+                                ' for ${card.days} ${card.days == 1 ? 'day' : 'days'}',
+                          ),
+                        ]
+                      : [
+                          TextSpan(
+                            text: formatRupees(card.pricePerDayPaise),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const TextSpan(text: ' / day'),
+                        ],
+                  if (ratingLine(card.ratingAvg, card.ratingCount)
+                      case final rating?)
+                    TextSpan(
+                      text: '  $rating',
+                      style: TextStyle(color: muted, fontSize: 12),
+                    ),
+                ],
               ),
               style: text.bodyMedium,
             ),

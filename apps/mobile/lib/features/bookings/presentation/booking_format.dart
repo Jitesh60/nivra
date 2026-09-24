@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/tokens.g.dart';
-import '../../listings/data/models.dart' show BlockedRange;
+import '../../listings/data/models.dart' show BlockedRange, formatRupees;
 import '../../listings/presentation/listing_detail_view.dart' show formatRange;
 import '../data/models.dart';
 
@@ -88,9 +88,11 @@ String nextStep(BookingDetail d) {
       return b.isBorrower
           ? 'Accepted! Pay to confirm. Your dates are held until the timer runs out.'
           : 'Accepted. The dates are held while $other pays.';
+    case BookingStatus.confirmed when d.can.handover:
+      return 'Pickup day! Scan $other’s code, then photograph the item before handing it over.';
     case BookingStatus.confirmed:
       return b.isBorrower
-          ? 'Confirmed! Pick it up from $other on ${formatRange(BlockedRange(b.startDate, b.startDate))}. The address is below.'
+          ? 'Confirmed! Pick it up from $other on ${formatRange(BlockedRange(b.startDate, b.startDate))}; the address is below. Show your handover code at pickup.'
           : 'Confirmed and paid. $other picks it up on ${formatRange(BlockedRange(b.startDate, b.startDate))}.';
     case BookingStatus.declined:
       return b.declineReason == null
@@ -98,6 +100,40 @@ String nextStep(BookingDetail d) {
           : 'Declined: “${b.declineReason}”';
     case BookingStatus.expired:
       return 'This booking expired before the next step was done.';
+    case BookingStatus.cancelled when d.rental?.noShowAt != null:
+      return b.isBorrower
+          ? '$other says you didn’t come for the pickup, so the booking was cancelled. Your deposit comes back; the rent doesn’t.'
+          : 'Cancelled: the borrower didn’t come. Your share of the rent is paid to you.';
+    case BookingStatus.active:
+      final due = whenText(
+        d.rental!.dueAt.subtract(const Duration(minutes: 1)),
+      );
+      return b.isBorrower
+          ? 'Enjoy! Return it by $due. At the return, scan $other’s code and photograph the item.'
+          : '$other has it until $due. At the return, show them your return code.';
+    case BookingStatus.returned:
+      final until = d.rental?.claimUntil;
+      return b.isBorrower
+          ? 'Returned. Your deposit comes back once $other has checked the item${until == null ? '' : ' (by ${whenText(until)})'}.'
+          : 'Returned. Check the item now: you can report a problem${until == null ? '' : ' until ${whenText(until)}'}.';
+    case BookingStatus.disputed:
+      final dispute = d.dispute;
+      if (b.isBorrower) {
+        return dispute?.respondedAt == null
+            ? '$other reported a problem. Give your side; Sajha decides what happens to the deposit.'
+            : 'Sajha is looking at the claim and your reply. We’ll let you both know.';
+      }
+      return 'Sajha is looking at your claim and will decide what happens to the deposit.';
+    case BookingStatus.completed:
+      final kept = d.rental?.keptPaise ?? 0;
+      final back = b.depositPaise - kept;
+      return b.isBorrower
+          ? back > 0
+                ? 'All done. ${formatRupees(back)} of your deposit is coming back.'
+                : 'All done. The deposit went to $other.'
+          : kept > 0
+          ? 'All done. Your earnings are on their way, plus ${formatRupees(kept)} from the deposit.'
+          : 'All done. Your earnings are on their way.';
     case BookingStatus.cancelled:
       final by = switch (b.cancelledBy) {
         'BORROWER' => b.isBorrower ? 'You' : other,
@@ -107,8 +143,6 @@ String nextStep(BookingDetail d) {
       return b.cancelReason == null
           ? '$by cancelled this booking.'
           : '$by cancelled this booking: “${b.cancelReason}”';
-    default:
-      return b.status.label;
   }
 }
 
@@ -133,6 +167,12 @@ String eventText(BookingEvent e, Booking b) {
     BookingEventType.docsApproved => '$who approved the documents',
     BookingEventType.docsRejected => '$who didn’t accept the documents',
     BookingEventType.paid => 'Paid: booking confirmed',
+    BookingEventType.handedOver => 'Handed over',
+    BookingEventType.returned => 'Returned',
+    BookingEventType.noShow => '$who: borrower didn’t come',
+    BookingEventType.disputed => '$who reported a problem',
+    BookingEventType.completed => 'Rental complete',
+    BookingEventType.disputeResolved => 'Sajha decided the claim',
   };
 }
 
@@ -141,6 +181,7 @@ String refundText(BookingRefund r) => switch (r.kind) {
   RefundKind.cancellation => 'Cancellation refund',
   RefundKind.latePayment => 'Late payment refund',
   RefundKind.manual => 'Refund from Sajha',
+  RefundKind.depositReturn => 'Deposit back',
 };
 
 /// "Expires in 5h 12m", ticking once a minute.

@@ -40,6 +40,7 @@ class FakeBooking {
   String? cancelReason;
   final events = <Map<String, dynamic>>[];
   final shares = <FakeShare>[];
+  final rental = FakeRental();
 
   int get days =>
       DateTime.parse(end).difference(DateTime.parse(start)).inDays + 1;
@@ -543,7 +544,9 @@ extension FakeBookingsApi on FakeSajhaApi {
     String? note,
   }) {
     b.status = to;
-    b.expiresAt = b.open && to != 'CONFIRMED'
+    b.expiresAt =
+        b.open &&
+            !const {'CONFIRMED', 'ACTIVE', 'RETURNED', 'DISPUTED'}.contains(to)
         ? DateTime.now().toUtc().add(
             Duration(hours: to == 'AWAITING_PAYMENT' ? 2 : 24),
           )
@@ -643,6 +646,8 @@ extension FakeBookingsApi on FakeSajhaApi {
   }
 
   Map<String, dynamic> _bookingDetail(FakeBooking b, String viewerId) {
+    final rental = _rentalJson(b, viewerId);
+    final rentalCan = rental.remove('rentalCan') as Map<String, dynamic>;
     final borrower = viewerId == b.borrowerId;
     final submitted = b.shares.any((s) => s.status == 'SUBMITTED');
     final docs = listings[b.listingId]!.requiredDocs.isNotEmpty;
@@ -705,7 +710,9 @@ extension FakeBookingsApi on FakeSajhaApi {
             borrower &&
             b.status == 'AWAITING_PAYMENT' &&
             (b.expiresAt?.isAfter(DateTime.now()) ?? true),
+        ...rentalCan,
       },
+      ...rental,
     };
   }
 }

@@ -7,7 +7,13 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../chat/presentation/chat_format.dart' show ParticipantAvatar;
 import '../../listings/data/models.dart' show formatRupees;
+import '../../../core/media/photo_picker.dart';
+import '../../chat/data/chat_repository.dart';
+import '../../chat/data/models.dart' show ReportTarget;
+import '../../chat/presentation/report_sheet.dart';
 import '../../payments/presentation/pay_flow.dart';
+import '../../rentals/data/rentals_repository.dart';
+import '../../rentals/presentation/rental_sections.dart';
 import '../application/bookings_providers.dart';
 import '../data/bookings_repository.dart';
 import '../data/models.dart';
@@ -234,9 +240,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   const SizedBox(height: SajhaSpacing.xs),
                   Countdown(
                     until: b.expiresAt!,
-                    prefix: b.status == BookingStatus.awaitingPayment
-                        ? 'Dates held for'
-                        : 'Expires in',
+                    prefix: switch (b.status) {
+                      BookingStatus.awaitingPayment => 'Dates held for',
+                      BookingStatus.returned =>
+                        b.isBorrower
+                            ? 'Deposit settles in'
+                            : 'Time left to report a problem:',
+                      _ => 'Expires in',
+                    },
                   ),
                 ],
               ],
@@ -244,6 +255,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ),
         ),
 
+        if (LateBanner.shows(d)) LateBanner(d),
         if (d.pickupAddress != null)
           Card(
             key: const ValueKey('booking-pickup'),
@@ -256,6 +268,65 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ),
 
         // Actions.
+        if (can.showCode)
+          FilledButton.icon(
+            key: const ValueKey('booking-show-code'),
+            onPressed: () => context.push(Routes.bookingCode(b.id)),
+            icon: const Icon(Icons.qr_code_2),
+            label: Text(
+              b.isBorrower ? 'Show handover code' : 'Show return code',
+            ),
+          ),
+        if (can.handover)
+          FilledButton.icon(
+            key: const ValueKey('booking-handover'),
+            onPressed: _busy
+                ? null
+                : () => context.push(Routes.bookingHandover(b.id)),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Hand over'),
+          ),
+        if (can.returnItem)
+          FilledButton.icon(
+            key: const ValueKey('booking-return'),
+            onPressed: _busy
+                ? null
+                : () => context.push(Routes.bookingReturn(b.id)),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Return it'),
+          ),
+        if (can.respond)
+          FilledButton(
+            key: const ValueKey('booking-respond'),
+            onPressed: () => context.push(Routes.bookingRespond(b.id)),
+            child: const Text('Give your side'),
+          ),
+        if (can.review)
+          FilledButton.icon(
+            key: const ValueKey('booking-review'),
+            onPressed: () => context.push(Routes.bookingReview(b.id)),
+            icon: const Icon(Icons.star_outline),
+            label: Text('Rate ${b.other.firstName}'),
+          ),
+        if (can.addPhotos)
+          OutlinedButton.icon(
+            key: const ValueKey('booking-add-photos'),
+            onPressed: _busy ? null : () => _addPhotos(b),
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: const Text('Add condition photos'),
+          ),
+        if (can.dispute)
+          OutlinedButton(
+            key: const ValueKey('booking-dispute'),
+            onPressed: () => context.push(Routes.bookingDispute(b.id)),
+            child: const Text('Report a problem'),
+          ),
+        if (can.noShow)
+          TextButton(
+            key: const ValueKey('booking-no-show'),
+            onPressed: _busy ? null : _noShow,
+            child: const Text('Borrower didn’t show up'),
+          ),
         if (can.pay)
           FilledButton.icon(
             key: const ValueKey('booking-pay'),
@@ -335,13 +406,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               '− ${formatRupees(r.amountPaise)}',
               key: 'booking-refund-$i',
             ),
-          if (!b.isBorrower)
+          if (d.rental case final r?
+              when r.returnedAt != null && r.lateFeePaise > 0)
+            _line(
+              'Late fee (${r.lateDays} ${r.lateDays == 1 ? 'day' : 'days'}, from the deposit)',
+              formatRupees(r.lateFeePaise),
+              key: 'booking-late-fee',
+            ),
+          if (!b.isBorrower && b.status != BookingStatus.completed)
             Text(
               'Your share (rent less Sajha’s 10% commission) is held until '
               'the item is back. See Earnings in your profile.',
               style: text.bodySmall?.copyWith(color: muted),
             ),
         ],
+        if (d.conditionReports.isNotEmpty) ConditionPhotosSection(d),
+        if (d.dispute != null) DisputeSection(d),
+        if (ReviewsSection.shows(d)) ReviewsSection(d),
 
         // Documents.
         if (d.requiredDocs.isNotEmpty) ...[
@@ -402,7 +483,67 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             child: const Text('Cancel booking'),
           ),
         ],
+        if (b.status != BookingStatus.requested)
+          TextButton(
+            key: const ValueKey('booking-report'),
+            onPressed: () => _report(b),
+            child: Text('Report ${b.other.firstName}'),
+          ),
       ],
+    );
+  }
+
+  Future<void> _noShow() async {
+    final note = await askReason(
+      context,
+      title: 'Borrower didn’t show up?',
+      message:
+          'The booking is cancelled. The borrower gets their deposit back, '
+          'and your share of the rent is paid to you.',
+      confirmLabel: 'Cancel: didn’t show',
+      required: false,
+    );
+    if (note == null || !mounted) return;
+    await _run(() async {
+      final updated = await ref
+          .read(rentalsRepositoryProvider)
+          .noShow(widget.bookingId, note: note);
+      _controller.replace(updated);
+    }, 'Booking cancelled');
+  }
+
+  /// More condition photos: handover ones while it's out, return ones after.
+  Future<void> _addPhotos(Booking b) async {
+    final stage = b.status == BookingStatus.active
+        ? RentalStage.handover
+        : RentalStage.returned;
+    final photos = await ref.read(photoPickerProvider).pickMany(limit: 6);
+    if (photos.isEmpty || !mounted) return;
+    await _run(() async {
+      final updated = await ref
+          .read(rentalsRepositoryProvider)
+          .addPhotos(widget.bookingId, stage, photos);
+      _controller.replace(updated);
+    }, 'Photos added');
+  }
+
+  Future<void> _report(Booking b) async {
+    final draft = await showReportSheet(
+      context,
+      title: 'Report ${b.other.firstName}',
+    );
+    if (draft == null || !mounted) return;
+    await _run(
+      () => ref
+          .read(chatRepositoryProvider)
+          .report(
+            target: ReportTarget.user,
+            targetId: b.other.id,
+            reason: draft.reason,
+            note: draft.note,
+            conversationId: b.conversationId,
+          ),
+      'Thanks. Sajha will look into it.',
     );
   }
 
