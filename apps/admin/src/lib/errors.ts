@@ -35,6 +35,10 @@ const MESSAGES: Record<string, string> = {
   DOCUMENT_NOT_PENDING: 'This document was already reviewed, maybe by another admin.',
   USER_STATUS_CONFLICT: 'That action doesn’t apply to the user’s current status.',
   NOT_FOUND: 'Not found. It may have been deleted.',
+  LISTING_STATUS_CONFLICT:
+    'This listing changed (maybe another admin acted on it). Reload the page.',
+  CATEGORY_SLUG_TAKEN: 'Another category already uses this slug.',
+  CATEGORY_INACTIVE: 'Choose an active category.',
 };
 
 export function friendlyMessage(error: ApiError): string {
