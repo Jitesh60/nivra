@@ -303,6 +303,13 @@ export class LenderSummaryDto {
   @ApiProperty() emailVerified: boolean;
   @ApiProperty() idVerified: boolean;
   @ApiProperty({ type: String, format: 'date-time' }) memberSince: string;
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Average of published reviews',
+  })
+  ratingAvg: number | null;
+  @ApiProperty({ description: 'Published reviews of this person' }) ratingCount: number;
 }
 
 /** What anyone can see of a LIVE listing: no exact pin or address. */
@@ -312,6 +319,13 @@ export class PublicListingDto extends ListingBaseDto {
   @ApiProperty({ type: LenderSummaryDto }) lender: LenderSummaryDto;
   @ApiProperty({ description: 'In the signed-in user’s wishlist' }) saved: boolean;
   @ApiProperty({ description: 'How many people saved it' }) favoriteCount: number;
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Average of borrowers’ published reviews of rentals of this item',
+  })
+  ratingAvg: number | null;
+  @ApiProperty() ratingCount: number;
 }
 
 export class AdminLenderDto extends LenderSummaryDto {

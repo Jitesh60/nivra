@@ -12,4 +12,8 @@ export class ConsoleSmsProvider extends SmsProvider {
   async sendOtp(phone: string, code: string): Promise<void> {
     this.logger.warn(`[dev] OTP for ${phone}: ${code}`);
   }
+
+  async sendOverdue(phone: string, item: string, daysLate: number): Promise<void> {
+    this.logger.warn(`[dev] Overdue SMS to ${phone}: ${item}, ${daysLate} day(s) late`);
+  }
 }

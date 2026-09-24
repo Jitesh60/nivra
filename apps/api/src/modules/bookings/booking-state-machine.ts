@@ -20,6 +20,7 @@ import { BookingQueue } from './booking-queue.js';
 import {
   type Actor,
   type BookingAction,
+  CLAIM_WINDOW_HOURS,
   deadlineFor,
   isOpen,
   nextStatus,
@@ -38,6 +39,12 @@ const EVENT_FOR: Record<BookingAction, BookingEventType> = {
   rejectDocs: 'DOCS_REJECTED',
   confirmPayment: 'PAID',
   expire: 'EXPIRED',
+  handOver: 'HANDED_OVER',
+  markReturned: 'RETURNED',
+  noShow: 'NO_SHOW',
+  openDispute: 'DISPUTED',
+  complete: 'COMPLETED',
+  resolveDispute: 'DISPUTE_RESOLVED',
 };
 
 export interface ActorRef {
@@ -121,7 +128,7 @@ export class BookingStateMachine {
         if (opts.onlyIf && !opts.onlyIf(booking)) return null;
 
         const state = stateOf(booking);
-        const to = nextStatus(action, actor.party, state);
+        const to = nextStatus(action, actor.party, state, now);
         if (!to) {
           throw new AppException(
             ErrorCode.BOOKING_INVALID_TRANSITION,
@@ -355,6 +362,83 @@ export class BookingStateMachine {
         }
         return;
       }
+      case 'HANDED_OVER':
+        await send(
+          b.borrowerId,
+          'booking.handed_over',
+          'Enjoy your rental',
+          `You’ve got ${title}. Return it by the end of ${day(b.endsOn)}.`,
+          true,
+        );
+        return send(
+          b.lenderId,
+          'booking.handed_over',
+          'Handed over',
+          `${borrower} has ${title} until ${day(b.endsOn)}.`,
+          false,
+        );
+      case 'RETURNED': {
+        const late =
+          b.lateFeePaise > 0
+            ? ` It was ${b.lateDays} ${b.lateDays === 1 ? 'day' : 'days'} late: ${rupees(b.lateFeePaise)} comes out of the deposit.`
+            : '';
+        await send(
+          b.lenderId,
+          'booking.returned',
+          'Item returned',
+          `${borrower} returned ${title}.${late} Check it and report any problem within ${CLAIM_WINDOW_HOURS} hours.`,
+          true,
+        );
+        return send(
+          b.borrowerId,
+          'booking.returned',
+          'Return confirmed',
+          `Thanks for returning ${title}.${late} Your deposit comes back once ${lender} has checked it (${CLAIM_WINDOW_HOURS} hours at most).`,
+          false,
+        );
+      }
+      case 'NO_SHOW':
+        return send(
+          b.borrowerId,
+          'booking.cancelled',
+          'Booking cancelled: missed pickup',
+          `${lender} says you didn’t come for ${title}, so the booking is cancelled. Your deposit comes back; the rent doesn’t.`,
+          true,
+        );
+      case 'DISPUTED':
+        await send(
+          b.borrowerId,
+          'booking.dispute_opened',
+          'The lender reported a problem',
+          `${lender} reported a problem with ${title}. Reply with your side; Sajha will decide what happens to the deposit.`,
+          true,
+        );
+        return send(
+          b.lenderId,
+          'booking.dispute_opened',
+          'Problem reported',
+          `Sajha will look at your claim for ${title} and decide what happens to the deposit.`,
+          false,
+        );
+      case 'COMPLETED':
+      case 'DISPUTE_RESOLVED': {
+        const back = b.depositPaise - b.keptPaise;
+        const decided = t.event === 'DISPUTE_RESOLVED' ? 'Sajha has decided the claim. ' : '';
+        await send(
+          b.borrowerId,
+          'booking.completed',
+          'Rental complete',
+          `${decided}${back > 0 ? `${rupees(back)} of your deposit is on its way back.` : 'The deposit went to the lender.'} Rate ${lender} while it’s fresh.`,
+          true,
+        );
+        return send(
+          b.lenderId,
+          'booking.completed',
+          'Rental complete',
+          `${decided}Your earnings for ${title} are on their way${b.keptPaise > 0 ? `, plus ${rupees(b.keptPaise)} from the deposit` : ''}. Rate ${borrower} while it’s fresh.`,
+          true,
+        );
+      }
     }
   }
 }
@@ -389,6 +473,20 @@ function chatText(t: Transition): string {
       };
       return `Booking cancelled by ${by[b.cancelledBy ?? 'ADMIN']}${reason}`;
     }
+    case 'HANDED_OVER':
+      return `Handed over. Due back by the end of ${day(b.endsOn)}.`;
+    case 'RETURNED':
+      return b.lateFeePaise > 0
+        ? `Returned, ${b.lateDays} ${b.lateDays === 1 ? 'day' : 'days'} late (late fee ${rupees(b.lateFeePaise)} from the deposit).`
+        : 'Returned. The lender has 24 hours to report any problem.';
+    case 'NO_SHOW':
+      return `Cancelled: the borrower didn’t come for the pickup${reason}`;
+    case 'DISPUTED':
+      return 'The lender reported a problem. Sajha will decide what happens to the deposit.';
+    case 'COMPLETED':
+      return 'Rental complete. The deposit is being settled.';
+    case 'DISPUTE_RESOLVED':
+      return `Sajha decided the claim${reason}`;
   }
 }
 
@@ -403,6 +501,15 @@ function expiryReason(t: Transition): string {
     default:
       return 'payment wasn’t completed in time';
   }
+}
+
+/** "14 Oct" (booking dates are whole days). */
+function day(d: Date): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(d);
 }
 
 function firstName(name: string | null, fallback: string): string {

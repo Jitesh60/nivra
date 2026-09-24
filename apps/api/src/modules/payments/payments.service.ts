@@ -21,7 +21,7 @@ import { LISTING_RULES } from '../listings/listing-rules.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PayoutsService } from '../payouts/payouts.service.js';
 import type { CheckoutDto, DevCheckoutDto, DevCheckoutResultDto } from './dto/payment.dto.js';
-import { capturePostings } from './ledger.js';
+import { capturePostings, depositKeepPostings } from './ledger.js';
 import { LedgerService } from './ledger.service.js';
 import { RefundsService } from './refunds.service.js';
 
@@ -316,8 +316,64 @@ export class PaymentsService implements OnModuleInit {
       await this.payouts.onConfirmed(t.booking.id);
       return;
     }
-    if (t.event === 'CANCELLED' && (PAID_STATUSES as readonly string[]).includes(t.from)) {
+    // A no-show is a late borrower cancellation: the deposit back, the rent kept.
+    if (
+      (t.event === 'CANCELLED' || t.event === 'NO_SHOW') &&
+      (PAID_STATUSES as readonly string[]).includes(t.from)
+    ) {
       await this.refundCancelled(t.booking.id);
+      return;
+    }
+    if (t.event === 'COMPLETED' || t.event === 'DISPUTE_RESOLVED') {
+      await this.settle(t.booking.id);
+    }
+  }
+
+  /**
+   * The rental is over: the lender keeps part of the deposit (late fee,
+   * dispute award), the held rent is released, and the rest of the deposit
+   * goes back to the borrower. Every step is idempotent (the sweep re-runs it).
+   */
+  async settle(bookingId: string): Promise<void> {
+    const b = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: {
+        payments: { where: { status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED'] } }, take: 1 },
+        refunds: { where: { kind: 'DEPOSIT_RETURN' } },
+      },
+    });
+    const payment = b.payments[0];
+    if (b.status !== 'COMPLETED' || !payment) return;
+    const kept = Math.min(b.keptPaise, b.depositPaise);
+
+    if (kept > 0) {
+      await this.prisma.$transaction(async (tx) => {
+        // Serialise with a concurrent settle (the sweep) on the same booking.
+        await tx.$queryRaw`SELECT id FROM bookings WHERE id = ${bookingId}::uuid FOR UPDATE`;
+        const posted = await tx.ledgerEntry.count({ where: { bookingId, type: 'DEPOSIT_KEPT' } });
+        if (posted === 0) {
+          await this.ledger.post(
+            tx,
+            { type: 'DEPOSIT_KEPT', bookingId, externalRef: null },
+            depositKeepPostings(kept),
+          );
+        }
+      });
+    }
+    await this.payouts.release(bookingId);
+    await this.payouts.sendKept(bookingId, kept);
+
+    const back = b.depositPaise - kept;
+    if (back > 0 && b.refunds.length === 0) {
+      await this.refunds.create({
+        paymentRowId: payment.id,
+        kind: 'DEPOSIT_RETURN',
+        amounts: { rentPaise: 0, feePaise: 0, depositPaise: back },
+        reason:
+          kept > 0
+            ? `Deposit back after the rental, less ${rupees(kept)} kept by the lender`
+            : 'Deposit back after the rental',
+      });
     }
   }
 
@@ -338,7 +394,9 @@ export class PaymentsService implements OnModuleInit {
       paymentRowId: payment.id,
       kind: 'CANCELLATION',
       amounts: { rentPaise: r.rentPaise, feePaise: r.feePaise, depositPaise: r.depositPaise },
-      reason: `Cancelled by the ${party.toLowerCase()} (${r.tier.toLowerCase().replace('_', ' ')})`,
+      reason: b.noShowAt
+        ? 'The borrower didn’t come for the pickup (deposit only)'
+        : `Cancelled by the ${party.toLowerCase()} (${r.tier.toLowerCase().replace('_', ' ')})`,
     });
     await this.payouts.onCancelled(bookingId, r.rentPaise);
   }
@@ -359,6 +417,26 @@ export class PaymentsService implements OnModuleInit {
       take: 50,
     });
     for (const { id } of missed) await this.refundCancelled(id);
+    // Completed rentals with money still to move (rent held, deposit not back).
+    const unsettled = await this.prisma.booking.findMany({
+      where: {
+        status: 'COMPLETED',
+        completedAt: { lt: new Date(Date.now() - 60_000) },
+        payments: { some: { status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED'] } } },
+        OR: [
+          { transfers: { some: { status: 'ON_HOLD', fromDeposit: false } } },
+          { refunds: { none: { kind: 'DEPOSIT_RETURN' } } },
+        ],
+      },
+      select: { id: true, depositPaise: true, keptPaise: true, transfers: true },
+      take: 50,
+    });
+    for (const b of unsettled) {
+      const held = b.transfers.some((t) => t.status === 'ON_HOLD' && !t.fromDeposit);
+      // All of the deposit kept, nothing held: nothing to do.
+      if (!held && b.keptPaise >= b.depositPaise) continue;
+      await this.settle(b.id);
+    }
     await this.refunds.retryFailed();
     await this.payouts.retryFailed();
   }

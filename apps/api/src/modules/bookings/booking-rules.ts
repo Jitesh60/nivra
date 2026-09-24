@@ -63,7 +63,13 @@ export type BookingAction =
   | 'approveDocs'
   | 'rejectDocs'
   | 'confirmPayment'
-  | 'expire';
+  | 'expire'
+  | 'handOver'
+  | 'markReturned'
+  | 'noShow'
+  | 'openDispute'
+  | 'complete'
+  | 'resolveDispute';
 
 export interface BookingState {
   status: BookingStatus;
@@ -71,16 +77,23 @@ export interface BookingState {
   requiresDocs: boolean;
   /** The borrower has shared them (waiting for the lender's review). */
   docsSubmitted: boolean;
+  /** The rental dates (first and last day, inclusive): needed for handover and no-show. */
+  startsOn?: Date;
+  endsOn?: Date;
+  /** When the borrower returned the item (the claim window runs from here). */
+  returnedAt?: Date | null;
 }
 
 /**
- * Where [action] by [actor] takes the booking, or null if it isn't allowed.
- * Handover (Phase 8) adds its own transitions.
+ * Where [action] by [actor] takes the booking at [now], or null if it isn't
+ * allowed. Rental steps (handover, return, no-show, disputes) also depend on
+ * the dates, so they need `startsOn`/`endsOn`/`returnedAt` in [b].
  */
 export function nextStatus(
   action: BookingAction,
   actor: Actor,
   b: BookingState,
+  now: Date = new Date(),
 ): BookingStatus | null {
   switch (action) {
     case 'accept':
@@ -89,7 +102,8 @@ export function nextStatus(
     case 'decline':
       return actor === 'LENDER' && b.status === 'REQUESTED' ? 'DECLINED' : null;
     case 'cancel':
-      if (actor === 'ADMIN') return isOpen(b.status) ? 'CANCELLED' : null;
+      // Once the item has changed hands, problems go through a dispute instead.
+      if (actor === 'ADMIN') return isOpen(b.status) && !isRental(b.status) ? 'CANCELLED' : null;
       // A paid booking can be cancelled until handover; the refund follows the policy.
       if (actor === 'BORROWER') {
         return ['REQUESTED', 'AWAITING_DOCS', 'AWAITING_PAYMENT', 'CONFIRMED'].includes(b.status)
@@ -122,12 +136,58 @@ export function nextStatus(
         ['REQUESTED', 'AWAITING_DOCS', 'AWAITING_PAYMENT'].includes(b.status)
         ? 'EXPIRED'
         : null;
+    case 'handOver':
+      return actor === 'LENDER' &&
+        b.status === 'CONFIRMED' &&
+        b.startsOn !== undefined &&
+        b.endsOn !== undefined &&
+        now >= handoverOpensAt(b.startsOn) &&
+        now < rentalEnd(b.endsOn)
+        ? 'ACTIVE'
+        : null;
+    case 'markReturned':
+      return actor === 'BORROWER' && b.status === 'ACTIVE' ? 'RETURNED' : null;
+    case 'noShow':
+      return actor === 'LENDER' &&
+        b.status === 'CONFIRMED' &&
+        b.startsOn !== undefined &&
+        now >= rentalStart(b.startsOn)
+        ? 'CANCELLED'
+        : null;
+    case 'openDispute':
+      if (actor !== 'LENDER') return null;
+      if (b.status === 'RETURNED') {
+        return b.returnedAt && now < claimUntil(b.returnedAt) ? 'DISPUTED' : null;
+      }
+      // Not returned: once it's well overdue.
+      return b.status === 'ACTIVE' &&
+        b.endsOn !== undefined &&
+        now >= new Date(rentalEnd(b.endsOn).getTime() + NOT_RETURNED_AFTER_DAYS * DAY_MS)
+        ? 'DISPUTED'
+        : null;
+    case 'complete':
+      return actor === 'SYSTEM' && b.status === 'RETURNED' ? 'COMPLETED' : null;
+    case 'resolveDispute':
+      return actor === 'ADMIN' && b.status === 'DISPUTED' ? 'COMPLETED' : null;
   }
 }
 
+/** The item is with the borrower, or being checked after its return. */
+export const RENTAL_STATUSES = [
+  'ACTIVE',
+  'RETURNED',
+  'DISPUTED',
+] as const satisfies readonly BookingStatus[];
+
+export const isRental = (s: BookingStatus) => (RENTAL_STATUSES as readonly string[]).includes(s);
+
 /** What the viewer can do now; the apps show buttons from this. */
-export function allowedActions(party: 'BORROWER' | 'LENDER', b: BookingState) {
-  const can = (a: BookingAction) => nextStatus(a, party, b) !== null;
+export function allowedActions(
+  party: 'BORROWER' | 'LENDER',
+  b: BookingState,
+  now: Date = new Date(),
+) {
+  const can = (a: BookingAction) => nextStatus(a, party, b, now) !== null;
   return {
     accept: can('accept'),
     decline: can('decline'),
@@ -135,6 +195,22 @@ export function allowedActions(party: 'BORROWER' | 'LENDER', b: BookingState) {
     shareDocs: can('submitDocs'),
     reviewDocs: can('approveDocs'),
     pay: party === 'BORROWER' && b.status === 'AWAITING_PAYMENT',
+    /** Lender: confirm the handover with the borrower's code (from the day before). */
+    handover: can('handOver'),
+    /** Borrower: confirm the return with the lender's code. */
+    return: can('markReturned'),
+    /** Lender: the borrower didn't come for the pickup. */
+    noShow: can('noShow'),
+    /** Lender: claim from the deposit (in the claim window, or when long overdue). */
+    dispute: can('openDispute'),
+    /** Show a code to the other person: the borrower's at handover, the lender's at return. */
+    showCode:
+      (party === 'BORROWER' && b.status === 'CONFIRMED') ||
+      (party === 'LENDER' && b.status === 'ACTIVE'),
+    /** Add condition photos: at handover while active, at return during the claim window. */
+    addPhotos:
+      b.status === 'ACTIVE' ||
+      (b.status === 'RETURNED' && !!b.returnedAt && now < claimUntil(b.returnedAt)),
   };
 }
 
@@ -154,6 +230,8 @@ export function deadlineFor(
   now: Date,
   w: Windows,
 ): Date | null {
+  // After the return, the lender has a claim window; then it completes.
+  if (b.status === 'RETURNED') return claimUntil(now);
   const minutes =
     b.status === 'REQUESTED'
       ? w.requestMin
@@ -170,10 +248,55 @@ export function deadlineFor(
 
 /** India Standard Time is UTC+5:30, all year. */
 const IST_OFFSET_MS = 330 * 60_000;
+const DAY_MS = 86_400_000;
+
+/** Each side can review for this long after completion… */
+export const REVIEW_WINDOW_DAYS = 14;
+/** …and a review is published this long after completion even if the other side hasn't written one. */
+export const REVIEW_PUBLISH_DAYS = 7;
+
+/** How long the lender has after the return to report a problem. */
+export const CLAIM_WINDOW_HOURS = 24;
+/** A lender may claim for an item not returned this many days after it was due. */
+export const NOT_RETURNED_AFTER_DAYS = 2;
 
 /** Rentals start at midnight IST on the first day. */
 export function rentalStart(startsOn: Date): Date {
   return new Date(startsOn.getTime() - IST_OFFSET_MS);
+}
+
+/** …and are due back by the end of the last day (midnight IST after it). */
+export function rentalEnd(endsOn: Date): Date {
+  return new Date(endsOn.getTime() + DAY_MS - IST_OFFSET_MS);
+}
+
+/** The handover can be confirmed from the day before the first day (early pickups). */
+export function handoverOpensAt(startsOn: Date): Date {
+  return new Date(rentalStart(startsOn).getTime() - DAY_MS);
+}
+
+export function claimUntil(returnedAt: Date): Date {
+  return new Date(returnedAt.getTime() + CLAIM_WINDOW_HOURS * 3_600_000);
+}
+
+/** Started days late: 1 minute past midnight is one late day. */
+export function lateDaysFor(endsOn: Date, returnedAt: Date): number {
+  const late = returnedAt.getTime() - rentalEnd(endsOn).getTime();
+  return late > 0 ? Math.ceil(late / DAY_MS) : 0;
+}
+
+/** The PRD late fee: 1× the daily rate per late day, never more than the deposit. */
+export function lateFeeFor(
+  lateDays: number,
+  pricePerDayPaise: number,
+  depositPaise: number,
+): number {
+  return Math.min(lateDays * pricePerDayPaise, depositPaise);
+}
+
+/** What an admin can still let the lender keep after the late fee. */
+export function maxKeepable(depositPaise: number, lateFeePaise: number): number {
+  return Math.max(0, depositPaise - lateFeePaise);
 }
 
 export interface Refund {

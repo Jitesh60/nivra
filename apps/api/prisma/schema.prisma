@@ -43,19 +43,23 @@ model User {
   listings      Listing[]
   favorites     Favorite[]
 
-  borrowerConversations Conversation[] @relation("ConversationBorrower")
-  lenderConversations   Conversation[] @relation("ConversationLender")
+  borrowerConversations Conversation[]    @relation("ConversationBorrower")
+  lenderConversations   Conversation[]    @relation("ConversationLender")
   messages              Message[]
   offers                Offer[]
-  blocksMade            UserBlock[]    @relation("BlockBlocker")
-  blocksReceived        UserBlock[]    @relation("BlockBlocked")
+  blocksMade            UserBlock[]       @relation("BlockBlocker")
+  blocksReceived        UserBlock[]       @relation("BlockBlocked")
   reports               Report[]
   deviceTokens          DeviceToken[]
-  borrowerBookings      Booking[]      @relation("BookingBorrower")
-  lenderBookings        Booking[]      @relation("BookingLender")
+  borrowerBookings      Booking[]         @relation("BookingBorrower")
+  lenderBookings        Booking[]         @relation("BookingLender")
   notifications         Notification[]
   payoutAccount         PayoutAccount?
   transfers             Transfer[]
+  conditionReports      ConditionReport[]
+  disputesOpened        Dispute[]
+  reviewsWritten        Review[]          @relation("ReviewAuthor")
+  reviewsReceived       Review[]          @relation("ReviewSubject")
 
   @@map("users")
 }
@@ -97,6 +101,7 @@ model AdminUser {
   reviewedDocuments UserDocument[]
   reviewedListings  Listing[]
   resolvedReports   Report[]
+  resolvedDisputes  Dispute[]
 
   @@map("admin_users")
 }
@@ -246,12 +251,15 @@ model WaitlistEntry {
 
 /// Public-facing profile details. Created on first update; `name` stays on User.
 model Profile {
-  userId    String   @id @map("user_id") @db.Uuid
-  city      String?
-  bio       String?
+  userId      String   @id @map("user_id") @db.Uuid
+  city        String?
+  bio         String?
   /// Object key of the processed 512×512 WebP avatar in the public bucket.
-  avatarKey String?  @map("avatar_key")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  avatarKey   String?  @map("avatar_key")
+  /// Published reviews of this person (Phase 8), kept in sync when one is published.
+  ratingAvg   Float?   @map("rating_avg")
+  ratingCount Int      @default(0) @map("rating_count")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -386,6 +394,9 @@ model Listing {
   /// Set when an admin approves it. A lender with any approved listing publishes straight to LIVE.
   approvedAt        DateTime?                 @map("approved_at")
   publishedAt       DateTime?                 @map("published_at")
+  /// Borrowers' published reviews of rentals of this item (Phase 8).
+  ratingAvg         Float?                    @map("rating_avg")
+  ratingCount       Int                       @default(0) @map("rating_count")
   deletedAt         DateTime?                 @map("deleted_at")
   createdAt         DateTime                  @default(now()) @map("created_at")
   updatedAt         DateTime                  @updatedAt @map("updated_at")
@@ -733,19 +744,33 @@ model Booking {
   cancelReason     String?       @map("cancel_reason")
   /// When it reached a closed state; document access ends then.
   closedAt         DateTime?     @map("closed_at")
+  /// Rental (Phase 8): when the item changed hands, came back and the booking completed.
+  handedOverAt     DateTime?     @map("handed_over_at")
+  returnedAt       DateTime?     @map("returned_at")
+  completedAt      DateTime?     @map("completed_at")
+  /// The lender marked the borrower as a no-show (cancelled as a late borrower cancellation).
+  noShowAt         DateTime?     @map("no_show_at")
+  /// Started days late at return, and the fee (1× daily rate each, capped at the deposit).
+  lateDays         Int           @default(0) @map("late_days")
+  lateFeePaise     Int           @default(0) @map("late_fee_paise")
+  /// Deposit the lender keeps: the late fee plus what an admin awarded in a dispute.
+  keptPaise        Int           @default(0) @map("kept_paise")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
-  listing      Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  borrower     User                   @relation("BookingBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
-  lender       User                   @relation("BookingLender", fields: [lenderId], references: [id], onDelete: Cascade)
-  conversation Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  offer        Offer?                 @relation(fields: [offerId], references: [id], onDelete: SetNull)
-  events       BookingEvent[]
-  shares       BookingDocumentShare[]
-  payments     Payment[]
-  refunds      Refund[]
-  transfers    Transfer[]
+  listing          Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  borrower         User                   @relation("BookingBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
+  lender           User                   @relation("BookingLender", fields: [lenderId], references: [id], onDelete: Cascade)
+  conversation     Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  offer            Offer?                 @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  events           BookingEvent[]
+  shares           BookingDocumentShare[]
+  payments         Payment[]
+  refunds          Refund[]
+  transfers        Transfer[]
+  conditionReports ConditionReport[]
+  dispute          Dispute?
+  reviews          Review[]
 
   @@index([borrowerId, createdAt])
   @@index([lenderId, createdAt])
@@ -765,6 +790,103 @@ enum BookingEventType {
   DOCS_REJECTED
   /// Payment captured: the booking is confirmed (Phase 7).
   PAID
+  /// Phase 8: the rental.
+  HANDED_OVER
+  RETURNED
+  NO_SHOW
+  DISPUTED
+  COMPLETED
+  DISPUTE_RESOLVED
+}
+
+enum RentalStage {
+  HANDOVER
+  RETURN
+}
+
+/// Condition photos one person took at handover or return (evidence for disputes).
+model ConditionReport {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  bookingId String      @map("booking_id") @db.Uuid
+  stage     RentalStage
+  byUserId  String      @map("by_user_id") @db.Uuid
+  /// Private-bucket keys of processed WebP photos.
+  photoKeys String[]    @map("photo_keys")
+  note      String?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  byUser  User    @relation(fields: [byUserId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, stage, byUserId])
+  @@map("condition_reports")
+}
+
+enum DisputeReason {
+  DAMAGE
+  MISSING_PARTS
+  NOT_RETURNED
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+}
+
+/// A lender's claim on the deposit, settled by an admin.
+model Dispute {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  bookingId      String        @unique @map("booking_id") @db.Uuid
+  openedById     String        @map("opened_by_id") @db.Uuid
+  reason         DisputeReason
+  description    String
+  /// What the lender asks to keep (at most the deposit less any late fee).
+  claimPaise     Int           @map("claim_paise")
+  evidenceKeys   String[]      @map("evidence_keys")
+  /// The borrower's side, once.
+  responseNote   String?       @map("response_note")
+  responseKeys   String[]      @default([]) @map("response_keys")
+  respondedAt    DateTime?     @map("responded_at")
+  status         DisputeStatus @default(OPEN)
+  /// What the admin let the lender keep.
+  keptPaise      Int?          @map("kept_paise")
+  resolutionNote String?       @map("resolution_note")
+  resolvedById   String?       @map("resolved_by_id") @db.Uuid
+  resolvedAt     DateTime?     @map("resolved_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  booking    Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  openedBy   User       @relation(fields: [openedById], references: [id], onDelete: Cascade)
+  resolvedBy AdminUser? @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("disputes")
+}
+
+/// A rating after a completed rental. Double-blind: hidden until both have
+/// written one, or 7 days after completion.
+model Review {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  bookingId   String       @map("booking_id") @db.Uuid
+  authorId    String       @map("author_id") @db.Uuid
+  subjectId   String       @map("subject_id") @db.Uuid
+  /// The author's side of the booking.
+  authorRole  BookingParty @map("author_role")
+  rating      Int
+  comment     String?
+  publishedAt DateTime?    @map("published_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author  User    @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subject User    @relation("ReviewSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, authorId])
+  @@index([subjectId, publishedAt])
+  @@map("reviews")
 }
 
 /// Append-only timeline of a booking.
@@ -899,6 +1021,8 @@ enum RefundKind {
   LATE_PAYMENT
   /// An admin's goodwill refund.
   MANUAL
+  /// After the rental: the deposit, less anything the lender keeps.
+  DEPOSIT_RETURN
 }
 
 enum RefundStatus {
@@ -984,6 +1108,8 @@ model Transfer {
   amountPaise        Int            @map("amount_paise")
   /// Held until the return (booking rent), or paid straight away (a cancellation's kept share).
   onHold             Boolean        @default(true) @map("on_hold")
+  /// Deposit the lender keeps after the rental (late fee, dispute award), not rent.
+  fromDeposit        Boolean        @default(false) @map("from_deposit")
   status             TransferStatus
   failureReason      String?        @map("failure_reason")
   /// Provider calls tried so far (failed ones are retried a few times).

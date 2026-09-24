@@ -1,7 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsInt, Max, Min } from 'class-validator';
 
-export const UPLOAD_PURPOSES = ['AVATAR', 'DOCUMENT', 'LISTING_PHOTO', 'CHAT_IMAGE'] as const;
+export const UPLOAD_PURPOSES = [
+  'AVATAR',
+  'DOCUMENT',
+  'LISTING_PHOTO',
+  'CHAT_IMAGE',
+  'CONDITION_PHOTO',
+] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export const UPLOAD_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -11,6 +17,8 @@ export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
   DOCUMENT: 10 * 1024 * 1024,
   LISTING_PHOTO: 10 * 1024 * 1024,
   CHAT_IMAGE: 10 * 1024 * 1024,
+  /** Handover and return photos, and dispute evidence (private). */
+  CONDITION_PHOTO: 10 * 1024 * 1024,
 };
 
 export class CreateUploadDto {

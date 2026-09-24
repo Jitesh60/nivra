@@ -17,6 +17,13 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ParticipantDto } from '../../safety/dto/safety.dto.js';
+import {
+  AdminConditionReportDto,
+  BookingReviewsDto,
+  ConditionReportDto,
+  DisputeDto,
+  RentalDto,
+} from './rental.dto.js';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -44,6 +51,12 @@ export const BOOKING_EVENT_TYPES = [
   'DOCS_APPROVED',
   'DOCS_REJECTED',
   'PAID',
+  'HANDED_OVER',
+  'RETURNED',
+  'NO_SHOW',
+  'DISPUTED',
+  'COMPLETED',
+  'DISPUTE_RESOLVED',
 ] as const;
 
 const DOC_TYPES = [
@@ -160,11 +173,24 @@ export class BookingActionsDto {
   @ApiProperty({ description: 'Lender: approve or reject shared documents now' })
   reviewDocs: boolean;
   @ApiProperty({ description: 'Borrower: pay now (POST /bookings/:id/pay)' }) pay: boolean;
+  @ApiProperty({ description: 'Lender: confirm the handover with the borrower’s code' })
+  handover: boolean;
+  @ApiProperty({ description: 'Borrower: confirm the return with the lender’s code' })
+  return: boolean;
+  @ApiProperty({ description: 'Lender: the borrower didn’t come for the pickup' })
+  noShow: boolean;
+  @ApiProperty({ description: 'Lender: report a problem (claim from the deposit)' })
+  dispute: boolean;
+  @ApiProperty({ description: 'Show your code to the other person (GET /bookings/:id/code)' })
+  showCode: boolean;
+  @ApiProperty({ description: 'Add condition photos now' }) addPhotos: boolean;
+  @ApiProperty({ description: 'Borrower: reply to the lender’s claim' }) respond: boolean;
+  @ApiProperty({ description: 'Rate the other person' }) review: boolean;
 }
 
 export class BookingRefundDto {
   @ApiProperty() amountPaise: number;
-  @ApiProperty({ enum: ['CANCELLATION', 'LATE_PAYMENT', 'MANUAL'] }) kind: string;
+  @ApiProperty({ enum: ['CANCELLATION', 'LATE_PAYMENT', 'MANUAL', 'DEPOSIT_RETURN'] }) kind: string;
   @ApiProperty({ enum: ['PENDING', 'PROCESSED', 'FAILED'] }) status: string;
   @ApiProperty() createdAt: Date;
 }
@@ -261,6 +287,16 @@ export class BookingDetailDto extends BookingDto {
   @ApiProperty({ type: [SharedDocumentDto] }) sharedDocuments: SharedDocumentDto[];
   @ApiProperty({ type: [BookingEventDto], description: 'Oldest first' }) events: BookingEventDto[];
   @ApiProperty({ type: BookingActionsDto }) can: BookingActionsDto;
+  @ApiPropertyOptional({
+    type: RentalDto,
+    nullable: true,
+    description: 'Handover, return and late fee (paid bookings)',
+  })
+  rental: RentalDto | null;
+  @ApiProperty({ type: [ConditionReportDto], description: 'Photos at handover and return' })
+  conditionReports: ConditionReportDto[];
+  @ApiPropertyOptional({ type: DisputeDto, nullable: true }) dispute: DisputeDto | null;
+  @ApiProperty({ type: BookingReviewsDto }) reviews: BookingReviewsDto;
 }
 
 export class CancelPreviewDto {
@@ -352,7 +388,11 @@ export class AdminBookingDetailDto extends AdminBookingDto {
   @ApiProperty({ type: [AdminSharedDocumentDto] }) sharedDocuments: AdminSharedDocumentDto[];
   @ApiProperty({ type: [AdminBookingEventDto], description: 'Oldest first' })
   events: AdminBookingEventDto[];
-  @ApiProperty({ description: 'Open: an admin may cancel it' }) cancellable: boolean;
+  @ApiProperty({ description: 'An admin may cancel it (open, and not handed over yet)' })
+  cancellable: boolean;
+  @ApiPropertyOptional({ type: RentalDto, nullable: true }) rental: RentalDto | null;
+  @ApiProperty({ type: [AdminConditionReportDto] }) conditionReports: AdminConditionReportDto[];
+  @ApiPropertyOptional({ type: String, nullable: true, format: 'uuid' }) disputeId: string | null;
 }
 
 export class AdminListBookingsQueryDto {

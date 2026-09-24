@@ -17,7 +17,7 @@ export function photo(width = 1200, height = 800, color = '#1DA482'): Promise<Bu
 export async function upload(
   app: INestApplication,
   accessToken: string,
-  purpose: 'AVATAR' | 'DOCUMENT' | 'LISTING_PHOTO' | 'CHAT_IMAGE',
+  purpose: 'AVATAR' | 'DOCUMENT' | 'LISTING_PHOTO' | 'CHAT_IMAGE' | 'CONDITION_PHOTO',
   bytes: Buffer,
   contentType = 'image/jpeg',
 ): Promise<string> {

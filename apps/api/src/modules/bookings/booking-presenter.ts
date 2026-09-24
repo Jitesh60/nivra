@@ -9,9 +9,14 @@ import { userViewInclude } from '../users/user-view.js';
 import {
   allowedActions,
   type BookingState,
+  claimUntil,
   docTypesFor,
-  isOpen,
+  lateDaysFor,
+  lateFeeFor,
+  nextStatus,
   PAID_STATUSES,
+  rentalEnd,
+  REVIEW_WINDOW_DAYS,
 } from './booking-rules.js';
 import type {
   AdminBookingDetailDto,
@@ -21,7 +26,20 @@ import type {
   BookingDto,
   BookingRequiredDocDto,
 } from './dto/booking.dto.js';
+import type {
+  BookingReviewsDto,
+  ConditionReportDto,
+  DisputeDto,
+  PhotoDto,
+  RentalDto,
+  ReviewDto,
+} from './dto/rental.dto.js';
 
+/** Condition photos and evidence links last this long. */
+export const PHOTO_URL_TTL_SEC = 600;
+
+/** Each photo is stored as `<key>.webp` with a `<key>-thumb.webp` next to it. */
+export const thumbKeyOf = (key: string) => key.replace(/\.webp$/, '-thumb.webp');
 export const bookingInclude = () =>
   ({
     listing: {
@@ -51,6 +69,9 @@ export const bookingDetailInclude = () =>
       orderBy: { createdAt: 'asc' },
       include: { accessLogs: { orderBy: { createdAt: 'asc' } } },
     },
+    conditionReports: { orderBy: [{ stage: 'asc' }, { createdAt: 'asc' }] },
+    dispute: true,
+    reviews: true,
   }) satisfies Prisma.BookingInclude;
 
 export type BookingRow = Prisma.BookingGetPayload<{ include: ReturnType<typeof bookingInclude> }>;
@@ -64,6 +85,9 @@ export function stateOf(b: BookingRow): BookingState {
     status: b.status,
     requiresDocs: b.listing.requiredDocs.length > 0,
     docsSubmitted: b.shares.some((s) => s.status === 'SUBMITTED'),
+    startsOn: b.startsOn,
+    endsOn: b.endsOn,
+    returnedAt: b.returnedAt,
   };
 }
 
@@ -113,9 +137,10 @@ export class BookingPresenter {
     };
   }
 
-  detail(b: BookingDetailRow, viewerId: string, now = new Date()): BookingDetailDto {
+  async detail(b: BookingDetailRow, viewerId: string, now = new Date()): Promise<BookingDetailDto> {
     const isBorrower = b.borrowerId === viewerId;
     const lenderName = b.lender.name;
+    const reviews = this.reviews(b, viewerId, now);
     return {
       ...this.summary(b, viewerId),
       payment: this.payment(b),
@@ -162,7 +187,100 @@ export class BookingPresenter {
         note: e.note,
         at: e.createdAt,
       })),
-      can: allowedActions(isBorrower ? 'BORROWER' : 'LENDER', stateOf(b)),
+      can: {
+        ...allowedActions(isBorrower ? 'BORROWER' : 'LENDER', stateOf(b), now),
+        respond: isBorrower && b.dispute?.status === 'OPEN' && b.dispute.respondedAt === null,
+        review: reviews.canReview,
+      },
+      rental: this.rental(b, now),
+      conditionReports: await this.conditionReports(b),
+      dispute: b.dispute ? await this.dispute(b.dispute) : null,
+      reviews: reviews.dto,
+    };
+  }
+
+  /** Handover, return and the late fee, once the booking is paid (or was a no-show). */
+  rental(b: BookingRow, now = new Date()): RentalDto | null {
+    if (!(PAID_STATUSES as readonly string[]).includes(b.status) && !b.noShowAt) return null;
+    // While the item is still out, show the late fee so far.
+    const out = b.status === 'ACTIVE' || (b.status === 'DISPUTED' && !b.returnedAt);
+    const lateDays = out ? lateDaysFor(b.endsOn, now) : b.lateDays;
+    return {
+      handedOverAt: b.handedOverAt,
+      dueAt: rentalEnd(b.endsOn),
+      returnedAt: b.returnedAt,
+      claimUntil: b.returnedAt ? claimUntil(b.returnedAt) : null,
+      lateDays,
+      lateFeePaise: out ? lateFeeFor(lateDays, b.pricePerDayPaise, b.depositPaise) : b.lateFeePaise,
+      keptPaise: b.keptPaise,
+      completedAt: b.completedAt,
+      noShowAt: b.noShowAt,
+    };
+  }
+
+  async photos(keys: string[]): Promise<PhotoDto[]> {
+    return Promise.all(
+      keys.map(async (key) => ({
+        url: await this.storage.presignGet(key, PHOTO_URL_TTL_SEC),
+        thumbUrl: await this.storage.presignGet(thumbKeyOf(key), PHOTO_URL_TTL_SEC),
+      })),
+    );
+  }
+
+  async conditionReports(b: BookingDetailRow): Promise<ConditionReportDto[]> {
+    return Promise.all(
+      b.conditionReports.map(async (r) => ({
+        stage: r.stage,
+        by: r.byUserId === b.borrowerId ? 'BORROWER' : 'LENDER',
+        photos: await this.photos(r.photoKeys),
+        note: r.note,
+        at: r.createdAt,
+      })),
+    );
+  }
+
+  async dispute(d: NonNullable<BookingDetailRow['dispute']>): Promise<DisputeDto> {
+    return {
+      reason: d.reason,
+      description: d.description,
+      claimPaise: d.claimPaise,
+      evidence: await this.photos(d.evidenceKeys),
+      responseNote: d.responseNote,
+      responsePhotos: await this.photos(d.responseKeys),
+      respondedAt: d.respondedAt,
+      status: d.status,
+      keptPaise: d.keptPaise,
+      resolutionNote: d.resolutionNote,
+      resolvedAt: d.resolvedAt,
+      createdAt: d.createdAt,
+    };
+  }
+
+  /** Double-blind: the other person's review only once it's published. */
+  private reviews(
+    b: BookingDetailRow,
+    viewerId: string,
+    now: Date,
+  ): { dto: BookingReviewsDto; canReview: boolean } {
+    const present = (r: BookingDetailRow['reviews'][number]): ReviewDto => ({
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      publishedAt: r.publishedAt,
+    });
+    const mine = b.reviews.find((r) => r.authorId === viewerId);
+    const theirs = b.reviews.find((r) => r.authorId !== viewerId && r.publishedAt !== null);
+    const reviewUntil =
+      b.status === 'COMPLETED' && b.completedAt
+        ? new Date(b.completedAt.getTime() + REVIEW_WINDOW_DAYS * 86_400_000)
+        : null;
+    return {
+      dto: {
+        mine: mine ? present(mine) : null,
+        theirs: theirs ? present(theirs) : null,
+        reviewUntil,
+      },
+      canReview: !mine && reviewUntil !== null && now < reviewUntil,
     };
   }
 
@@ -183,10 +301,10 @@ export class BookingPresenter {
     };
   }
 
-  adminDetail(
+  async adminDetail(
     b: BookingDetailRow,
     extras: { lenderCancellations: number; names: Map<string, string | null> },
-  ): AdminBookingDetailDto {
+  ): Promise<AdminBookingDetailDto> {
     const name = (id: string | null) => (id ? (extras.names.get(id) ?? null) : null);
     return {
       ...this.admin(b),
@@ -231,7 +349,13 @@ export class BookingPresenter {
         note: e.note,
         at: e.createdAt,
       })),
-      cancellable: isOpen(b.status),
+      cancellable: nextStatus('cancel', 'ADMIN', stateOf(b)) !== null,
+      rental: this.rental(b),
+      conditionReports: (await this.conditionReports(b)).map((r) => ({
+        ...r,
+        byName: r.by === 'BORROWER' ? b.borrower.name : b.lender.name,
+      })),
+      disputeId: b.dispute?.id ?? null,
     };
   }
 

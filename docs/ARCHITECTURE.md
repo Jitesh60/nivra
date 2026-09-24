@@ -202,9 +202,12 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `transfers` (7a) | bookingId, lenderId, paymentId, providerTransferId, amountPaise, onHold, status (AWAITING_ACCOUNT/ON_HOLD/RELEASED/REVERSED/FAILED), attempts |
 | `ledger_entries` (7a) | txnId, bookingId, type (PAYMENT_CAPTURED/REFUND/REFUND_GOODWILL/TRANSFER/TRANSFER_REVERSAL), account (GATEWAY/DEPOSIT_HELD/LENDER_PAYABLE/PLATFORM_REVENUE/GOODWILL), debitPaise, creditPaise, externalRef; append-only, each txn balanced (deferred trigger) |
 | `webhook_events` (7a) | provider, eventId (unique per provider), type, receivedAt, processedAt |
-| `condition_reports` | bookingId, stage (HANDOVER/RETURN), byUserId, photoKeys[], notes |
-| `reviews` | bookingId, authorId, subjectId, rating, comment, publishedAt |
-| `disputes` | bookingId, openedBy, reason, status, resolution, capturePaise, resolvedBy |
+| `bookings` (8a additions) | handedOverAt, returnedAt, completedAt, noShowAt, lateDays, lateFeePaise, keptPaise (deposit the lender keeps: late fee + dispute award); events HANDED_OVER/RETURNED/NO_SHOW/DISPUTED/COMPLETED/DISPUTE_RESOLVED. Handover and return codes are derived (HMAC with `OTP_PEPPER`), not stored |
+| `condition_reports` (8a) | bookingId, stage (HANDOVER/RETURN), byUserId, photoKeys[] (1–6 private WebP, thumbs beside them), note; unique(bookingId, stage, byUserId) |
+| `reviews` (8a) | bookingId, authorId, subjectId, authorRole, rating (1–5), comment, publishedAt (null while hidden); unique(bookingId, authorId) |
+| `disputes` (8a) | bookingId (unique), openedById, reason (DAMAGE/MISSING_PARTS/NOT_RETURNED/OTHER), description, claimPaise, evidenceKeys[], responseNote, responseKeys[], respondedAt, status (OPEN/RESOLVED), keptPaise, resolutionNote, resolvedById, resolvedAt |
+| `listings` (8a additions) | ratingAvg, ratingCount (borrowers' published reviews) |
+| `transfers` (8a addition) | fromDeposit (deposit kept after the rental; one per booking) |
 | `reports` | reporterId, targetType, targetId, reason, status |
 | `notifications` (6a) | userId, type (e.g. `booking.requested`), title, body, data (`{bookingId}`), readAt, createdAt |
 | `device_tokens` | userId, sessionId, fcmToken, platform |
@@ -399,6 +402,27 @@ stateDiagram-v2
 
 - Transitions live in **one `BookingStateMachine` service** (`modules/bookings/booking-state-machine.ts`). Each transition runs inside a DB transaction with `SELECT … FOR UPDATE`, checks the pure rules in `booking-rules.ts`, updates the booking and writes a `booking_events` row. After the commit it schedules the next timer, posts a SYSTEM note in the booking's chat, emits `booking:updated` to both people and sends notifications. Failures after the commit are logged, never thrown.
 - **Payment (Phase 7a):** `confirmPayment` (SYSTEM) moves AWAITING_PAYMENT → CONFIRMED when the payment is captured, which writes a `PAID` event. The borrower and lender can cancel a CONFIRMED booking until handover, with refunds by the policy (§6).
+- **The rental (Phase 8a, `modules/rentals/`):**
+  - **Codes:** each is 6 digits, derived as HMAC(`OTP_PEPPER`, booking|stage), so nothing is stored.
+    - Only the person who shows a code can read it (`GET /bookings/:id/code`): the borrower's at handover, the lender's at return.
+    - The QR holds `sajha://booking/<id>/<stage>/<code>`.
+    - 5 wrong tries in 15 minutes lock the code.
+  - **Handover** (`handOver`, lender): CONFIRMED → ACTIVE with the code and 2–6 condition photos. It's allowed from the day before the start date until the end date.
+  - **Return** (`markReturned`, borrower): ACTIVE → RETURNED.
+    - The item is due by midnight IST after the end date. The late fee is 1× the daily rate per started late day, and never more than the deposit.
+    - The fee is saved at return as `keptPaise`.
+  - **Condition photos:** either side can add up to 6 per stage, while the item is out (handover) or in the claim window (return).
+  - **No-show** (`noShow`, lender, from the first day): CONFIRMED → CANCELLED as a late borrower cancellation (`cancelledBy = BORROWER`, `noShowAt`). The deposit comes back and the lender is paid their rent share.
+  - **Claim window:** 24 h. The returned booking's deadline is `returnedAt + 24h`, and when it passes the expiry job runs `complete` (RETURNED → COMPLETED); the sweep catches misses.
+  - **Disputes** (`openDispute`, lender):
+    - Opened from RETURNED within the window, or from ACTIVE once the item is 2 days overdue (NOT_RETURNED).
+    - The claim is at most the deposit less the late fee. The borrower replies once.
+    - An admin decides with `resolveDispute` (DISPUTED → COMPLETED) and a kept amount; it's audited.
+  - **Admin cancel** is refused once the item has changed hands (ACTIVE, RETURNED, DISPUTED).
+  - **Reviews** (1–5 and an optional comment) are allowed within 14 days of completion.
+    - Double-blind: a review is published when both have written one, or 7 days after completion (an hourly `rentals` job).
+    - Publishing updates `profiles.ratingAvg/ratingCount` and, for borrowers' reviews, the listing's.
+  - **Reminders** (hourly `rentals` job): pickup tomorrow, return tomorrow, due today, and overdue (daily, also by SMS: `SmsProvider.sendOverdue`). Each is deduplicated per type, booking and IST day against `notifications`.
 - **As built in Phase 6:**
   - "Accepted" is an event, not a status: accepting moves straight to `AWAITING_DOCS` or `AWAITING_PAYMENT`.
   - An offer accepted in chat creates the booking already accepted, inside the offer's transaction.
@@ -446,13 +470,21 @@ sequenceDiagram
   | Goodwill refund (admin) | GOODWILL | GATEWAY |
   | Transfer to the lender | LENDER_PAYABLE | GATEWAY |
   | Transfer reversed | GATEWAY | LENDER_PAYABLE |
+  | Deposit kept after the rental (8a) | DEPOSIT_HELD | LENDER_PAYABLE (then a transfer) |
 
   Postings are written when the provider accepts the refund or transfer, never before. A deferred trigger rejects any unbalanced transaction, and another makes the table append-only. `GET /v1/admin/ledger/summary` reports balances and reconciliation checks.
 - **Cancelling after payment:** `BookingStateMachine.onTransition` lets payments react.
   - A CANCELLED booking that was CONFIRMED is refunded by `refundFor()` (the borrower's tier; the lender or admin gives everything back).
   - The held transfer is reversed, and the lender's share of any rent kept is sent at once (`onHold: false`).
   - A payment that arrives after the booking stopped waiting is refunded in full (LATE_PAYMENT).
-- **Route payouts:** lenders set up a linked account (`PUT /v1/me/payout-account`). Transfers wait in AWAITING_ACCOUNT until `account.activated`, and are released after the return in Phase 8.
+- **Route payouts:** lenders set up a linked account (`PUT /v1/me/payout-account`). Transfers wait in AWAITING_ACCOUNT until `account.activated`.
+- **Settlement at COMPLETED (Phase 8a, `PaymentsService.settle`),** after the claim window or a dispute decision:
+  1. Post the deposit the lender keeps (`DEPOSIT_KEPT`).
+  2. Release the held rent transfer (`releaseTransfer`; one not sent yet goes out unheld).
+  3. Transfer the kept deposit (`fromDeposit`, unheld).
+  4. Refund the rest of the deposit (`DEPOSIT_RETURN`).
+
+  Each step is idempotent, and the `payments` sweep re-runs settlement for completed bookings with rent still held or no deposit refund.
 - **Failures:** a failed provider call is saved with the reason and retried by the `payments` sweep (every 5 minutes, up to 5 attempts; refunds only when Razorpay never accepted them). The sweep also refunds cancelled paid bookings that were missed.
 
 ## 7. Chat & realtime (Phase 5a)

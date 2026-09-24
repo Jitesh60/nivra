@@ -10,6 +10,12 @@ export class InMemorySmsProvider extends SmsProvider {
     this.sent.push({ phone, code });
   }
 
+  readonly overdue: { phone: string; item: string; daysLate: number }[] = [];
+
+  async sendOverdue(phone: string, item: string, daysLate: number): Promise<void> {
+    this.overdue.push({ phone, item, daysLate });
+  }
+
   lastCodeFor(phone: string): string {
     const hit = [...this.sent].reverse().find((m) => m.phone === phone);
     if (!hit) throw new Error(`No SMS sent to ${phone}`);

@@ -61,6 +61,8 @@ export const envSchema = z.object({
   SMS_PROVIDER: z.enum(['console', 'msg91']).default('console'),
   MSG91_AUTH_KEY: optional(z.string()),
   MSG91_OTP_TEMPLATE_ID: optional(z.string()),
+  /** DLT template for overdue-return SMS (`##item##`, `##days##`); optional. */
+  MSG91_OVERDUE_TEMPLATE_ID: optional(z.string()),
 
   // ── Push (FCM) ──
   /** `console` logs pushes (development, or until Firebase is set up). */

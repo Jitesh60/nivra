@@ -77,6 +77,8 @@ export class CardPresenter {
       available: l.status === 'LIVE' && l.lender.status === 'ACTIVE',
       rentPaise: extras.days ? rentFor(l, extras.days).rent : null,
       days: extras.days ?? null,
+      ratingAvg: l.ratingAvg,
+      ratingCount: l.ratingCount,
     };
   }
 }

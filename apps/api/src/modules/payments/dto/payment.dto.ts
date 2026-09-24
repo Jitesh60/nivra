@@ -141,7 +141,7 @@ export class AdminPaymentPageDto {
 export class AdminRefundDto {
   @ApiProperty({ format: 'uuid' }) id: string;
   @ApiProperty() amountPaise: number;
-  @ApiProperty({ enum: ['CANCELLATION', 'LATE_PAYMENT', 'MANUAL'] }) kind: string;
+  @ApiProperty({ enum: ['CANCELLATION', 'LATE_PAYMENT', 'MANUAL', 'DEPOSIT_RETURN'] }) kind: string;
   @ApiProperty({ enum: ['PENDING', 'PROCESSED', 'FAILED'] }) status: string;
   @ApiPropertyOptional({ type: String, nullable: true }) reason: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) providerRefundId: string | null;

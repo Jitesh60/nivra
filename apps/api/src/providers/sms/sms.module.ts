@@ -16,6 +16,7 @@ import { SmsProvider } from './sms.provider.js';
           ? new Msg91SmsProvider({
               authKey: config.get('MSG91_AUTH_KEY', { infer: true })!,
               templateId: config.get('MSG91_OTP_TEMPLATE_ID', { infer: true })!,
+              overdueTemplateId: config.get('MSG91_OVERDUE_TEMPLATE_ID', { infer: true }),
             })
           : new ConsoleSmsProvider(),
     },
