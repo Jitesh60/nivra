@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 
 part 'fake_bookings.dart';
 part 'fake_chat.dart';
+part 'fake_payments.dart';
 
 /// In-memory stand-in for the Sajha API, plugged into Dio as its HTTP adapter.
 /// Mirrors the real endpoints and error shapes closely enough to drive
@@ -141,6 +142,9 @@ class FakeSajhaApi implements HttpClientAdapter {
   int _seq = 0;
   bool offline = false;
 
+  /// Requests ('POST /payments/verify') that fail as if the network dropped.
+  final offlineFor = <String>{};
+
   /// Host that plays object storage for presigned PUTs and document views.
   static const storageHost = 'storage.test';
 
@@ -190,7 +194,9 @@ class FakeSajhaApi implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    if (offline) {
+    final route =
+        '${options.method} ${options.uri.path.replaceFirst('/v1', '')}';
+    if (offline || offlineFor.contains(route)) {
       throw DioException.connectionError(
         requestOptions: options,
         reason: 'offline',
@@ -266,6 +272,7 @@ class FakeSajhaApi implements HttpClientAdapter {
 
   /// Bookings and notifications (see fake_bookings.dart).
   final bookingState = FakeBookings();
+  final payments = FakePayments();
 
   /// The user the app is signed in as (the last authenticated caller).
   String? appUserId;
@@ -638,6 +645,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       target.revoked = true;
       return (204, null);
     }
+    final paymentResult = _payments(method, path, body, user);
+    if (paymentResult != null) return paymentResult;
     final bookingResult = _bookings(method, path, body, query, user);
     if (bookingResult != null) return bookingResult;
     final chatResult = _chat(method, path, body, query, user);

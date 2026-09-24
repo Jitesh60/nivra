@@ -7,6 +7,10 @@ import '../../features/auth/presentation/email_screen.dart';
 import '../../features/auth/presentation/name_screen.dart';
 import '../../features/auth/presentation/otp_screens.dart';
 import '../../features/auth/presentation/phone_screen.dart';
+import '../../features/payments/presentation/earnings_screen.dart';
+import '../../features/payments/presentation/payment_processing_screen.dart';
+import '../../features/payments/presentation/payouts_screen.dart';
+import '../payments/payment_gateway.dart';
 import '../../features/bookings/presentation/booking_screen.dart';
 import '../../features/bookings/presentation/my_bookings_screen.dart';
 import '../../features/bookings/presentation/notifications_screen.dart';
@@ -121,6 +125,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ShareDocumentsScreen(bookingId: state.pathParameters['id']!),
       ),
+      GoRoute(
+        path: Routes.bookingPayingPattern,
+        redirect: (_, state) => state.extra is CheckoutSuccess
+            ? null
+            : Routes.booking(state.pathParameters['id']!),
+        builder: (_, state) => PaymentProcessingScreen(
+          bookingId: state.pathParameters['id']!,
+          payment: state.extra! as CheckoutSuccess,
+        ),
+      ),
+      GoRoute(path: Routes.earnings, builder: (_, _) => const EarningsScreen()),
+      GoRoute(path: Routes.payouts, builder: (_, _) => const PayoutsScreen()),
       GoRoute(
         path: Routes.bookingDocument,
         redirect: (_, state) =>

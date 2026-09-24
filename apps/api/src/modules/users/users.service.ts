@@ -139,6 +139,8 @@ export class UsersService {
       });
       await tx.profile.deleteMany({ where: { userId } });
       await tx.deviceToken.deleteMany({ where: { userId } });
+      // The bank details' name and last digits (Razorpay keeps the account).
+      await tx.payoutAccount.deleteMany({ where: { userId } });
       await tx.userDocument.updateMany({
         where: { userId, deletedAt: null },
         data: { deletedAt: new Date() },

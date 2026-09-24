@@ -7,7 +7,9 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../chat/presentation/chat_format.dart' show ParticipantAvatar;
 import '../../listings/data/models.dart' show formatRupees;
+import '../../payments/presentation/pay_flow.dart';
 import '../application/bookings_providers.dart';
+import '../data/bookings_repository.dart';
 import '../data/models.dart';
 import 'booking_format.dart';
 import 'reason_dialog.dart';
@@ -56,17 +58,53 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     await _run(() => _controller.decline(reason), 'Request declined');
   }
 
-  Future<void> _cancel(Booking b) async {
+  Future<void> _cancel(BookingDetail d) async {
+    final b = d.booking;
+    var message = b.isBorrower
+        ? 'Nothing has been paid, so there’s nothing to refund.'
+        : 'Cancelling after accepting counts against you as a lender.';
+    if (d.payment?.status.paid ?? false) {
+      // What comes back depends on how close pickup is: ask the API.
+      setState(() => _busy = true);
+      try {
+        final preview = await ref
+            .read(bookingsRepositoryProvider)
+            .cancelPreview(b.id);
+        message = preview.summary;
+      } on ApiException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
+        }
+        return;
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      if (!mounted) return;
+    }
     final reason = await askReason(
       context,
       title: 'Cancel this booking?',
-      message: b.isBorrower
-          ? 'Nothing has been paid, so there’s nothing to refund.'
-          : 'Cancelling after accepting counts against you as a lender.',
+      message: message,
       confirmLabel: 'Cancel booking',
     );
     if (reason == null || !mounted) return;
-    await _run(() => _controller.cancel(reason), 'Booking cancelled');
+    await _run(
+      () => _controller.cancel(reason),
+      d.payment?.status.paid ?? false
+          ? 'Booking cancelled. Any refund is on its way.'
+          : 'Booking cancelled',
+    );
+  }
+
+  Future<void> _pay() async {
+    setState(() => _busy = true);
+    try {
+      await payForBooking(context, ref, widget.bookingId);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    await _controller.refresh();
   }
 
   Future<void> _rejectDocuments() async {
@@ -206,7 +244,25 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ),
         ),
 
+        if (d.pickupAddress != null)
+          Card(
+            key: const ValueKey('booking-pickup'),
+            margin: const EdgeInsets.only(bottom: SajhaSpacing.sm),
+            child: ListTile(
+              leading: const Icon(Icons.place_outlined),
+              title: const Text('Pickup address'),
+              subtitle: SelectableText(d.pickupAddress!),
+            ),
+          ),
+
         // Actions.
+        if (can.pay)
+          FilledButton.icon(
+            key: const ValueKey('booking-pay'),
+            onPressed: _busy ? null : _pay,
+            icon: const Icon(Icons.lock_outline),
+            label: Text('Pay ${formatRupees(b.totalPaise)}'),
+          ),
         if (can.accept)
           FilledButton(
             key: const ValueKey('booking-accept'),
@@ -262,6 +318,30 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             'Price agreed in chat.',
             style: text.bodySmall?.copyWith(color: muted),
           ),
+        if (d.payment case final p? when p.status.paid) ...[
+          const SizedBox(height: SajhaSpacing.sm),
+          _line(
+            [
+              b.isBorrower ? 'Paid' : 'Borrower paid',
+              if (p.paidAt != null) whenText(p.paidAt!),
+              ?p.method,
+            ].join(' · '),
+            formatRupees(p.amountPaise),
+            key: 'booking-paid',
+          ),
+          for (final (i, r) in p.refunds.indexed)
+            _line(
+              '${refundText(r)} · ${r.status.label}',
+              '− ${formatRupees(r.amountPaise)}',
+              key: 'booking-refund-$i',
+            ),
+          if (!b.isBorrower)
+            Text(
+              'Your share (rent less Sajha’s 10% commission) is held until '
+              'the item is back. See Earnings in your profile.',
+              style: text.bodySmall?.copyWith(color: muted),
+            ),
+        ],
 
         // Documents.
         if (d.requiredDocs.isNotEmpty) ...[
@@ -318,7 +398,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: SajhaColors.danger,
             ),
-            onPressed: _busy ? null : () => _cancel(b),
+            onPressed: _busy ? null : () => _cancel(d),
             child: const Text('Cancel booking'),
           ),
         ],
@@ -361,16 +441,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  Widget _line(String label, String value, {bool bold = false}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        Expanded(child: Text(label)),
-        Text(
-          value,
-          style: bold ? const TextStyle(fontWeight: FontWeight.w700) : null,
+  Widget _line(String label, String value, {bool bold = false, String? key}) =>
+      Padding(
+        key: key == null ? null : ValueKey(key),
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text(
+              value,
+              style: bold ? const TextStyle(fontWeight: FontWeight.w700) : null,
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }

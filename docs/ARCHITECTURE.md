@@ -582,6 +582,11 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - "Request to book" follows the chat pattern for guests: `requireSignIn(returnTo: /item/:id?book=1&from=…&to=…)`. The item page reopens the request with those dates after sign-in.
   - **Shared-document viewer:** `ScreenProtection` (`core/security/`) sits over the `sajha/secure` method channel. On Android it sets `FLAG_SECURE` for as long as the viewer is open. On iOS it reports `UIScreen.isCaptured` changes, and the viewer blurs while the screen is being recorded or mirrored. A watermark with the lender's name, the booking reference and the time is drawn over the image. Tests use a fake.
   - A push tap with `bookingId` opens `/booking/:id`. Resuming the app refreshes the bell's badge.
+- **Payments** (Phase 7b, `features/payments/`, `core/payments/`):
+  - `PaymentsRepository` covers `/bookings/:id/pay`, `/payments/verify`, the dev test checkout, `/me/payout-account` and `/me/earnings`.
+  - `PaymentGateway` is `RazorpayGateway` (`razorpay_flutter`), faked in tests. `payForBooking()` picks the test sheet when the API's provider is `fake`.
+  - `PaymentProcessingScreen` verifies, then watches `bookingProvider(id)` until it's paid and confirmed. The webhook's `booking:updated` confirms it even if verify failed on the network.
+  - `earningsProvider` reloads on `booking:updated`.
 - **Discovery state** (Phase 4b):
   - **Search area:** `searchAreaProvider` (GPS or map, 1–25 km), saved in `AppPrefs`.
   - **Recently viewed:** the last 20 ids, on the device.

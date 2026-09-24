@@ -590,6 +590,34 @@ Delivered in three parts, each with its own PR and green CI: **7a API → 7b Mob
 - **Confirmed booking:** the pickup address, the payment and refunds, and cancel with a refund preview.
 - **Payouts:** a lender payout setup screen (bank, IFSC, PAN) and an Earnings screen.
 
+**As built:**
+- **Paying:** `PaymentGateway` (`core/payments/`) opens Razorpay Standard Checkout through `razorpay_flutter`. When the API answers `provider: fake`, a **test checkout** sheet (Pay, or simulate a failure) calls `POST /v1/dev/payments/:orderId/checkout` instead. Production builds never show it.
+- **After checkout:** the processing screen (`/booking/:id/paying`) calls `/payments/verify` and waits for the booking to be confirmed.
+  - If verify can't get through, the webhook still confirms it and the page updates live.
+  - After 45 seconds it says it's taking longer, and the borrower can leave.
+  - A failed payment shows the reason and **Try again**, which reuses the same order.
+- **Booking page:**
+  - **Pay ₹X** (from `can.pay`).
+  - The pickup address card, for the borrower once confirmed.
+  - The payment line (when, method) and each refund with its status.
+  - A note for the lender that their share is held.
+  - Cancelling a paid booking first shows the API's refund preview (`/cancel-preview`).
+- **Profile → Earnings & payouts:** totals (held, paid out, waiting for a bank account) and a list per booking. Payouts has a bank form (account number twice, IFSC, PAN, address), then the account status. Only the last 4 digits are shown.
+- **Chat:** needs no change. The API stops masking once confirmed, so the "hidden" note no longer shows.
+- **Android:** R8 keep rules for Razorpay are in `proguard-rules.pro`.
+- **API fix:** deleting an account now removes the payout details too.
+- **Tests:**
+  - 7 widget flows:
+    - the test checkout → confirmed with the address
+    - a failure, then retry
+    - closing the checkout
+    - the Razorpay SDK path, including a refused forged signature
+    - verify offline with the webhook confirming
+    - a cancel with a refund preview and the transfer reversed
+    - lender earnings and payout setup through to activation
+  - The live contract test covers payouts and the not-yet-payable errors.
+  - An opt-in live payment test (`LIVE_LISTING_ID`, `LIVE_LENDER_PHONE`) does request → accept → a failed then a paid test checkout → verify → confirmed with the address → a full refund on cancel.
+
 ### 7c — Admin
 **Branch:** `phase/7c-payments-admin`
 

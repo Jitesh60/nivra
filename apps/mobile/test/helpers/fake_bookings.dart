@@ -405,16 +405,23 @@ extension FakeBookingsApi on FakeSajhaApi {
         );
       case 'cancel':
         final allowed = lender
-            ? const {'AWAITING_DOCS', 'AWAITING_PAYMENT'}.contains(b.status)
+            ? const {
+                'AWAITING_DOCS',
+                'AWAITING_PAYMENT',
+                'CONFIRMED',
+              }.contains(b.status)
             : const {
                 'REQUESTED',
                 'AWAITING_DOCS',
                 'AWAITING_PAYMENT',
+                'CONFIRMED',
               }.contains(b.status);
         if (!allowed) return conflict();
+        final paid = b.status == 'CONFIRMED';
         b
           ..cancelledBy = lender ? 'LENDER' : 'BORROWER'
           ..cancelReason = (body['reason'] as String).trim();
+        if (paid) _refundCancelled(b, lender: lender);
         _move(b, 'CANCELLED', 'CANCELLED', user.id, note: b.cancelReason);
         _notify(
           lender ? b.borrowerId : b.lenderId,
@@ -536,7 +543,7 @@ extension FakeBookingsApi on FakeSajhaApi {
     String? note,
   }) {
     b.status = to;
-    b.expiresAt = b.open
+    b.expiresAt = b.open && to != 'CONFIRMED'
         ? DateTime.now().toUtc().add(
             Duration(hours: to == 'AWAITING_PAYMENT' ? 2 : 24),
           )
@@ -644,8 +651,20 @@ extension FakeBookingsApi on FakeSajhaApi {
             'REQUESTED',
             'AWAITING_DOCS',
             'AWAITING_PAYMENT',
+            'CONFIRMED',
           }.contains(b.status)
-        : const {'AWAITING_DOCS', 'AWAITING_PAYMENT'}.contains(b.status);
+        : const {
+            'AWAITING_DOCS',
+            'AWAITING_PAYMENT',
+            'CONFIRMED',
+          }.contains(b.status);
+    final paid = const {
+      'CONFIRMED',
+      'ACTIVE',
+      'RETURNED',
+      'COMPLETED',
+      'DISPUTED',
+    }.contains(b.status);
     return {
       ..._bookingJson(b, viewerId),
       'requiredDocs': docs ? _requiredDocs(b) : const [],
@@ -672,12 +691,20 @@ extension FakeBookingsApi on FakeSajhaApi {
           },
       ],
       'events': b.events,
+      'payment': _paymentJson(b),
+      'pickupAddress': borrower && paid
+          ? 'Flat 4, Shanti Apartments, Lane 3, Kothrud, Pune 411038'
+          : null,
       'can': {
         'accept': !borrower && b.status == 'REQUESTED',
         'decline': !borrower && b.status == 'REQUESTED',
         'cancel': cancel(),
         'shareDocs': borrower && b.status == 'AWAITING_DOCS' && !submitted,
         'reviewDocs': !borrower && b.status == 'AWAITING_DOCS' && submitted,
+        'pay':
+            borrower &&
+            b.status == 'AWAITING_PAYMENT' &&
+            (b.expiresAt?.isAfter(DateTime.now()) ?? true),
       },
     };
   }

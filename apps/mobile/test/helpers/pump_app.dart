@@ -10,6 +10,7 @@ import 'package:sajha/core/location/location_service.dart';
 import 'package:sajha/core/media/photo_picker.dart';
 import 'package:sajha/features/listings/presentation/pickup_map.dart';
 import 'package:sajha/core/network/api_client.dart';
+import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
 import 'package:sajha/core/security/screen_protection.dart';
@@ -42,6 +43,7 @@ class TestHarness {
   late final FakeRealtime realtime = FakeRealtime(api);
   final push = FakePushService();
   final screen = FakeScreenProtection();
+  final gateway = FakePaymentGateway();
   late ProviderContainer container;
 
   /// What the next date-range pick returns; null means cancelled.
@@ -64,6 +66,7 @@ class TestHarness {
     realtimeClientProvider.overrideWithValue(realtime),
     pushServiceProvider.overrideWithValue(push),
     screenProtectionProvider.overrideWithValue(screen),
+    paymentGatewayProvider.overrideWithValue(gateway),
     dateRangeChooserProvider.overrideWithValue((
       context, {
       required first,

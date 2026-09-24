@@ -150,6 +150,7 @@ class BookingActions {
     this.cancel = false,
     this.shareDocs = false,
     this.reviewDocs = false,
+    this.pay = false,
   });
 
   factory BookingActions.fromJson(Map<String, dynamic> json) => BookingActions(
@@ -158,6 +159,7 @@ class BookingActions {
     cancel: json['cancel'] as bool,
     shareDocs: json['shareDocs'] as bool,
     reviewDocs: json['reviewDocs'] as bool,
+    pay: json['pay'] as bool? ?? false,
   );
 
   final bool accept;
@@ -165,6 +167,9 @@ class BookingActions {
   final bool cancel;
   final bool shareDocs;
   final bool reviewDocs;
+
+  /// Borrower: pay now.
+  final bool pay;
 }
 
 /// A document the lender asks for, and which vault documents count.
@@ -281,7 +286,8 @@ enum BookingEventType {
   cancelled('CANCELLED'),
   docsSubmitted('DOCS_SUBMITTED'),
   docsApproved('DOCS_APPROVED'),
-  docsRejected('DOCS_REJECTED');
+  docsRejected('DOCS_REJECTED'),
+  paid('PAID');
 
   const BookingEventType(this.apiValue);
   final String apiValue;
@@ -323,6 +329,8 @@ class BookingDetail {
     required this.sharedDocuments,
     required this.events,
     required this.can,
+    this.payment,
+    this.pickupAddress,
   });
 
   factory BookingDetail.fromJson(Map<String, dynamic> json) => BookingDetail(
@@ -340,6 +348,10 @@ class BookingDetail {
         BookingEvent.fromJson(e as Map<String, dynamic>),
     ],
     can: BookingActions.fromJson(json['can'] as Map<String, dynamic>),
+    payment: json['payment'] == null
+        ? null
+        : BookingPayment.fromJson(json['payment'] as Map<String, dynamic>),
+    pickupAddress: json['pickupAddress'] as String?,
   );
 
   final Booking booking;
@@ -349,6 +361,140 @@ class BookingDetail {
   /// Oldest first.
   final List<BookingEvent> events;
   final BookingActions can;
+
+  /// The borrower's payment, once one went through (or was attempted).
+  final BookingPayment? payment;
+
+  /// The exact pickup address: the borrower's, once confirmed.
+  final String? pickupAddress;
+}
+
+enum PaymentStatus {
+  created('CREATED'),
+  captured('CAPTURED'),
+  failed('FAILED'),
+  partiallyRefunded('PARTIALLY_REFUNDED'),
+  refunded('REFUNDED');
+
+  const PaymentStatus(this.apiValue);
+  final String apiValue;
+
+  static PaymentStatus fromApi(String v) =>
+      values.firstWhere((s) => s.apiValue == v, orElse: () => created);
+
+  /// Money was taken (some may have come back since).
+  bool get paid =>
+      this == captured || this == partiallyRefunded || this == refunded;
+}
+
+enum RefundKind {
+  cancellation('CANCELLATION'),
+  latePayment('LATE_PAYMENT'),
+  manual('MANUAL');
+
+  const RefundKind(this.apiValue);
+  final String apiValue;
+
+  static RefundKind fromApi(String v) =>
+      values.firstWhere((k) => k.apiValue == v, orElse: () => manual);
+}
+
+enum RefundStatus {
+  pending('PENDING', 'On the way'),
+  processed('PROCESSED', 'Refunded'),
+  failed('FAILED', 'Retrying');
+
+  const RefundStatus(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static RefundStatus fromApi(String v) =>
+      values.firstWhere((s) => s.apiValue == v, orElse: () => pending);
+}
+
+class BookingRefund {
+  const BookingRefund({
+    required this.amountPaise,
+    required this.kind,
+    required this.status,
+    required this.createdAt,
+  });
+
+  factory BookingRefund.fromJson(Map<String, dynamic> json) => BookingRefund(
+    amountPaise: (json['amountPaise'] as num).toInt(),
+    kind: RefundKind.fromApi(json['kind'] as String),
+    status: RefundStatus.fromApi(json['status'] as String),
+    createdAt: _date(json['createdAt']),
+  );
+
+  final int amountPaise;
+  final RefundKind kind;
+  final RefundStatus status;
+  final DateTime createdAt;
+}
+
+class BookingPayment {
+  const BookingPayment({
+    required this.status,
+    required this.amountPaise,
+    required this.refundedPaise,
+    required this.refunds,
+    this.method,
+    this.paidAt,
+  });
+
+  factory BookingPayment.fromJson(Map<String, dynamic> json) => BookingPayment(
+    status: PaymentStatus.fromApi(json['status'] as String),
+    amountPaise: (json['amountPaise'] as num).toInt(),
+    method: json['method'] as String?,
+    paidAt: _dateOrNull(json['paidAt']),
+    refundedPaise: (json['refundedPaise'] as num).toInt(),
+    refunds: [
+      for (final r in json['refunds'] as List)
+        BookingRefund.fromJson(r as Map<String, dynamic>),
+    ],
+  );
+
+  final PaymentStatus status;
+  final int amountPaise;
+
+  /// card, upi, netbanking… (Razorpay's name).
+  final String? method;
+  final DateTime? paidAt;
+  final int refundedPaise;
+  final List<BookingRefund> refunds;
+}
+
+/// What cancelling now would refund (`GET /bookings/:id/cancel-preview`).
+class CancelPreview {
+  const CancelPreview({
+    required this.refundPaise,
+    required this.rentPaise,
+    required this.feePaise,
+    required this.depositPaise,
+    required this.summary,
+    this.tier,
+  });
+
+  factory CancelPreview.fromJson(Map<String, dynamic> json) => CancelPreview(
+    refundPaise: (json['refundPaise'] as num).toInt(),
+    rentPaise: (json['rentPaise'] as num).toInt(),
+    feePaise: (json['feePaise'] as num).toInt(),
+    depositPaise: (json['depositPaise'] as num).toInt(),
+    tier: json['tier'] as String?,
+    summary: json['summary'] as String,
+  );
+
+  final int refundPaise;
+  final int rentPaise;
+  final int feePaise;
+  final int depositPaise;
+
+  /// FULL, HALF_RENT or DEPOSIT_ONLY; null when nothing was paid.
+  final String? tier;
+
+  /// One line to show before confirming.
+  final String summary;
 }
 
 /// A short-lived link to a shared document, and the watermark to draw over it.

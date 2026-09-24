@@ -5,6 +5,7 @@
 //
 // Uses the real AuthRepository, TokenManager and interceptor over real HTTP,
 // so it catches any drift between the app's models and the API.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -28,11 +29,19 @@ import 'package:sajha/features/documents/data/documents_repository.dart';
 import 'package:sajha/features/documents/data/models.dart';
 import 'package:sajha/features/listings/data/listings_repository.dart';
 import 'package:sajha/features/listings/data/models.dart' as listing;
+import 'package:sajha/features/payments/data/models.dart';
+import 'package:sajha/features/payments/data/payments_repository.dart';
+import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/features/profile/data/profile_repository.dart';
 
 import 'helpers/fakes.dart';
 
 const liveUrl = String.fromEnvironment('LIVE_API_URL');
+
+/// For the payment test: a LIVE listing and its lender's phone (10 digits),
+/// e.g. seeded locally. The lender accepts from here.
+const liveListingId = String.fromEnvironment('LIVE_LISTING_ID');
+const liveLenderPhone = String.fromEnvironment('LIVE_LENDER_PHONE');
 const bypassCode = String.fromEnvironment(
   'LIVE_OTP_CODE',
   defaultValue: '000000',
@@ -308,6 +317,18 @@ void main() {
         expect(open.items.first.id, b.id);
         expect((await chat.conversation(b.conversationId)).openBookingId, b.id);
 
+        // Not payable until the lender accepts; nothing to refund yet.
+        final payments = PaymentsRepository(dio: api);
+        final early = await payments
+            .checkout(b.id)
+            .then<Object?>((_) => null, onError: (Object e) => e);
+        expect((early! as ApiException).code, 'PAYMENT_NOT_ALLOWED');
+        final preview = await bookings.cancelPreview(b.id);
+        expect((preview.refundPaise, preview.tier), (0, null));
+        expect(requested.payment, isNull);
+        expect(requested.pickupAddress, isNull);
+        expect(requested.can.pay, isFalse);
+
         final cancelled = await bookings.cancel(b.id, 'Live test, sorry!');
         expect(cancelled.booking.status, BookingStatus.cancelled);
         expect(cancelled.booking.cancelledBy, 'BORROWER');
@@ -326,11 +347,135 @@ void main() {
       socket.disconnect();
     }
 
+    // Payouts: none yet, a bad IFSC is refused, then set up (the account
+    // goes away with the user below).
+    final payouts = PaymentsRepository(dio: api);
+    expect(await payouts.payoutAccount(), isNull);
+    final empty = await payouts.earnings();
+    expect(empty.account, isNull);
+    expect(empty.items, isEmpty);
+    expect(empty.onHoldPaise, 0);
+    const bank = PayoutAccountInput(
+      beneficiaryName: 'Live Test',
+      accountNumber: '50100123456789',
+      ifsc: 'hdfc0001234',
+      pan: 'abcde1234f',
+      email: 'live@example.com',
+      street: '12 FC Road',
+      city: 'Pune',
+      state: 'Maharashtra',
+      postalCode: '411004',
+    );
+    final badBank = await payouts
+        .setUpPayouts(
+          const PayoutAccountInput(
+            beneficiaryName: 'Live Test',
+            accountNumber: '50100123456789',
+            ifsc: 'HDFC1234',
+            pan: 'ABCDE1234F',
+            email: 'live@example.com',
+            street: '12 FC Road',
+            city: 'Pune',
+            state: 'Maharashtra',
+            postalCode: '411004',
+          ),
+        )
+        .then<Object?>((_) => null, onError: (Object e) => e);
+    expect((badBank! as ApiException).code, 'VALIDATION_FAILED');
+    final account = await payouts.setUpPayouts(bank);
+    expect(account.bankLast4, '6789');
+    expect(account.ifsc, 'HDFC0001234');
+    expect(account.panLast4, '234F');
+    expect((await payouts.payoutAccount())?.status, account.status);
+
     // Delete the account so the test leaves nothing behind.
     await repo.deleteAccount();
     expect(storage.refreshToken, isNull);
     await expectLater(tokens.refresh(), completion(isNull));
   }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
+
+  test(
+    'pays for a booking through the test checkout',
+    () async {
+      final borrower = await _signIn(_randomPhone(), verifyEmail: true);
+      final lender = await _signIn(liveLenderPhone);
+      final bookings = BookingsRepository(dio: borrower.api);
+      final lenderBookings = BookingsRepository(dio: lender.api);
+      final payments = PaymentsRepository(dio: borrower.api);
+
+      final item = await DiscoveryRepository(borrower.api)
+          .listing(liveListingId);
+      final from = DateTime.now().add(
+        Duration(days: item.advanceNoticeDays + 40 + Random().nextInt(200)),
+      );
+      final requested = await bookings.request(
+        listingId: item.id,
+        start: from,
+        end: from.add(Duration(days: item.minDays.clamp(1, 7) - 1)),
+      );
+      final b = requested.booking;
+      final accepted = await lenderBookings.accept(b.id);
+      if (accepted.booking.status == BookingStatus.awaitingDocs) {
+        await bookings.cancel(b.id, 'Live test: listing asks for documents');
+        markTestSkipped(
+          'LIVE_LISTING_ID asks for documents; use one that '
+          'doesn’t',
+        );
+        return;
+      }
+      expect(accepted.booking.status, BookingStatus.awaitingPayment);
+      expect((await bookings.get(b.id)).can.pay, isTrue);
+
+      // The order, then a failed attempt, then a paid one (same order).
+      final order = await payments.checkout(b.id);
+      expect(
+        order.provider,
+        'fake',
+        reason: 'run the API with the fake provider',
+      );
+      expect(order.amountPaise, b.totalPaise);
+      expect(order.contact, startsWith('+91'));
+      expect(
+        await payments.testCheckout(order.orderId, succeed: false),
+        isA<CheckoutFailure>(),
+      );
+      final again = await payments.checkout(b.id);
+      expect(again.orderId, order.orderId);
+      final paid = await payments.testCheckout(order.orderId, succeed: true);
+      expect(await payments.verify(paid as CheckoutSuccess), 'CONFIRMED');
+
+      final confirmed = await bookings.get(b.id);
+      expect(confirmed.booking.status, BookingStatus.confirmed);
+      expect(confirmed.payment?.status, PaymentStatus.captured);
+      expect(confirmed.payment?.amountPaise, b.totalPaise);
+      expect(confirmed.pickupAddress, isNotNull);
+      expect(confirmed.can.pay, isFalse);
+      expect(confirmed.events.last.type, BookingEventType.paid);
+      final lenderView = await lenderBookings.get(b.id);
+      expect(lenderView.pickupAddress, isNull);
+      expect(lenderView.payment?.status, PaymentStatus.captured);
+      final earnings = await PaymentsRepository(dio: lender.api).earnings();
+      expect(earnings.items.first.bookingId, b.id);
+
+      // Cancelled long before pickup: everything comes back.
+      final preview = await bookings.cancelPreview(b.id);
+      expect((preview.tier, preview.refundPaise), ('FULL', b.totalPaise));
+      final cancelled = await bookings.cancel(b.id, 'Live test, sorry!');
+      expect(cancelled.booking.status, BookingStatus.cancelled);
+      await _until(() async {
+        final p = (await bookings.get(b.id)).payment;
+        return p?.status == PaymentStatus.refunded && p!.refunds.isNotEmpty;
+      });
+      final refunded = (await bookings.get(b.id)).payment!;
+      expect(refunded.refunds.single.kind, RefundKind.cancellation);
+      expect(refunded.refundedPaise, b.totalPaise);
+
+      await borrower.repo.deleteAccount();
+    },
+    skip: liveUrl.isEmpty || liveListingId.isEmpty || liveLenderPhone.isEmpty
+        ? 'Set LIVE_API_URL, LIVE_LISTING_ID and LIVE_LENDER_PHONE to run'
+        : false,
+  );
 
   test('guests browse: home, search, a listing and its quote', () async {
     final discovery = DiscoveryRepository(
@@ -384,9 +529,41 @@ void main() {
 }
 
 /// Waits (up to 5 s) for [done].
-Future<void> _until(bool Function() done) async {
-  for (var i = 0; i < 50 && !done(); i++) {
+Future<void> _until(FutureOr<bool> Function() done) async {
+  for (var i = 0; i < 50 && !await done(); i++) {
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
-  expect(done(), isTrue);
+  expect(await done(), isTrue);
+}
+
+String _randomPhone() {
+  final random = Random();
+  return '9${List.generate(9, (_) => random.nextInt(10)).join()}';
+}
+
+/// Signs [phone] in with the bypass code (a new user gets a name, and an
+/// email when [verifyEmail]).
+Future<({Dio api, AuthRepository repo})> _signIn(
+  String phone, {
+  bool verifyEmail = false,
+}) async {
+  Dio dio() => Dio(BaseOptions(baseUrl: '$liveUrl/v1'));
+  final storage = InMemorySessionStorage();
+  final tokens = TokenManager(dio: dio(), store: storage);
+  final api = dio();
+  api.interceptors.add(AuthInterceptor(tokens, api));
+  final repo = AuthRepository(
+    dio: api,
+    tokens: tokens,
+    store: storage,
+    device: FakeDeviceInfo(),
+  );
+  final challenge = await repo.requestPhoneOtp(phone);
+  final login = await repo.verifyPhoneOtp(challenge.challengeId, bypassCode);
+  if (login.isNewUser) await repo.updateName('Live Borrower');
+  if (verifyEmail) {
+    final c = await repo.requestEmailOtp('live.$phone@example.com');
+    await repo.verifyEmailOtp(c.challengeId, bypassCode);
+  }
+  return (api: api, repo: repo);
 }

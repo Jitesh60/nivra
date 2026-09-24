@@ -152,10 +152,8 @@ void main() {
       m.api.bookingActAs(m.lender, booking.id, 'documents/approve');
       await settle(tester);
       expect(await statusText(tester), 'Waiting for payment');
-      expect(
-        find.textContaining('Payment opens in the next update'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Pay to confirm'), findsOneWidget);
+      expect(find.byKey(const ValueKey('booking-pay')), findsOneWidget);
       expect(find.textContaining('Dates held for'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('booking-event-3')),
