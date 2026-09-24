@@ -2,10 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/providers.dart';
+import '../storage/session_storage.dart';
+import 'auth_interceptor.dart';
+import 'token_manager.dart';
 
-/// Shared HTTP client for the Sajha API (`/v1`).
-/// Auth and token-refresh interceptors are added in Phase 1b.
-final dioProvider = Provider<Dio>((ref) {
+/// Test seam: tests swap in a fake adapter to serve responses in memory.
+final httpClientAdapterProvider = Provider<HttpClientAdapter?>((ref) => null);
+
+Dio _baseDio(Ref ref) {
   final config = ref.watch(appConfigProvider);
   final dio = Dio(
     BaseOptions(
@@ -15,18 +19,26 @@ final dioProvider = Provider<Dio>((ref) {
       headers: {'Accept': 'application/json'},
     ),
   );
-  ref.onDispose(dio.close);
+  final adapter = ref.watch(httpClientAdapterProvider);
+  if (adapter != null) dio.httpClientAdapter = adapter;
   return dio;
+}
+
+/// Access/refresh token handling. Uses its own interceptor-free client so a
+/// refresh can never trigger another refresh.
+final tokenManagerProvider = Provider<TokenManager>((ref) {
+  final refreshDio = _baseDio(ref);
+  ref.onDispose(refreshDio.close);
+  return TokenManager(
+    dio: refreshDio,
+    store: ref.watch(sessionStorageProvider),
+  );
 });
 
-/// `true` when `GET /v1/health` reports every dependency up.
-final apiHealthyProvider = FutureProvider.autoDispose<bool>((ref) async {
-  try {
-    final res = await ref
-        .watch(dioProvider)
-        .get<Map<String, dynamic>>('/health');
-    return res.data?['status'] == 'ok';
-  } on DioException {
-    return false;
-  }
+/// Shared HTTP client for the Sajha API (`/v1`), with auth and token refresh.
+final dioProvider = Provider<Dio>((ref) {
+  final dio = _baseDio(ref);
+  dio.interceptors.add(AuthInterceptor(ref.watch(tokenManagerProvider), dio));
+  ref.onDispose(dio.close);
+  return dio;
 });

@@ -114,7 +114,7 @@ flowchart LR
 1. **Splash**: animated shader background (GLSL aurora/gradient mesh) plus the logo animation; checks the stored session
 2. **Onboarding**: 3 slides (Borrow / Lend / Trust) with `flutter_animate` transitions; skip option
 3. **Phone entry**: fixed +91 prefix, 10-digit validation, terms and privacy consent checkbox, uiverse-style animated CTA
-4. **OTP**: 6-box input with auto-fill (Android SMS Retriever / iOS `oneTimeCode`), resend countdown (30s), error shake animation, attempts-left message
+4. **OTP**: 6-box input with keyboard auto-fill (`AutofillHints.oneTimeCode`: iOS and Gboard suggest the code from the SMS), resend countdown (30s), error shake animation, attempts-left message. Android SMS Retriever (fully automatic fill) needs the app hash in the DLT SMS template, so it's added once MSG91 is live.
 5. **Profile setup** (new users only): name
 6. **Email entry → email OTP** (the same OTP widget); can be skipped for browsing, but it's required before listing or booking
 7. **Home placeholder** with the verified badges shown and a logout button
@@ -123,8 +123,8 @@ flowchart LR
 **Technical scope**
 - `features/auth` data, application and presentation layers; `AuthController` state machine
 - `flutter_secure_storage` for the refresh token; access token in memory
-- dio `RefreshInterceptor` (single-flight refresh, retries queued requests, logs out on failure)
-- go_router redirects: unknown → splash, unauthenticated → phone, needsProfile → profile setup
+- dio `AuthInterceptor` + `TokenManager` (single-flight refresh, retries the failed request, signs out when the server ends the session)
+- go_router redirects: unknown → splash, unauthenticated → onboarding (first time) or phone, no name → name setup, email not verified → email step (skippable)
 - Maps API error codes to friendly messages
 - Stable device ID generated and persisted at first launch
 - `effects/`: reusable `ShaderBackground` widget, `AnimatedGradientButton`, `OtpField`, loading shimmer
