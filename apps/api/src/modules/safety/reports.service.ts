@@ -66,6 +66,15 @@ export class ReportsService {
         conversationId = c.id;
         break;
       }
+      case 'REQUEST': {
+        const request = await this.prisma.itemRequest.findUnique({
+          where: { id: dto.targetId },
+          select: { borrowerId: true, status: true },
+        });
+        if (!request || request.status === 'REMOVED') throw notFound();
+        if (request.borrowerId === reporterId) throw invalid('You can’t report your own request');
+        break;
+      }
     }
     if (conversationId) {
       const inChat = await this.prisma.conversation.count({
@@ -218,6 +227,18 @@ export class ReportsService {
         label: l?.title ?? 'Deleted listing',
         status: l?.status ?? null,
         ownerId: l?.lenderId ?? null,
+      };
+    }
+    if (type === 'REQUEST') {
+      const r = await this.prisma.itemRequest.findUnique({
+        where: { id },
+        select: { title: true, status: true, borrowerId: true },
+      });
+      return {
+        ...base,
+        label: r?.title ?? 'Deleted request',
+        status: r?.status ?? null,
+        ownerId: r?.borrowerId ?? null,
       };
     }
     const m = await this.prisma.message.findUnique({

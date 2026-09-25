@@ -31,7 +31,7 @@ export const TEST_ENV = {
 export async function createTestApp(): Promise<TestApp> {
   Object.assign(process.env, {
     NODE_ENV: 'test',
-    LOG_LEVEL: 'silent',
+    LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     SWAGGER_ENABLED: 'true',
     CORS_ORIGINS: 'http://localhost:3001',
     DATABASE_URL: inject('databaseUrl'),

@@ -145,6 +145,13 @@ export class UsersService {
       await tx.profile.deleteMany({ where: { userId } });
       await tx.deviceToken.deleteMany({ where: { userId } });
       await tx.notificationPreferences.deleteMany({ where: { userId } });
+      // Phase 10: saved searches go, open requests leave the board, the invite code stops working.
+      await tx.savedSearch.deleteMany({ where: { userId } });
+      await tx.itemRequest.updateMany({
+        where: { borrowerId: userId, status: 'OPEN' },
+        data: { status: 'CLOSED', closedAt: new Date() },
+      });
+      await tx.referralCode.deleteMany({ where: { userId } });
       // The bank details' name and last digits (Razorpay keeps the account).
       await tx.payoutAccount.deleteMany({ where: { userId } });
       await tx.userDocument.updateMany({

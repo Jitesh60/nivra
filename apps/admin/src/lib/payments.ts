@@ -62,6 +62,7 @@ export const LEDGER_ACCOUNTS: LedgerAccount[] = [
   'LENDER_PAYABLE',
   'PLATFORM_REVENUE',
   'GOODWILL',
+  'PROMOTIONS',
 ];
 
 export const LEDGER_ACCOUNT_LABEL: Record<LedgerAccount, string> = {
@@ -70,6 +71,7 @@ export const LEDGER_ACCOUNT_LABEL: Record<LedgerAccount, string> = {
   LENDER_PAYABLE: 'Owed to lenders',
   PLATFORM_REVENUE: 'Sajha revenue',
   GOODWILL: 'Goodwill refunds',
+  PROMOTIONS: 'Invite credit',
 };
 
 export const LEDGER_ACCOUNT_HINT: Record<LedgerAccount, string> = {
@@ -78,6 +80,7 @@ export const LEDGER_ACCOUNT_HINT: Record<LedgerAccount, string> = {
   LENDER_PAYABLE: 'Rent less commission, not yet transferred.',
   PLATFORM_REVENUE: 'Commission and fees kept.',
   GOODWILL: 'Refunds Sajha paid for (a cost, shown as a debit).',
+  PROMOTIONS: 'Rent paid with invite credit, which Sajha covers (a cost, shown as a debit).',
 };
 
 export const COMMON_REFUND_REASONS = [

@@ -135,6 +135,20 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - `PUBLIC_READ_LIMIT_PER_MIN` caps public reads per IP.
 - Security review: [docs/SECURITY.md](../../docs/SECURITY.md). Load tests: [infra/load](../../infra/load/README.md), results in [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md).
 
+## Growth (Phase 10a)
+
+| Endpoint | What |
+|---|---|
+| `GET/POST /v1/me/saved-searches`, `PATCH/DELETE …/:id`, `GET …/:id/results` | Saved searches (10 max); new matching listings are alerted |
+| `POST/GET /v1/requests`, `GET /v1/requests/:id`, `POST …/:id/close`, `POST …/:id/responses`, `GET /v1/me/requests` | "Request an item" board; a lender's answer opens the chat about their listing |
+| `GET /v1/me/referral`, `POST /v1/me/referral/redeem` | Invite code, link and credit |
+| `GET /v1/admin/requests`, `GET …/:id`, `POST …/:id/remove` | Board moderation (remove: SUPER_ADMIN/OPS) |
+| `GET /v1/admin/users/:id/referral`, `POST …/credits/revoke` | Referrals and credit per person (revoke: SUPER_ADMIN/OPS) |
+
+- The `discovery` BullMQ queue (job worker) runs saved-search alerts, request notices and hourly request expiry.
+- Credit comes off rent when booking (`bookings.creditPaise`), and Sajha pays it (ledger `PROMOTIONS`). See docs/ARCHITECTURE.md §6.
+- `PUBLIC_SITE_URL` builds invite links.
+
 ## Deployment (Phase 9d)
 
 ```bash

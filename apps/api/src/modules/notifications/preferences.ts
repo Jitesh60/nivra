@@ -6,6 +6,8 @@ export interface Preferences {
   emailBookings: boolean;
   smsReminders: boolean;
   marketing: boolean;
+  pushSearchAlerts: boolean;
+  pushRequests: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -15,6 +17,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   emailBookings: true,
   smsReminders: true,
   marketing: false,
+  pushSearchAlerts: true,
+  pushRequests: true,
 };
 
 /**
@@ -24,6 +28,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
 export function pushSwitchFor(type: string): keyof Preferences | null {
   if (type.startsWith('booking.reminder.')) return 'pushReminders';
   if (type.startsWith('chat.')) return 'pushChat';
+  if (type.startsWith('search.')) return 'pushSearchAlerts';
+  if (type.startsWith('request.')) return 'pushRequests';
   if (type.startsWith('booking.') || type.startsWith('payment.')) return 'pushBookings';
   return null;
 }

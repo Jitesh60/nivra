@@ -199,12 +199,12 @@ flowchart LR
 | Lender earnings & payout screen | Lender motivation and transparency | **MVP** |
 | Personal document vault | Upload an ID once and reuse it across bookings | **MVP** |
 | Contact masking in chat before confirmation | Keeps transactions on-platform and safe | **MVP** |
-| "Request an item" board | Borrowers post needs ("need a tent 12–15 Oct in Pune") and lenders respond | Later |
-| Wishlist & saved searches with alerts | Re-engagement | Later |
+| "Request an item" board | Borrowers post needs ("need a tent 12–15 Oct in Pune") and lenders respond | **Phase 10** |
+| Wishlist & saved searches with alerts | Re-engagement | **Phase 4 (wishlist), Phase 10 (saved searches)** |
 | DigiLocker-based KYC | Stronger ID verification | Later |
 | Damage protection add-on | Optional small fee to cover damage | Later |
 | Delivery partner integration (Dunzo / Porter / Shadowfax) | Convenience | Later |
-| Referral credits | Growth | Later |
+| Referral credits | Growth | **Phase 10** |
 | Hindi and regional-language localisation | Reach | Later |
 | Bundles (e.g., "Trek kit" = shoes + poles + bag) | Higher order value | Later |
 | Instant book for trusted borrowers | Faster conversion | Later |
@@ -224,6 +224,9 @@ flowchart LR
 | Damage claim window | 24 hours after return |
 | Minimum age | 18 |
 | Rental length | Minimum 1 day; the maximum is set by the lender (default 30 days) |
+| Saved searches (Phase 10) | Up to 10 per person; a new matching listing gives an in-app notice, and a push at most once per search every 6 hours and 5 a day per person |
+| Requests board (Phase 10) | Verified people only; 5 open and 5 new a day per person; expires the day after its end date or after 30 days; lenders within 10 km with something similar are told (at most 3 such notices a day); a lender answers by offering one of their live listings, which opens the chat (20 answers a day) |
+| Invite credit (Phase 10) | ₹100 to a new person who enters a code within 7 days of joining and before their first booking; ₹100 to the inviter when that person's first rental completes (up to 20 rewards). Credit comes off the rent, at most half of it, and Sajha pays for it (the lender's share is unchanged). It's held when booking, given back if the booking doesn't go ahead, and on a paid cancellation comes back before any cash. No expiry for now |
 | Prohibited items | Weapons, drugs, alcohol, medicines, vehicles requiring registration (MVP), live animals, counterfeit or stolen goods, adult content, hazardous materials |
 
 ## 8. Admin panel capabilities

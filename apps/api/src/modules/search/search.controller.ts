@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -6,12 +7,15 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -26,7 +30,14 @@ import {
   SearchPageDto,
   SearchQueryDto,
 } from './dto/search.dto.js';
+import {
+  CreateSavedSearchDto,
+  SavedSearchDto,
+  SavedSearchResultsQueryDto,
+  UpdateSavedSearchDto,
+} from './dto/saved-search.dto.js';
 import { EngagementService } from './engagement.service.js';
+import { MAX_SAVED_SEARCHES, SavedSearchesService } from './saved-searches.service.js';
 import { SearchService } from './search.service.js';
 import { PublicReadLimitGuard } from '../../common/http/public-read-limit.guard.js';
 
@@ -87,5 +98,64 @@ export class FavoritesController {
     @Param('listingId', new ParseUUIDPipe()) listingId: string,
   ): Promise<void> {
     await this.engagement.remove(auth.userId, listingId);
+  }
+}
+
+@ApiTags('me · saved searches')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('me/saved-searches')
+export class SavedSearchesController {
+  constructor(private readonly saved: SavedSearchesService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Saved searches, newest first' })
+  @ApiOkResponse({ type: [SavedSearchDto] })
+  list(@CurrentUser() auth: UserAuth): Promise<SavedSearchDto[]> {
+    return this.saved.list(auth.userId);
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: `Save a search (up to ${MAX_SAVED_SEARCHES}); new matching listings are alerted`,
+  })
+  @ApiCreatedResponse({ type: SavedSearchDto })
+  create(
+    @CurrentUser() auth: UserAuth,
+    @Body() dto: CreateSavedSearchDto,
+  ): Promise<SavedSearchDto> {
+    return this.saved.create(auth.userId, dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Rename, or turn alerts on or off' })
+  @ApiOkResponse({ type: SavedSearchDto })
+  update(
+    @CurrentUser() auth: UserAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateSavedSearchDto,
+  ): Promise<SavedSearchDto> {
+    return this.saved.update(auth.userId, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse()
+  async remove(
+    @CurrentUser() auth: UserAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<void> {
+    await this.saved.remove(auth.userId, id);
+  }
+
+  @Get(':id/results')
+  @ApiOperation({ summary: 'Run a saved search now' })
+  @ApiOkResponse({ type: SearchPageDto })
+  results(
+    @CurrentUser() auth: UserAuth,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: SavedSearchResultsQueryDto,
+  ): Promise<SearchPageDto> {
+    return this.saved.results(auth.userId, id, query);
   }
 }

@@ -74,6 +74,8 @@ export const envSchema = z.object({
   // ── Email ──
   EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
   EMAIL_FROM: z.string().default('Sajha <no-reply@sajha.app>'),
+  /** The marketing site, for links the API hands out (invite links). */
+  PUBLIC_SITE_URL: z.url().default('https://sajha.app'),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   RESEND_API_KEY: optional(z.string()),

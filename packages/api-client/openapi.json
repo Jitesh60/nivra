@@ -2301,6 +2301,198 @@
         ]
       }
     },
+    "/v1/me/saved-searches": {
+      "get": {
+        "operationId": "SavedSearchesController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedSearchDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Saved searches, newest first",
+        "tags": [
+          "me · saved searches"
+        ]
+      },
+      "post": {
+        "operationId": "SavedSearchesController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSavedSearchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save a search (up to 10); new matching listings are alerted",
+        "tags": [
+          "me · saved searches"
+        ]
+      }
+    },
+    "/v1/me/saved-searches/{id}": {
+      "patch": {
+        "operationId": "SavedSearchesController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedSearchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename, or turn alerts on or off",
+        "tags": [
+          "me · saved searches"
+        ]
+      },
+      "delete": {
+        "operationId": "SavedSearchesController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me · saved searches"
+        ]
+      }
+    },
+    "/v1/me/saved-searches/{id}/results": {
+      "get": {
+        "operationId": "SavedSearchesController_results_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "From the previous page’s nextCursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 30,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Run a saved search now",
+        "tags": [
+          "me · saved searches"
+        ]
+      }
+    },
     "/v1/me/documents": {
       "get": {
         "operationId": "MyDocumentsController_list_v1",
@@ -6339,6 +6531,610 @@
           "admin"
         ]
       }
+    },
+    "/v1/requests": {
+      "post": {
+        "operationId": "RequestsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemRequestDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REQUEST_LIMIT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask the community for an item (verified people; 5 open, 5 a day)",
+        "tags": [
+          "requests"
+        ]
+      },
+      "get": {
+        "operationId": "RequestsController_list_v1",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": 18.5074,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": 73.8077,
+              "type": "number"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 25,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 30,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemRequestPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open requests near a point, nearest first",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/v1/me/requests": {
+      "get": {
+        "operationId": "RequestsController_mine_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemRequestDetailDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your requests, newest first, with every answer",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/v1/requests/{id}": {
+      "get": {
+        "operationId": "RequestsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemRequestDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/v1/requests/{id}/close": {
+      "post": {
+        "operationId": "RequestsController_close_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemRequestDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Close your request (found one, or no longer needed)",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/v1/requests/{id}/responses": {
+      "post": {
+        "operationId": "RequestsController_respond_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondToRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemRequestDetailDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REQUEST_NOT_OPEN, REQUEST_ALREADY_ANSWERED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Offer one of your live listings: opens the chat about it with your message (20 a day)",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/v1/admin/requests": {
+      "get": {
+        "operationId": "AdminRequestsController_list_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "CLOSED",
+                "EXPIRED",
+                "REMOVED"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminItemRequestPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Requests board posts, newest first",
+        "tags": [
+          "admin · requests"
+        ]
+      }
+    },
+    "/v1/admin/requests/{id}": {
+      "get": {
+        "operationId": "AdminRequestsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminItemRequestDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin · requests"
+        ]
+      }
+    },
+    "/v1/admin/requests/{id}/remove": {
+      "post": {
+        "operationId": "AdminRequestsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminItemRequestDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Take a request off the board, with a reason the borrower sees",
+        "tags": [
+          "admin · requests"
+        ]
+      }
+    },
+    "/v1/me/referral": {
+      "get": {
+        "operationId": "ReferralsController_mine_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReferralDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your invite code and link, who joined, and your credit",
+        "tags": [
+          "me · invites & credit"
+        ]
+      }
+    },
+    "/v1/me/referral/redeem": {
+      "post": {
+        "operationId": "ReferralsController_redeem_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemReferralDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReferralDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "REFERRAL_CODE_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REFERRAL_NOT_ALLOWED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enter an invite code (within 7 days of joining, before your first booking)",
+        "tags": [
+          "me · invites & credit"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/referral": {
+      "get": {
+        "operationId": "AdminReferralsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReferralDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite code, who invited them, who they invited, and their credit",
+        "tags": [
+          "admin · users"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/credits/revoke": {
+      "post": {
+        "operationId": "AdminReferralsController_revoke_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeCreditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReferralDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CREDIT_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Take away unused credit, with a reason (audited)",
+        "tags": [
+          "admin · users"
+        ]
+      }
     }
   },
   "info": {
@@ -7218,8 +8014,13 @@
             "type": "number",
             "description": "Refundable"
           },
+          "creditPaise": {
+            "type": "number",
+            "description": "Invite credit a booking would take off the rent (signed-in borrowers)"
+          },
           "totalPaise": {
-            "type": "number"
+            "type": "number",
+            "description": "What you’d pay: rent + fee + deposit − credit"
           },
           "available": {
             "type": "boolean"
@@ -7243,6 +8044,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditPaise",
           "totalPaise",
           "available"
         ]
@@ -8362,6 +9164,118 @@
           "newest"
         ]
       },
+      "SavedSearchFiltersDto": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "example": "tent"
+          },
+          "lat": {
+            "type": "number",
+            "example": 18.5074
+          },
+          "lng": {
+            "type": "number",
+            "example": 73.8077
+          },
+          "radiusKm": {
+            "type": "number",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 25
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minPricePaise": {
+            "type": "number"
+          },
+          "maxPricePaise": {
+            "type": "number"
+          },
+          "condition": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "LIKE_NEW",
+                "GOOD",
+                "FAIR"
+              ]
+            }
+          },
+          "verifiedLendersOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "SavedSearchDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/SavedSearchFiltersDto"
+          },
+          "alertsEnabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "filters",
+          "alertsEnabled",
+          "createdAt"
+        ]
+      },
+      "CreateSavedSearchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Tents near Kothrud",
+            "description": "Suggested from the filters when left out"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/SavedSearchFiltersDto"
+          },
+          "alertsEnabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "filters"
+        ]
+      },
+      "UpdateSavedSearchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "alertsEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "DocumentDto": {
         "type": "object",
         "properties": {
@@ -8972,6 +9886,18 @@
             "format": "uuid",
             "description": "Open this booking when tapped"
           },
+          "listingId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Open this listing when tapped (saved-search alerts)"
+          },
+          "requestId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Open this request when tapped (requests board)"
+          },
           "readAt": {
             "format": "date-time",
             "type": "string",
@@ -9050,6 +9976,14 @@
           "marketing": {
             "type": "boolean",
             "description": "News and offers from Sajha"
+          },
+          "pushSearchAlerts": {
+            "type": "boolean",
+            "description": "Push: new listings matching a saved search"
+          },
+          "pushRequests": {
+            "type": "boolean",
+            "description": "Push: requests near you and answers to your requests"
           }
         },
         "required": [
@@ -9058,7 +9992,9 @@
           "pushReminders",
           "emailBookings",
           "smsReminders",
-          "marketing"
+          "marketing",
+          "pushSearchAlerts",
+          "pushRequests"
         ]
       },
       "UpdateNotificationPreferencesDto": {
@@ -9080,6 +10016,12 @@
             "type": "boolean"
           },
           "marketing": {
+            "type": "boolean"
+          },
+          "pushSearchAlerts": {
+            "type": "boolean"
+          },
+          "pushRequests": {
             "type": "boolean"
           }
         }
@@ -9132,7 +10074,8 @@
             "enum": [
               "USER",
               "LISTING",
-              "MESSAGE"
+              "MESSAGE",
+              "REQUEST"
             ]
           },
           "targetId": {
@@ -9194,7 +10137,8 @@
             "enum": [
               "USER",
               "LISTING",
-              "MESSAGE"
+              "MESSAGE",
+              "REQUEST"
             ]
           },
           "id": {
@@ -9203,12 +10147,12 @@
           },
           "label": {
             "type": "string",
-            "description": "A short description: a name, a listing title or the message text"
+            "description": "A short description: a name, a listing or request title, or the message text"
           },
           "status": {
             "type": "string",
             "nullable": true,
-            "description": "User or listing status"
+            "description": "User, listing or request status"
           },
           "originalText": {
             "type": "string",
@@ -10547,8 +11491,13 @@
             "type": "number",
             "description": "Refundable"
           },
+          "creditPaise": {
+            "type": "number",
+            "description": "Referral credit taken off the rent"
+          },
           "totalPaise": {
-            "type": "number"
+            "type": "number",
+            "description": "What the borrower pays: rent + fee + deposit − credit"
           },
           "expiresAt": {
             "format": "date-time",
@@ -10663,6 +11612,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditPaise",
           "totalPaise",
           "createdAt",
           "updatedAt",
@@ -10746,8 +11696,13 @@
             "type": "number",
             "description": "Refundable"
           },
+          "creditPaise": {
+            "type": "number",
+            "description": "Referral credit taken off the rent"
+          },
           "totalPaise": {
-            "type": "number"
+            "type": "number",
+            "description": "What the borrower pays: rent + fee + deposit − credit"
           },
           "expiresAt": {
             "format": "date-time",
@@ -10796,6 +11751,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditPaise",
           "totalPaise",
           "createdAt",
           "updatedAt"
@@ -11291,6 +12247,10 @@
           "depositPaise": {
             "type": "number"
           },
+          "creditPaise": {
+            "type": "number",
+            "description": "Referral credit taken off the rent (Sajha pays it)"
+          },
           "declineReason": {
             "type": "string",
             "nullable": true
@@ -11378,6 +12338,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditPaise",
           "lenderCancellations",
           "requiredDocs",
           "sharedDocuments",
@@ -11501,6 +12462,10 @@
           "depositPaise": {
             "type": "number"
           },
+          "creditBackPaise": {
+            "type": "number",
+            "description": "Rent paid with referral credit that comes back as credit"
+          },
           "tier": {
             "type": "string",
             "nullable": true,
@@ -11521,6 +12486,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditBackPaise",
           "summary"
         ]
       },
@@ -11987,7 +12953,8 @@
               "DEPOSIT_HELD",
               "LENDER_PAYABLE",
               "PLATFORM_REVENUE",
-              "GOODWILL"
+              "GOODWILL",
+              "PROMOTIONS"
             ]
           },
           "debitPaise": {
@@ -12092,6 +13059,10 @@
           "depositPaise": {
             "type": "number"
           },
+          "creditPaise": {
+            "type": "number",
+            "description": "Referral credit taken off the rent (not charged to the card)"
+          },
           "refunds": {
             "type": "array",
             "items": {
@@ -12127,6 +13098,7 @@
           "rentPaise",
           "feePaise",
           "depositPaise",
+          "creditPaise",
           "refunds",
           "transfers",
           "ledger"
@@ -12187,6 +13159,10 @@
           },
           "GOODWILL": {
             "type": "number"
+          },
+          "PROMOTIONS": {
+            "type": "number",
+            "description": "Referral credit Sajha paid for (debit balance, so negative)"
           }
         },
         "required": [
@@ -12194,7 +13170,8 @@
           "DEPOSIT_HELD",
           "LENDER_PAYABLE",
           "PLATFORM_REVENUE",
-          "GOODWILL"
+          "GOODWILL",
+          "PROMOTIONS"
         ]
       },
       "LedgerSummaryDto": {
@@ -12765,6 +13742,14 @@
           },
           "disputesSettled": {
             "type": "number"
+          },
+          "referralSignups": {
+            "type": "number",
+            "description": "New people who joined with an invite code"
+          },
+          "creditsSpentPaise": {
+            "type": "number",
+            "description": "Invite credit used on paid bookings, net of credit given back"
           }
         },
         "required": [
@@ -12778,7 +13763,9 @@
           "revenuePaise",
           "refundsPaise",
           "disputesOpened",
-          "disputesSettled"
+          "disputesSettled",
+          "referralSignups",
+          "creditsSpentPaise"
         ]
       },
       "AnalyticsDayDto": {
@@ -12826,6 +13813,14 @@
           "disputesSettled": {
             "type": "number"
           },
+          "referralSignups": {
+            "type": "number",
+            "description": "New people who joined with an invite code"
+          },
+          "creditsSpentPaise": {
+            "type": "number",
+            "description": "Invite credit used on paid bookings, net of credit given back"
+          },
           "date": {
             "type": "string",
             "format": "date",
@@ -12844,6 +13839,8 @@
           "refundsPaise",
           "disputesOpened",
           "disputesSettled",
+          "referralSignups",
+          "creditsSpentPaise",
           "date"
         ]
       },
@@ -13048,6 +14045,684 @@
           "redis",
           "queues",
           "generatedAt"
+        ]
+      },
+      "CreateRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "2-person tent for a weekend trek",
+            "maxLength": 80
+          },
+          "details": {
+            "type": "string",
+            "example": "Going to Rajmachi on Saturday. Need it Friday evening.",
+            "maxLength": 500
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "budgetPerDayPaise": {
+            "type": "number",
+            "description": "Most the borrower wants to pay per day"
+          },
+          "lat": {
+            "type": "number",
+            "example": 18.5074
+          },
+          "lng": {
+            "type": "number",
+            "example": 73.8077
+          },
+          "areaLabel": {
+            "type": "string",
+            "example": "Kothrud, Pune",
+            "description": "Shown instead of the exact point"
+          }
+        },
+        "required": [
+          "title",
+          "details",
+          "lat",
+          "lng",
+          "areaLabel"
+        ]
+      },
+      "RequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "listing": {
+            "nullable": true,
+            "description": "Null when the listing is no longer live",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ListingCardDto"
+              }
+            ]
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Open this chat"
+          },
+          "message": {
+            "type": "string",
+            "description": "As the borrower saw it in the chat (contact details masked)"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lender",
+          "conversationId",
+          "message",
+          "createdAt"
+        ]
+      },
+      "ItemRequestDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "category": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryDto"
+              }
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "budgetPerDayPaise": {
+            "type": "number",
+            "nullable": true
+          },
+          "areaLabel": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number",
+            "nullable": true,
+            "description": "From the searcher, rounded to 0.5 km (null on your own requests)"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "EXPIRED",
+              "REMOVED"
+            ]
+          },
+          "responseCount": {
+            "type": "number"
+          },
+          "answeredByMe": {
+            "type": "boolean",
+            "description": "Whether you (as a lender) already answered it"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "responses": {
+            "description": "Every answer for your own request; only your own answers otherwise",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequestResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "details",
+          "areaLabel",
+          "borrower",
+          "status",
+          "responseCount",
+          "answeredByMe",
+          "mine",
+          "expiresAt",
+          "createdAt",
+          "responses"
+        ]
+      },
+      "ItemRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "category": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryDto"
+              }
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "budgetPerDayPaise": {
+            "type": "number",
+            "nullable": true
+          },
+          "areaLabel": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number",
+            "nullable": true,
+            "description": "From the searcher, rounded to 0.5 km (null on your own requests)"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "EXPIRED",
+              "REMOVED"
+            ]
+          },
+          "responseCount": {
+            "type": "number"
+          },
+          "answeredByMe": {
+            "type": "boolean",
+            "description": "Whether you (as a lender) already answered it"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "details",
+          "areaLabel",
+          "borrower",
+          "status",
+          "responseCount",
+          "answeredByMe",
+          "mine",
+          "expiresAt",
+          "createdAt"
+        ]
+      },
+      "ItemRequestPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Nearest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemRequestDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RespondToRequestDto": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "One of your LIVE listings"
+          },
+          "message": {
+            "type": "string",
+            "example": "I have a 2-person tent, used twice. Free this weekend.",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "listingId",
+          "message"
+        ]
+      },
+      "AdminItemRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "category": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryDto"
+              }
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "budgetPerDayPaise": {
+            "type": "number",
+            "nullable": true
+          },
+          "areaLabel": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number",
+            "nullable": true,
+            "description": "From the searcher, rounded to 0.5 km (null on your own requests)"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "EXPIRED",
+              "REMOVED"
+            ]
+          },
+          "responseCount": {
+            "type": "number"
+          },
+          "answeredByMe": {
+            "type": "boolean",
+            "description": "Whether you (as a lender) already answered it"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "responses": {
+            "description": "Every answer for your own request; only your own answers otherwise",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequestResponseDto"
+            }
+          },
+          "removedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "openReports": {
+            "type": "number",
+            "description": "Open reports about this request"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "details",
+          "areaLabel",
+          "borrower",
+          "status",
+          "responseCount",
+          "answeredByMe",
+          "mine",
+          "expiresAt",
+          "createdAt",
+          "responses",
+          "openReports"
+        ]
+      },
+      "AdminItemRequestPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminItemRequestDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RemoveRequestDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Asks for something not allowed on Sajha"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CreditEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "GRANT_REFEREE",
+              "GRANT_REFERRER",
+              "HOLD",
+              "RELEASE",
+              "REVOKE"
+            ]
+          },
+          "amountPaise": {
+            "type": "number",
+            "description": "Positive adds to the balance, negative spends it"
+          },
+          "bookingId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amountPaise",
+          "createdAt"
+        ]
+      },
+      "ReferralRulesDto": {
+        "type": "object",
+        "properties": {
+          "refereeCreditPaise": {
+            "type": "number"
+          },
+          "referrerCreditPaise": {
+            "type": "number"
+          },
+          "maxShareOfRentPct": {
+            "type": "number",
+            "description": "Credit covers at most this much of a booking’s rent"
+          },
+          "maxReferrerRewards": {
+            "type": "number"
+          },
+          "redeemWithinDays": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "refereeCreditPaise",
+          "referrerCreditPaise",
+          "maxShareOfRentPct",
+          "maxReferrerRewards",
+          "redeemWithinDays"
+        ]
+      },
+      "MyReferralDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "K7PX2QMA"
+          },
+          "link": {
+            "type": "string",
+            "example": "https://sajha.app/r/K7PX2QMA"
+          },
+          "invited": {
+            "type": "number",
+            "description": "People who joined with your code"
+          },
+          "rewarded": {
+            "type": "number",
+            "description": "…of whom finished a first rental (you got credit)"
+          },
+          "creditBalancePaise": {
+            "type": "number"
+          },
+          "canRedeem": {
+            "type": "boolean",
+            "description": "Whether you can still enter someone’s code"
+          },
+          "redeemBefore": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Until when"
+          },
+          "referredBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ParticipantDto"
+              }
+            ]
+          },
+          "entries": {
+            "description": "Newest first (last 30)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditEntryDto"
+            }
+          },
+          "rules": {
+            "$ref": "#/components/schemas/ReferralRulesDto"
+          }
+        },
+        "required": [
+          "code",
+          "link",
+          "invited",
+          "rewarded",
+          "creditBalancePaise",
+          "canRedeem",
+          "entries",
+          "rules"
+        ]
+      },
+      "RedeemReferralDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "K7PX2QMA",
+            "description": "Case and spaces don’t matter"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "InvitedPersonDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/ParticipantDto"
+          },
+          "joinedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rewardedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "user",
+          "joinedAt"
+        ]
+      },
+      "AdminReferralDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "referredBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ParticipantDto"
+              }
+            ]
+          },
+          "invited": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvitedPersonDto"
+            }
+          },
+          "creditBalancePaise": {
+            "type": "number"
+          },
+          "entries": {
+            "description": "Newest first (last 50)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditEntryDto"
+            }
+          }
+        },
+        "required": [
+          "invited",
+          "creditBalancePaise",
+          "entries"
+        ]
+      },
+      "RevokeCreditDto": {
+        "type": "object",
+        "properties": {
+          "amountPaise": {
+            "type": "number",
+            "description": "At most the current balance"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Invite code shared on a coupon site"
+          }
+        },
+        "required": [
+          "amountPaise",
+          "reason"
         ]
       }
     }

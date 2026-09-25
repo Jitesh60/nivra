@@ -22,11 +22,7 @@ export class RateLimiter {
   constructor(@Inject(REDIS) private readonly redis: Redis) {}
 
   async hit({ key, limit, windowSec, message, code }: RateLimit): Promise<void> {
-    const results = await this.redis.multi().incr(key).ttl(key).exec();
-    const count = Number(results?.[0]?.[1] ?? 0);
-    const ttl = Number(results?.[1]?.[1] ?? -1);
-    // First hit (or a key that somehow lost its expiry): start the window.
-    if (ttl < 0) await this.redis.expire(key, windowSec);
+    const { count, ttl } = await this.count(key, windowSec);
     if (count > limit) {
       throw new AppException(
         code ?? ErrorCode.RATE_LIMITED,
@@ -35,5 +31,19 @@ export class RateLimiter {
         { retryAfterSec: ttl > 0 ? ttl : windowSec },
       );
     }
+  }
+
+  /** Counts a hit like [hit] but answers instead of throwing: false when over the limit. */
+  async tryHit({ key, limit, windowSec }: Omit<RateLimit, 'message' | 'code'>): Promise<boolean> {
+    return (await this.count(key, windowSec)).count <= limit;
+  }
+
+  private async count(key: string, windowSec: number): Promise<{ count: number; ttl: number }> {
+    const results = await this.redis.multi().incr(key).ttl(key).exec();
+    const count = Number(results?.[0]?.[1] ?? 0);
+    const ttl = Number(results?.[1]?.[1] ?? -1);
+    // First hit (or a key that somehow lost its expiry): start the window.
+    if (ttl < 0) await this.redis.expire(key, windowSec);
+    return { count, ttl };
   }
 }

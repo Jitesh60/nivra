@@ -6,6 +6,7 @@ import type { Offer, Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RateLimiter } from '../../redis/rate-limiter.js';
 import { AuditService } from '../audit/audit.service.js';
+import { holdCredit } from '../referrals/credits.js';
 import { assertVerified } from '../auth/verified.guard.js';
 import { ConversationsService } from '../chat/conversations.service.js';
 import { todayUtc } from '../listings/listing-rules.js';
@@ -150,6 +151,14 @@ export class BookingsService {
             ),
           },
         });
+        // Referral credit comes off the rent (Phase 10).
+        const credit = await holdCredit(tx, borrowerId, created.id, q.rentPaise);
+        if (credit > 0) {
+          await tx.booking.update({
+            where: { id: created.id },
+            data: { creditPaise: credit, totalPaise: q.totalPaise - credit },
+          });
+        }
         await tx.bookingEvent.create({
           data: {
             bookingId: created.id,
@@ -223,6 +232,13 @@ export class BookingsService {
         ),
       },
     });
+    const credit = await holdCredit(tx, conversation.borrowerId, created.id, rent);
+    if (credit > 0) {
+      await tx.booking.update({
+        where: { id: created.id },
+        data: { creditPaise: credit, totalPaise: rent + fee + offer.depositPaise - credit },
+      });
+    }
     await tx.bookingEvent.create({
       data: {
         bookingId: created.id,

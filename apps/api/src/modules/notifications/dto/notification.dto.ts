@@ -14,6 +14,20 @@ export class NotificationDto {
     description: 'Open this booking when tapped',
   })
   bookingId: string | null;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'Open this listing when tapped (saved-search alerts)',
+  })
+  listingId: string | null;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'Open this request when tapped (requests board)',
+  })
+  requestId: string | null;
   @ApiPropertyOptional({ type: Date, nullable: true }) readAt: Date | null;
   @ApiProperty() createdAt: Date;
 }

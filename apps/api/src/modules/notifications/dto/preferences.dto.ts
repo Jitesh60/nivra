@@ -10,6 +10,10 @@ export class NotificationPreferencesDto {
   emailBookings: boolean;
   @ApiProperty({ description: 'SMS: overdue return reminders' }) smsReminders: boolean;
   @ApiProperty({ description: 'News and offers from Sajha' }) marketing: boolean;
+  @ApiProperty({ description: 'Push: new listings matching a saved search' })
+  pushSearchAlerts: boolean;
+  @ApiProperty({ description: 'Push: requests near you and answers to your requests' })
+  pushRequests: boolean;
 }
 
 /** Only the switches sent are changed. */
@@ -20,4 +24,6 @@ export class UpdateNotificationPreferencesDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean() emailBookings?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() smsReminders?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() marketing?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() pushSearchAlerts?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() pushRequests?: boolean;
 }

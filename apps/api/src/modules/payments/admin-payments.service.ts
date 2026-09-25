@@ -90,6 +90,7 @@ export class AdminPaymentsService {
             rentPaise: true,
             feePaise: true,
             depositPaise: true,
+            creditPaise: true,
             listing: { select: { title: true } },
             borrower: { select: { name: true } },
           },
@@ -121,6 +122,7 @@ export class AdminPaymentsService {
       rentPaise: p.booking.rentPaise,
       feePaise: p.booking.feePaise,
       depositPaise: p.booking.depositPaise,
+      creditPaise: p.booking.creditPaise,
       refunds: p.refunds
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         .map((r) => ({

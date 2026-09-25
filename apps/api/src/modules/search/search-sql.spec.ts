@@ -1,4 +1,4 @@
-import { decodeCursor, encodeCursor, roundDistanceKm } from './search-sql.js';
+import { decodeCursor, encodeCursor, filterConditions, roundDistanceKm } from './search-sql.js';
 
 describe('search helpers', () => {
   it('rounds distances to 0.5 km and hides anything under 1 km', () => {
@@ -17,5 +17,28 @@ describe('search helpers', () => {
     expect(() =>
       decodeCursor(Buffer.from(JSON.stringify({ v: 1, id: "x' OR 1=1" })).toString('base64url')),
     ).toThrow();
+  });
+});
+
+describe('filterConditions', () => {
+  it('adds one condition per filter given, and none for an empty search', () => {
+    expect(filterConditions({})).toHaveLength(0);
+    const all = filterConditions({
+      q: 'tent',
+      lat: 18.5,
+      lng: 73.8,
+      radiusKm: 5,
+      categoryId: '0192f000-0000-7000-8000-000000000000',
+      minPricePaise: 100,
+      maxPricePaise: 900,
+      condition: ['GOOD'],
+      verifiedLendersOnly: true,
+    });
+    expect(all).toHaveLength(7);
+    expect(all.map((c) => c.sql).join(' ')).toContain('ST_DWithin');
+  });
+
+  it('needs both lat and lng for the area', () => {
+    expect(filterConditions({ lat: 18.5 })).toHaveLength(0);
   });
 });

@@ -115,6 +115,32 @@ export class MessagesService {
     return this.presenter.message(message, senderId);
   }
 
+  /**
+   * A text message from another flow (a lender answering a request, Phase 10):
+   * masked like any message, with that flow's own notification instead of the
+   * chat push. The caller has already checked limits and blocks.
+   */
+  async sendText(
+    conversationId: string,
+    senderId: string,
+    body: string,
+    clientId: string,
+  ): Promise<MessageDto> {
+    const c = await this.conversations.participants(conversationId, senderId);
+    const { text, masked } = (await this.conversations.revealed(c.id))
+      ? { text: body, masked: false }
+      : maskContacts(body);
+    const message = await this.create(c, senderId, clientId, {
+      type: 'TEXT',
+      body,
+      maskedBody: text,
+      masked,
+    });
+    await this.conversations.touch(c.id, previewOf(message), message.createdAt);
+    await this.broadcast(c, message, { push: false });
+    return this.presenter.message(message, senderId);
+  }
+
   /** Marks everything the other person sent, up to [upTo], as read. */
   async markRead(conversationId: string, readerId: string, upTo: string): Promise<void> {
     const c = await this.conversations.participants(conversationId, readerId);

@@ -1,5 +1,6 @@
 import {
   capturePostings,
+  cashOf,
   commissionOn,
   depositKeepPostings,
   goodwillPostings,
@@ -106,5 +107,47 @@ describe('ledger postings', () => {
       'LENDER_PAYABLE',
       'PLATFORM_REVENUE',
     ]);
+  });
+
+  describe('with referral credit (Phase 10)', () => {
+    const credited = { ...booking, creditPaise: 10_000 };
+
+    it('the card pays less; Sajha pays the credit; the lender still gets their share', () => {
+      const lines = capturePostings(credited, BPS);
+      expect(isBalanced(lines)).toBe(true);
+      expect(balances(lines)).toEqual({
+        GATEWAY: -135_000,
+        PROMOTIONS: -10_000,
+        DEPOSIT_HELD: 100_000,
+        LENDER_PAYABLE: 40_500,
+        PLATFORM_REVENUE: 4_500,
+      });
+    });
+
+    it('a full refund with the credit given back as credit undoes everything', () => {
+      const refund = { ...booking, creditBackPaise: 10_000 };
+      expect(cashOf(refund)).toBe(135_000);
+      const txns = [capturePostings(credited, BPS), refundPostings(refund, booking.rentPaise, BPS)];
+      expect(txns.every(isBalanced)).toBe(true);
+      expect(Object.values(balances(...txns)).every((v) => v === 0)).toBe(true);
+    });
+
+    it('half the rent back: credit first, then cash; the lender keeps their share of the other half', () => {
+      const half = {
+        rentPaise: 22_500,
+        feePaise: 0,
+        depositPaise: 100_000,
+        creditBackPaise: 10_000,
+      };
+      expect(cashOf(half)).toBe(112_500);
+      const txns = [capturePostings(credited, BPS), refundPostings(half, booking.rentPaise, BPS)];
+      expect(txns.every(isBalanced)).toBe(true);
+      expect(balances(...txns)).toMatchObject({
+        GATEWAY: -22_500,
+        PROMOTIONS: 0,
+        DEPOSIT_HELD: 0,
+        LENDER_PAYABLE: lenderShare(22_500, BPS) + (40_500 - lenderShare(45_000, BPS)),
+      });
+    });
   });
 });

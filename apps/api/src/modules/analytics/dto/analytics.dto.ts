@@ -27,6 +27,10 @@ export class AnalyticsMetricsDto {
   @ApiProperty({ description: 'Refunds sent (not failed)' }) refundsPaise: number;
   @ApiProperty() disputesOpened: number;
   @ApiProperty() disputesSettled: number;
+  @ApiProperty({ description: 'New people who joined with an invite code' })
+  referralSignups: number;
+  @ApiProperty({ description: 'Invite credit used on paid bookings, net of credit given back' })
+  creditsSpentPaise: number;
 }
 
 export class AnalyticsDayDto extends AnalyticsMetricsDto {

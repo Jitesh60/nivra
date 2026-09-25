@@ -4,12 +4,19 @@ import { Redis } from 'ioredis';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { REDIS } from '../../redis/redis.token.js';
 import { BOOKINGS_QUEUE } from '../bookings/booking-queue.js';
+import { DISCOVERY_QUEUE } from '../discovery/discovery-queue.js';
 import { EMAIL_QUEUE } from '../mail/mailer.service.js';
 import { PAYMENTS_QUEUE } from '../payments/payments-worker.js';
 import { RENTALS_QUEUE } from '../rentals/rentals-worker.js';
 import type { DependencyLatencyDto, QueueStatusDto, SystemStatusDto } from './dto/system.dto.js';
 
-export const SYSTEM_QUEUES = [BOOKINGS_QUEUE, EMAIL_QUEUE, PAYMENTS_QUEUE, RENTALS_QUEUE];
+export const SYSTEM_QUEUES = [
+  BOOKINGS_QUEUE,
+  EMAIL_QUEUE,
+  PAYMENTS_QUEUE,
+  RENTALS_QUEUE,
+  DISCOVERY_QUEUE,
+];
 
 const TIMEOUT_MS = 2_000;
 

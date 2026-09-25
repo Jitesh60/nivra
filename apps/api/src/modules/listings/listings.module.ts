@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AdminAuthModule } from '../admin-auth/admin-auth.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CategoriesModule } from '../categories/categories.module.js';
+import { DiscoveryQueueModule } from '../discovery/discovery-queue.module.js';
 import { MediaModule } from '../media/media.module.js';
 import { SearchModule } from '../search/search.module.js';
 import { ListingPresenter } from './listing-presenter.js';
@@ -14,7 +15,14 @@ import {
 import { ListingsService } from './listings.service.js';
 
 @Module({
-  imports: [AuthModule, AdminAuthModule, MediaModule, CategoriesModule, SearchModule],
+  imports: [
+    AuthModule,
+    AdminAuthModule,
+    MediaModule,
+    CategoriesModule,
+    SearchModule,
+    DiscoveryQueueModule,
+  ],
   controllers: [
     ConfigController,
     PublicListingsController,

@@ -20,7 +20,7 @@ import {
   availableBetween,
   decodeCursor,
   encodeCursor,
-  LENDER_ID_VERIFIED,
+  filterConditions,
   point,
   PUBLIC_LISTINGS,
   sortSpec,
@@ -67,22 +67,7 @@ export class SearchService {
     }
 
     const spec = sortSpec(sort, origin, q);
-    const where: Prisma.Sql[] = [PUBLIC_LISTINGS];
-    if (q) where.push(Prisma.sql`l.search_vector @@ ${q}`);
-    if (origin) {
-      where.push(Prisma.sql`ST_DWithin(l.location, ${origin}, ${query.radiusKm * 1000}::float8)`);
-    }
-    if (query.categoryId) where.push(Prisma.sql`l.category_id = ${query.categoryId}::uuid`);
-    if (query.minPricePaise !== undefined) {
-      where.push(Prisma.sql`l.price_per_day_paise >= ${query.minPricePaise}::int`);
-    }
-    if (query.maxPricePaise !== undefined) {
-      where.push(Prisma.sql`l.price_per_day_paise <= ${query.maxPricePaise}::int`);
-    }
-    if (query.condition?.length) {
-      where.push(Prisma.sql`l.condition::text = ANY(${query.condition}::text[])`);
-    }
-    if (query.verifiedLendersOnly) where.push(LENDER_ID_VERIFIED);
+    const where: Prisma.Sql[] = [PUBLIC_LISTINGS, ...filterConditions(query)];
     if (dates) where.push(availableBetween(dates.start, dates.end, dates.days));
     if (query.cursor) where.push(afterCursor(spec, decodeCursor(query.cursor)));
 

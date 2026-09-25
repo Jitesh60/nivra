@@ -19,6 +19,7 @@ import {
   lenderBookedMessage,
 } from '../../providers/email/templates.js';
 import { LISTING_RULES } from '../listings/listing-rules.js';
+import { releaseCredit } from '../referrals/credits.js';
 import { Mailer } from '../mail/mailer.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { commissionOn } from '../payments/ledger.js';
@@ -38,8 +39,11 @@ import {
   deadlineFor,
   isOpen,
   nextStatus,
+  PAID_STATUSES,
   type Windows,
 } from './booking-rules.js';
+
+const isPaid = (s: BookingStatus) => (PAID_STATUSES as readonly BookingStatus[]).includes(s);
 
 /** Socket event: a booking changed (payload: BookingDto from the receiver's side). */
 export const BOOKING_UPDATED = 'booking:updated';
@@ -171,6 +175,11 @@ export class BookingStateMachine {
             ...(closing ? { closedAt: now } : {}),
           },
         });
+        if (closing && booking.creditPaise > 0 && !isPaid(booking.status)) {
+          // It never got paid: the referral credit goes back to the borrower.
+          // (After payment, the cancellation refund decides how much comes back.)
+          await releaseCredit(tx, bookingId);
+        }
         if (closing) {
           // The lender loses access to shared documents once the booking closes.
           await tx.bookingDocumentShare.updateMany({
@@ -280,6 +289,7 @@ export class BookingStateMachine {
             rentPaise: b.rentPaise,
             feePaise: b.feePaise,
             depositPaise: b.depositPaise,
+            creditPaise: b.creditPaise,
             totalPaise: b.totalPaise,
             lenderName: firstName(b.lender.name, 'the lender'),
           }),

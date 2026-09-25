@@ -47,6 +47,8 @@ describe('Launch: preferences, emails, analytics, limits (e2e)', () => {
         emailBookings: true,
         smsReminders: true,
         marketing: false,
+        pushSearchAlerts: true,
+        pushRequests: true,
       });
       const changed = (await prefs(user.accessToken, { pushChat: false }).expect(200)).body;
       expect(changed).toMatchObject({ pushChat: false, pushBookings: true });
@@ -207,6 +209,7 @@ describe('Launch: preferences, emails, analytics, limits (e2e)', () => {
         'email',
         'payments',
         'rentals',
+        'discovery',
       ]);
       for (const q of body.queues) {
         expect(q).toEqual({

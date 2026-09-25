@@ -7,7 +7,7 @@ import { PaymentProvider } from '../../providers/payments/payment.provider.js';
 import { rupees } from '../chat/chat-presenter.js';
 import { LISTING_RULES } from '../listings/listing-rules.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
-import { type Amounts, goodwillPostings, refundPostings } from './ledger.js';
+import { type Amounts, cashOf, goodwillPostings, refundPostings } from './ledger.js';
 import { LedgerService } from './ledger.service.js';
 import { refundMessage } from '../../providers/email/templates.js';
 import { Mailer } from '../mail/mailer.service.js';
@@ -51,14 +51,12 @@ export class RefundsService {
   async create(input: {
     paymentRowId: string;
     kind: RefundKind;
-    amounts?: Amounts;
+    amounts?: Amounts & { creditBackPaise?: number };
     amountPaise?: number;
     reason: string;
     adminId?: string;
   }): Promise<Refund | null> {
-    const amount = input.amounts
-      ? input.amounts.rentPaise + input.amounts.feePaise + input.amounts.depositPaise
-      : input.amountPaise!;
+    const amount = input.amounts ? cashOf(input.amounts) : input.amountPaise!;
     if (amount <= 0) return null;
     const left = await this.refundable(input.paymentRowId);
     if (amount > left) {
