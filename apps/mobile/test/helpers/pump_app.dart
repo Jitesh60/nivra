@@ -1,3 +1,4 @@
+import 'package:sajha/core/links/links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -30,6 +31,7 @@ class TestHarness {
     FakeAppPrefs? prefs,
     FakePhotoPicker? picker,
     FakeLocationService? location,
+    this.env = AppEnv.dev,
   }) : api = api ?? FakeSajhaApi(),
        location = location ?? FakeLocationService(),
        picker = picker ?? FakePhotoPicker(),
@@ -37,6 +39,9 @@ class TestHarness {
        prefs = prefs ?? FakeAppPrefs();
 
   final FakeSajhaApi api;
+
+  /// The build flavour the app thinks it is (prod hides the debug banner).
+  final AppEnv env;
   final InMemorySessionStorage storage;
   final FakeAppPrefs prefs;
   final FakePhotoPicker picker;
@@ -46,6 +51,9 @@ class TestHarness {
   final screen = FakeScreenProtection();
   final gateway = FakePaymentGateway();
   late ProviderContainer container;
+
+  /// Links opened in the browser, in order.
+  final openedLinks = <Uri>[];
 
   /// What the next QR scan returns; null means the person backed out.
   String? nextScan;
@@ -59,7 +67,7 @@ class TestHarness {
 
   List<Override> get overrides => [
     appConfigProvider.overrideWithValue(
-      const AppConfig(env: AppEnv.dev, apiBaseUrl: 'http://api.test'),
+      AppConfig(env: env, apiBaseUrl: 'http://api.test'),
     ),
     httpClientAdapterProvider.overrideWithValue(api),
     sessionStorageProvider.overrideWithValue(storage),
@@ -72,6 +80,10 @@ class TestHarness {
     pushServiceProvider.overrideWithValue(push),
     screenProtectionProvider.overrideWithValue(screen),
     paymentGatewayProvider.overrideWithValue(gateway),
+    linkOpenerProvider.overrideWithValue((uri) async {
+      openedLinks.add(uri);
+      return true;
+    }),
     codeScannerProvider.overrideWithValue((_) async {
       scans++;
       return nextScan;

@@ -622,6 +622,7 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - `PaymentGateway` is `RazorpayGateway` (`razorpay_flutter`), faked in tests. `payForBooking()` picks the test sheet when the API's provider is `fake`.
   - `PaymentProcessingScreen` verifies, then watches `bookingProvider(id)` until it's paid and confirmed. The webhook's `booking:updated` confirms it even if verify failed on the network.
   - `earningsProvider` reloads on `booking:updated`.
+- **Launch** (Phase 9b): `features/settings/` gains the notification switches (`NotificationPreferencesController`, optimistic with rollback) and website links (`core/links/`, a `LinkOpener` seam for tests). `core/observability/` runs the app inside Sentry only when the build has `SENTRY_DSN`, scrubbing personal data on the phone (`sentry_scrub.dart`) and tagging reports with the user id only.
 - **Rentals** (Phase 8b, `features/rentals/`, `core/scanner/`):
   - `RentalsRepository` covers `/bookings/:id/code`, `handover`, `return`, `photos`, `no-show`, `dispute`, `dispute/response` and `review`, and the public review lists. Condition photos upload with the `CONDITION_PHOTO` purpose first.
   - `CodeScanner` (`mobile_scanner`) scans the QR; tests fake it. `codeFromQr` only accepts this booking's `sajha://booking/<id>/<stage>/<code>`.

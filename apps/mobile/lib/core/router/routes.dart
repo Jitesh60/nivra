@@ -9,6 +9,7 @@ abstract final class Routes {
   static const home = '/home';
   static const settings = '/settings';
   static const devices = '/settings/devices';
+  static const notificationSettings = '/settings/notifications';
   static const profile = '/profile';
   static const documents = '/documents';
   static const documentsAdd = '/documents/add';

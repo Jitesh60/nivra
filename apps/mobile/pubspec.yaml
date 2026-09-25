@@ -52,6 +52,8 @@ dependencies:
   razorpay_flutter: ^1.4.7
   mobile_scanner: ^7.4.2
   qr_flutter: ^4.1.0
+  url_launcher: ^6.3.2
+  sentry_flutter: ^9.30.1
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +68,8 @@ dev_dependencies:
   mocktail: ^1.0.5
   integration_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -112,3 +116,22 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App icon: `dart run flutter_launcher_icons` (sources in assets/brand/;
+# re-render them with `node apps/mobile/assets/brand/render.mjs`).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/brand/icon.png
+  adaptive_icon_background: '#11846A'
+  adaptive_icon_foreground: assets/brand/icon-foreground.png
+  remove_alpha_ios: true
+  min_sdk_android: 21
+
+# Launch screen: `dart run flutter_native_splash:create`.
+flutter_native_splash:
+  color: '#11846A'
+  image: assets/brand/splash.png
+  android_12:
+    color: '#11846A'
+    image: assets/brand/icon-foreground.png

@@ -140,8 +140,26 @@ class FakeSajhaApi implements HttpClientAdapter {
     };
   }
 
+  Map<String, bool> _prefsFor(String userId) => notificationPrefs.putIfAbsent(
+    userId,
+    () => {
+      'pushBookings': true,
+      'pushChat': true,
+      'pushReminders': true,
+      'emailBookings': true,
+      'smsReminders': true,
+      'marketing': false,
+    },
+  );
+
   int _seq = 0;
   bool offline = false;
+
+  /// Notification switches per user id (missing = the defaults).
+  final notificationPrefs = <String, Map<String, bool>>{};
+
+  /// Make PUT /me/notification-preferences fail (the server is down).
+  bool failPrefs = false;
 
   /// Requests ('POST /payments/verify') that fail as if the network dropped.
   final offlineFor = <String>{};
@@ -529,6 +547,18 @@ class FakeSajhaApi implements HttpClientAdapter {
               if (listings[id]!.status != 'DELETED') _card(listings[id]!, user),
           ],
         );
+      case 'GET /me/notification-preferences':
+        return (200, _prefsFor(user.id));
+      case 'PUT /me/notification-preferences':
+        if (failPrefs) return _error(503, 'SERVICE_UNAVAILABLE', 'Try later');
+        final prefs = _prefsFor(user.id);
+        for (final e in body.entries) {
+          if (!prefs.containsKey(e.key) || e.value is! bool) {
+            return _error(400, 'VALIDATION_FAILED', 'Unknown switch ${e.key}');
+          }
+          prefs[e.key] = e.value as bool;
+        }
+        return (200, prefs);
       case 'GET /me/sessions':
         return (
           200,

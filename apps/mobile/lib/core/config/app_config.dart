@@ -39,6 +39,7 @@ class AppConfig {
     required this.apiBaseUrl,
     this.mapTileUrl = osmTileUrl,
     this.firebase,
+    this.sentryDsn,
   });
 
   /// OpenStreetMap's public tiles: fine for development and light use. Point
@@ -66,6 +67,7 @@ class AppConfig {
       ),
       projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
     ),
+    sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
   );
 
   factory AppConfig.parse({
@@ -73,6 +75,7 @@ class AppConfig {
     required String apiBaseUrl,
     String mapTileUrl = osmTileUrl,
     FirebaseConfig? firebase,
+    String sentryDsn = '',
   }) {
     final parsed = AppEnv.values.where((e) => e.name == env).firstOrNull;
     if (parsed == null) {
@@ -97,11 +100,19 @@ class AppConfig {
         'must be a tile URL template with {z}/{x}/{y}',
       );
     }
+    if (sentryDsn.isNotEmpty && !sentryDsn.startsWith('https://')) {
+      throw ArgumentError.value(
+        sentryDsn,
+        'SENTRY_DSN',
+        'must be an https URL',
+      );
+    }
     return AppConfig(
       env: parsed,
       apiBaseUrl: apiBaseUrl,
       mapTileUrl: mapTileUrl,
       firebase: firebase,
+      sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
     );
   }
 
@@ -113,6 +124,9 @@ class AppConfig {
 
   /// Push notifications; null until Firebase is set up for this build.
   final FirebaseConfig? firebase;
+
+  /// Crash reporting (Sentry); off until the build has a DSN.
+  final String? sentryDsn;
 
   bool get isProd => env == AppEnv.prod;
 

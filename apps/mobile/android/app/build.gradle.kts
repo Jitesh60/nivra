@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Upload key for Play (never committed): android/key.properties with
+// storeFile, storePassword, keyAlias, keyPassword. See docs/RELEASE.md.
+val keystoreProperties =
+    Properties().apply {
+        val file = rootProject.file("key.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+val hasUploadKey = !keystoreProperties.isEmpty
 
 android {
     namespace = "com.sajha.app"
@@ -28,6 +39,11 @@ android {
         versionName = flutter.versionName
     }
 
+    // The flavours name the app with resValue, which AGP 9 turns off by default.
+    buildFeatures {
+        resValues = true
+    }
+
     // One install per environment: `flutter run --flavor dev --dart-define-from-file=config/dev.json`
     flavorDimensions += "env"
     productFlavors {
@@ -49,12 +65,23 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-            // R8 shrinks release builds; keep what Razorpay's SDK needs.
+            // The upload key when it's there; the debug key otherwise, so
+            // `flutter run --release` still works (prod bundles refuse it below).
+            signingConfig = signingConfigs.getByName(if (hasUploadKey) "release" else "debug")
+            // R8 (on for release builds) shrinks and obfuscates; keep what plugins need.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -71,4 +98,18 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// A prod release for the store must be signed with the upload key.
+gradle.taskGraph.whenReady {
+    val prodRelease =
+        allTasks.any { t ->
+            (t.name.startsWith("bundle") || t.name.startsWith("assemble")) &&
+                t.name.endsWith("ProdRelease")
+        }
+    if (prodRelease && !hasUploadKey) {
+        throw GradleException(
+            "Prod release builds need android/key.properties (the Play upload key). See docs/RELEASE.md.",
+        )
+    }
 }
