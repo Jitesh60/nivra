@@ -35,6 +35,10 @@ import 'package:sajha/core/network/upload_client.dart' as up;
 import 'package:sajha/features/rentals/data/rentals_repository.dart';
 import 'package:sajha/core/payments/payment_gateway.dart';
 import 'package:sajha/features/profile/data/profile_repository.dart';
+import 'package:sajha/features/referrals/data/referrals.dart';
+import 'package:sajha/features/requests/data/models.dart';
+import 'package:sajha/features/requests/data/requests_repository.dart';
+import 'package:sajha/features/discovery/data/saved_searches.dart';
 
 import 'helpers/fakes.dart';
 
@@ -624,6 +628,118 @@ void main() {
       '00000000-0000-4000-8000-000000000000', // unknown: skipped
     ]);
     expect(cards.map((c) => c.id), [card.id]);
+  }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
+
+  test('growth: saved searches, invite codes and the requests board', () async {
+    const pune = SearchArea(
+      lat: 18.5074,
+      lng: 73.8077,
+      label: 'Kothrud, Pune',
+      radiusKm: 10,
+    );
+    final asha = await _signIn(_randomPhone(), verifyEmail: true);
+    final rahul = await _signIn(_randomPhone(), verifyEmail: true);
+
+    // Saved search: create (named by the API), mute, results, delete.
+    final saved = SavedSearchesRepository(asha.api);
+    final search = await saved.create(
+      const SavedSearchFilters(
+        lat: 18.5074,
+        lng: 73.8077,
+        radiusKm: 5,
+        query: 'tent',
+      ),
+    );
+    expect(search.name, isNotEmpty);
+    expect(search.alertsEnabled, isTrue);
+    expect(search.filters.query, 'tent');
+    expect((await saved.list()).map((s) => s.id), contains(search.id));
+    final muted = await saved.update(search.id, alertsEnabled: false);
+    expect(muted.alertsEnabled, isFalse);
+    final results = await saved.results(search.id);
+    for (final c in results.items) {
+      expect(c.distanceKm, lessThanOrEqualTo(5));
+    }
+    await saved.delete(search.id);
+    expect((await saved.list()).map((s) => s.id), isNot(contains(search.id)));
+
+    // Invite code: Rahul (new, no bookings) redeems Asha's and gets credit.
+    final ashaInvites = ReferralsRepository(asha.api);
+    final rahulInvites = ReferralsRepository(rahul.api);
+    final mine = await ashaInvites.get();
+    expect(mine.code, isNotEmpty);
+    expect(mine.link, contains(mine.code));
+    expect(mine.invited, 0);
+    await expectLater(
+      ashaInvites.redeem(mine.code),
+      throwsA(
+        isA<ApiException>().having(
+          (e) => e.code,
+          'code',
+          'REFERRAL_CODE_INVALID',
+        ),
+      ),
+    );
+    expect((await rahulInvites.get()).canRedeem, isTrue);
+    final redeemed = await rahulInvites.redeem(' ${mine.code.toLowerCase()} ');
+    expect(redeemed.canRedeem, isFalse);
+    expect(redeemed.referredBy?.id, isNotNull);
+    expect(redeemed.creditBalancePaise, redeemed.rules.refereeCreditPaise);
+    expect(
+      redeemed.entries.first.amountPaise,
+      redeemed.rules.refereeCreditPaise,
+    );
+    expect((await ashaInvites.get()).invited, 1);
+    await expectLater(
+      rahulInvites.redeem(mine.code),
+      throwsA(
+        isA<ApiException>().having(
+          (e) => e.code,
+          'code',
+          'REFERRAL_NOT_ALLOWED',
+        ),
+      ),
+    );
+
+    // Requests: Rahul asks; Asha sees it on the board; Rahul closes it.
+    final rahulRequests = RequestsRepository(rahul.api);
+    final ashaRequests = RequestsRepository(asha.api);
+    final title = 'Live test: a 2-person tent ${Random().nextInt(1 << 20)}';
+    final asked = await rahulRequests.create(
+      NewRequest(
+        title: title,
+        details: 'For a weekend trek near Sinhagad.',
+        lat: pune.lat,
+        lng: pune.lng,
+        areaLabel: pune.label,
+        budgetPerDayPaise: 20000,
+      ),
+    );
+    expect(asked.request.mine, isTrue);
+    expect(asked.request.status, RequestStatus.open);
+    expect(asked.responses, isEmpty);
+    expect(
+      (await rahulRequests.mine()).map((r) => r.request.id),
+      contains(asked.request.id),
+    );
+    expect(
+      (await rahulRequests.board(pune)).items.map((r) => r.id),
+      isNot(contains(asked.request.id)), // never your own
+    );
+    final board = await ashaRequests.board(pune);
+    final seen = board.items.singleWhere((r) => r.id == asked.request.id);
+    expect(seen.title, title);
+    expect(seen.mine, isFalse);
+    expect(seen.answeredByMe, isFalse);
+    final detail = await ashaRequests.get(asked.request.id);
+    expect(detail.request.title, title);
+
+    final closed = await rahulRequests.close(asked.request.id);
+    expect(closed.request.status, RequestStatus.closed);
+    expect(
+      (await ashaRequests.board(pune)).items.map((r) => r.id),
+      isNot(contains(asked.request.id)),
+    );
   }, skip: liveUrl.isEmpty ? 'Set --dart-define=LIVE_API_URL to run' : false);
 }
 

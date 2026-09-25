@@ -6,6 +6,7 @@ import '../../../core/theme/tokens.g.dart';
 import '../../listings/data/models.dart' show formatRupees;
 import '../../listings/presentation/listing_detail_view.dart' show formatRange;
 import '../data/models.dart';
+import '../../../shared/widgets/sajha_badge.dart';
 
 /// "12–14 Oct · Up to ₹200/day", or null when neither was given.
 String? requestTerms(ItemRequest r) {
@@ -42,8 +43,7 @@ class RequestTile extends StatelessWidget {
               Row(
                 children: [
                   Expanded(child: Text(r.title, style: text.titleMedium)),
-                  if (r.answeredByMe)
-                    const _Pill('You offered', color: SajhaColors.brand600),
+                  if (r.answeredByMe) const SajhaBadge('You offered'),
                 ],
               ),
               const SizedBox(height: SajhaSpacing.xs),
@@ -59,25 +59,4 @@ class RequestTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill(this.label, {required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(SajhaRadius.full),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SajhaSpacing.sm,
-        vertical: 2,
-      ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12)),
-    ),
-  );
 }

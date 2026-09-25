@@ -117,7 +117,9 @@ class _InviteCodeCardState extends ConsumerState<InviteCodeCard> {
                 const SizedBox(width: SajhaSpacing.sm),
                 FilledButton(
                   key: const ValueKey('redeem-code'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, SajhaSize.controlMd),
+                  ),
                   onPressed: _code.text.trim().isEmpty || _busy
                       ? null
                       : _redeem,

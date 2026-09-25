@@ -12,6 +12,8 @@ import '../application/saved_searches.dart';
 import '../data/models.dart';
 import '../data/saved_searches.dart';
 import 'listing_card.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/sajha_button.dart';
 
 /// Searches the user saved, with alerts for new listings that match.
 class SavedSearchesScreen extends ConsumerWidget {
@@ -164,33 +166,18 @@ class _Empty extends StatelessWidget {
   const _Empty();
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => EmptyState(
     key: const ValueKey('saved-searches-empty'),
-    child: Padding(
-      padding: const EdgeInsets.all(SajhaSpacing.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(LucideIcons.bookmark, size: 48, color: SajhaColors.ink400),
-          const SizedBox(height: SajhaSpacing.md),
-          Text(
-            'No saved searches yet',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: SajhaSpacing.xs),
-          const Text(
-            'Search in your area, then tap the bookmark. We’ll tell you when '
-            'something new matches.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: SajhaSpacing.md),
-          FilledButton.tonal(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-            onPressed: () => context.push(Routes.search),
-            child: const Text('Search'),
-          ),
-        ],
-      ),
+    icon: LucideIcons.bookmark,
+    title: 'No saved searches yet',
+    message:
+        'Search in your area, then tap the bookmark. We’ll tell you when '
+        'something new matches.',
+    action: SajhaButton(
+      label: 'Search',
+      variant: SajhaButtonVariant.secondary,
+      expand: false,
+      onPressed: () => context.push(Routes.search),
     ),
   );
 }
