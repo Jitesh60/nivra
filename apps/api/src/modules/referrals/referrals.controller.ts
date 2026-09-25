@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ErrorResponse } from '../../common/errors/error-response.js';
+import { PublicReadLimitGuard } from '../../common/http/public-read-limit.guard.js';
 import { Client, type ClientInfo } from '../../common/http/client-info.js';
 import {
   type AdminAuth,
@@ -29,6 +30,7 @@ import { CurrentUser, JwtAuthGuard, type UserAuth } from '../auth/jwt-auth.guard
 import {
   AdminReferralDto,
   MyReferralDto,
+  ReferralCodeLookupDto,
   RedeemReferralDto,
   RevokeCreditDto,
 } from './dto/referral.dto.js';
@@ -88,5 +90,22 @@ export class AdminReferralsController {
     @Client() client: ClientInfo,
   ): Promise<AdminReferralDto> {
     return this.referrals.revoke(auth.adminId, id, dto.amountPaise, dto.reason, client);
+  }
+}
+
+@ApiTags('invites')
+@UseGuards(PublicReadLimitGuard)
+@Controller('referral-codes')
+export class PublicReferralsController {
+  constructor(private readonly referrals: ReferralsService) {}
+
+  @Get(':code')
+  @ApiOperation({
+    summary: 'Look up an invite code for the website (no sign-in)',
+    description: 'Unknown codes return `valid: false`, never 404.',
+  })
+  @ApiOkResponse({ type: ReferralCodeLookupDto })
+  lookup(@Param('code') code: string): Promise<ReferralCodeLookupDto> {
+    return this.referrals.lookup(code.slice(0, 32));
   }
 }

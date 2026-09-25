@@ -227,7 +227,7 @@ export async function chatMessages(user: AppUser, conversationId: string) {
 export function report(
   user: AppUser,
   body: {
-    targetType: 'USER' | 'LISTING' | 'MESSAGE';
+    targetType: 'USER' | 'LISTING' | 'MESSAGE' | 'REQUEST';
     targetId: string;
     reason: string;
     note?: string;
@@ -347,4 +347,34 @@ export async function openDispute(
 export async function respondToDispute(borrower: AppUser, id: string, note: string) {
   const photoKeys = [await upload(borrower.token, 'CONDITION_PHOTO')];
   return bookingAction(borrower, id, 'dispute/response', { note, photoKeys });
+}
+
+/** Posts a request on the board (the borrower must have a verified email). */
+export function postRequest(user: AppUser, title: string) {
+  return call<{ id: string; status: string }>('POST', '/requests', user.token, {
+    title,
+    details: 'Going on a weekend trek near Sinhagad. Need it Friday evening.',
+    budgetPerDayPaise: 20_000,
+    lat: 18.5074,
+    lng: 73.8077,
+    areaLabel: 'Kothrud, Pune',
+  });
+}
+
+/** A lender answers a request with one of their live listings. */
+export function answerRequest(lender: AppUser, requestId: string, listingId: string) {
+  return call<{ id: string; responseCount: number }>(
+    'POST',
+    `/requests/${requestId}/responses`,
+    lender.token,
+    { listingId, message: 'I have this tent. Free that weekend!' },
+  );
+}
+
+export function myReferral(user: AppUser) {
+  return call<{ code: string; creditBalancePaise: number }>('GET', '/me/referral', user.token);
+}
+
+export function redeemCode(user: AppUser, code: string) {
+  return call<{ creditBalancePaise: number }>('POST', '/me/referral/redeem', user.token, { code });
 }

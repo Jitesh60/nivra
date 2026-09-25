@@ -63,7 +63,31 @@ function withPathname(request: NextRequest) {
   return NextResponse.next({ request: { headers } });
 }
 
-async function refreshTokens(refreshToken: string) {
+type Tokens = { accessToken: string; refreshToken: string; expiresInSec: number };
+
+/**
+ * Refresh tokens are single-use: the API revokes the session if one comes
+ * back twice. When the access cookie expires, the page and its prefetches hit
+ * this proxy at once, all carrying the same refresh token. So concurrent
+ * refreshes share one call, and the result is kept for a few seconds for
+ * requests that were already on their way with the old token.
+ */
+const REUSE_WINDOW_MS = 15_000;
+const refreshes = new Map<string, { at: number; result: Promise<Tokens | null> }>();
+
+function refreshTokens(refreshToken: string): Promise<Tokens | null> {
+  const now = Date.now();
+  for (const [token, entry] of refreshes) {
+    if (now - entry.at > REUSE_WINDOW_MS) refreshes.delete(token);
+  }
+  const existing = refreshes.get(refreshToken);
+  if (existing) return existing.result;
+  const result = callRefresh(refreshToken);
+  refreshes.set(refreshToken, { at: now, result });
+  return result;
+}
+
+async function callRefresh(refreshToken: string): Promise<Tokens | null> {
   try {
     const res = await fetch(`${API_URL}/v1/admin/auth/refresh`, {
       method: 'POST',
@@ -72,11 +96,7 @@ async function refreshTokens(refreshToken: string) {
       cache: 'no-store',
     });
     if (!res.ok) return null;
-    return (await res.json()) as {
-      accessToken: string;
-      refreshToken: string;
-      expiresInSec: number;
-    };
+    return (await res.json()) as Tokens;
   } catch {
     return null;
   }

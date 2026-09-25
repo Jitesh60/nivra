@@ -30,7 +30,9 @@ Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.m
 | 9 | Launch hardening & release | `phase/9-launch` | all |
 | 10a | Growth — API | `phase/10a-growth-api` | api |
 | 10b | Growth — Mobile | `phase/10b-growth-mobile` | mobile |
-| 10c | Growth — Admin + Web | `phase/10c-growth-admin-web` | admin, web |
+| 10c | Growth — Admin + Web | `phase/10c-growth-admin-web` | admin, web, api (invite lookup) |
+| 11a | One design system — tokens, web + admin, Nivra rename | `phase/11a-design-web-admin`, `phase/11r-rename-nivra` | all |
+| 11b | One design system — mobile | `phase/11b-design-mobile` | mobile |
 
 Larger phases (3, 5, 6, 7, 8) may also be split into `-api`, `-mobile` and `-admin` sub-branches, like Phase 1, if the PR gets too big to review.
 
@@ -51,6 +53,7 @@ flowchart LR
   P7 --> P8[8 Handover, reviews, disputes]
   P8 --> P9[9 Launch]
   P9 --> P10[10 Growth]
+  P10 --> P11[11 Design system & Nivra brand]
 ```
 
 ## Definition of done (every phase)
@@ -878,3 +881,47 @@ Three "Later" features from the PRD that help most after launch, delivered as **
     - requests board: the full flow (nearby notice, board, answer opens the masked chat, duplicate and closed checks); validation, limits, report, admin removal and expiry
     - invite credit: redeem rules; held and released on decline; the half-rent cap; paid with credit (order amount, balanced ledger, cancellation giving credit and cash back); the inviter rewarded once; admin view and revoke
 
+### 10b — Mobile
+**Branches:** `phase/10b-growth-mobile`, then `phase/10b-growth-followup`
+
+- **Saved searches:** save the search on screen (bookmark), a Saved searches list (rename, alerts on/off, delete, open the results), and `search.alert` notices open the matching results.
+- **Requests board:** board near your area (category filter), post a request (title, details, dates, budget), My requests (close), a request page where lenders answer with one of their live listings, which opens the chat; report a request.
+- **Invite credit:** Invite friends (share the link, copy the code, who joined and what you earned, the credit history), enter a friend's code, and the credit line in the booking quote and receipt.
+- **Tests:** widget tests with fakes (`growth_flow_test.dart`), and a growth block in `live_api_test.dart` against the real API: saved search CRUD and results, invite codes (own code refused, any case and spaces, credit granted, a second redeem refused, the inviter's count), and the requests board (own requests hidden, a neighbour sees it, closing removes it).
+
+### 10c — Admin + Web
+**Branch:** `phase/10c-growth-admin-web`
+
+- **Admin:**
+  - **Requests** (new section, every role can read): status tabs, answers and open reports per request, a detail page with the lender answers (listing and chat links) and, for Ops and Super Admins, **Remove** with a reason the borrower sees (audited).
+  - **Reports:** request reports are labelled and link to the request.
+  - **User page:** an **Invite credit** card (balance, code, who invited them, how many they invited) with **Take credit away** for Ops (amount and reason, audited), plus the credit history and the people they invited.
+  - **Dashboard:** "Joined with an invite" and "Invite credit used" tiles.
+  - The proxy shares one refresh call between concurrent requests (and remembers it for 15 s), so parallel prefetches after the access cookie expires can't trip the API's refresh-reuse check and sign the admin out.
+- **API:** `GET /v1/referral-codes/:code` (public, per-IP read limit): `{ valid, inviterFirstName, refereeCreditPaise, redeemWithinDays }`. Unknown codes and suspended or deleted owners read as not valid, never 404, and only the first name is shown.
+- **Web:** `/r/<code>`, where the app's invite links land: who invited you, the credit, the code with a copy button, three steps, and the download or waitlist section; an invalid code gets a friendly page. `noindex`, not in the sitemap. The FAQ explains invite credit and the requests board.
+- **Tests:**
+  - API e2e: the public lookup (valid, messy input, unknown, suspended owner).
+  - Admin Playwright (`e2e/growth.spec.ts`): Ops reviews a reported, answered request and removes it; Support can't; invite credit shows on both people's pages and Ops takes some away (and more than the balance is refused); the dashboard tiles.
+  - Web Playwright: the invite page with a real code (name, credit, code, noindex, copy) and an invalid code.
+
+---
+
+## Phase 11 — One design system and the Nivra brand
+The admin panel, the website and the app share one look, specified in [DESIGN.md](../DESIGN.md), and the product is now called **Nivra** everywhere people see it.
+
+### 11a — Tokens, web and admin (and the rename)
+**Branches:** `phase/11a-design-web-admin`, `phase/11r-rename-nivra`
+
+- **Design tokens v2** (`packages/design-tokens`): semantic light and dark colour roles, a type scale, shadows, motion, and control and icon sizes, generated as CSS variables, Tailwind theme entries and Dart constants.
+- **`packages/ui` (`@sajha/ui`):** Button (primary with a glow ring on hover, glow, secondary, outline, ghost, danger, link, inverse; 36/44/52 px), Card and SpotlightCard, Badge, Input, SegmentedToggle, DotsLoader, ShaderBackground (Paper MeshGradient), CountUp, PageHeader, EmptyState, Skeleton, Logo.
+- **Admin:** shadcn components wrap `@sajha/ui`; Lucide sidebar, split sign-in with the shader, dashboard shader band with count-up tiles, sonner toasts, light and dark mode.
+- **Web:** built on the same components; the Nivra logo in the header, footer, favicon and OG image.
+- **Rename:** every visible "Sajha" became "Nivra" (web, admin, emails and notifications, app name and store texts, docs). Domains, package names, bundle IDs and env vars are unchanged.
+
+### 11b — Mobile
+**Branch:** `phase/11b-design-mobile`
+
+- The launcher icon, adaptive icon, store icon and splash from the Nivra mark; the logo on the splash, onboarding, sign-in and home.
+- Plus Jakarta Sans, Bricolage Grotesque and JetBrains Mono bundled; the Material theme rebuilt on the tokens (44 px pill buttons and inputs, radius-16 cards) with a `SajhaTokens` extension.
+- Shared widgets (`SajhaButton` with the glow variant, `SajhaCard`, `SajhaBadge`, `DotsLoader`, `EmptyState`, `NivraLogo`), Lucide icons throughout, and the shader in the web palette.

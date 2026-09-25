@@ -77,7 +77,11 @@ export default async function ReportPage({ params }: PageProps<'/reports/[id]'>)
               <div className="flex flex-wrap gap-3">
                 {href && (
                   <Link href={href} className="text-primary hover:underline">
-                    {r.target.type === 'LISTING' ? 'Open listing →' : 'Open user →'}
+                    {r.target.type === 'LISTING'
+                      ? 'Open listing →'
+                      : r.target.type === 'REQUEST'
+                        ? 'Open request →'
+                        : 'Open user →'}
                   </Link>
                 )}
                 {r.conversationId && (

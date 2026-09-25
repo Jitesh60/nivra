@@ -21,6 +21,7 @@ export const NAV: NavItem[] = [
   { href: '/payments', label: 'Payments' },
   { href: '/disputes', label: 'Disputes' },
   { href: '/reports', label: 'Reports' },
+  { href: '/requests', label: 'Requests' },
   { href: '/documents', label: 'Documents', roles: ['SUPER_ADMIN', 'OPS'] },
   { href: '/categories', label: 'Categories', roles: ['SUPER_ADMIN', 'OPS'] },
   { href: '/waitlist', label: 'Waitlist', roles: ['SUPER_ADMIN', 'OPS'] },
