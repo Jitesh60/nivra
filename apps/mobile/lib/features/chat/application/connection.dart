@@ -50,7 +50,7 @@ final realtimeConnectionProvider = Provider<void>((ref) {
 });
 
 /// Registers this device for push once signed in (and again when the token
-/// rotates), and opens the chat or booking when a notification is tapped.
+/// rotates), and opens what a tapped notification is about.
 final pushRegistrationProvider = Provider<void>((ref) {
   final push = ref.watch(pushServiceProvider);
 
@@ -73,13 +73,14 @@ final pushRegistrationProvider = Provider<void>((ref) {
   final refreshes = push.tokenRefreshes.listen((t) => unawaited(register(t)));
   final opened = push.opened.listen((open) {
     if (!ref.read(signedInProvider)) return;
-    final booking = open.bookingId;
-    final chat = open.conversationId;
-    if (booking != null) {
-      ref.read(routerProvider).push(Routes.booking(booking));
-    } else if (chat != null) {
-      ref.read(routerProvider).push(Routes.chat(chat));
-    }
+    final route = Routes.forNotification(
+      type: open.type,
+      bookingId: open.bookingId,
+      conversationId: open.conversationId,
+      listingId: open.listingId,
+      requestId: open.requestId,
+    );
+    if (route != null) ref.read(routerProvider).push(route);
   });
   ref.onDispose(() {
     refreshes.cancel();

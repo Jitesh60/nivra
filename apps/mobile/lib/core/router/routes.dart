@@ -21,6 +21,19 @@ abstract final class Routes {
   static const search = '/search';
   static const areaPicker = '/area';
   static const wishlist = '/wishlist';
+  static const savedSearches = '/saved-searches';
+  static const savedSearchPattern = '/saved-searches/:id';
+  static String savedSearch(String id) => '/saved-searches/$id';
+
+  /// The requests board, asking for something, your own requests and one
+  /// request's page (declared before the pattern, which would match them).
+  static const requests = '/requests';
+  static const newRequest = '/requests/new';
+  static const myRequests = '/requests/mine';
+  static const requestPattern = '/requests/:id';
+  static String request(String id) => '/requests/$id';
+
+  static const invite = '/invite';
 
   /// A listing's public page. `/item/`, not `/listings/`, which is the
   /// lender's own space.
@@ -80,6 +93,22 @@ abstract final class Routes {
   /// A document shared with the lender (args in `extra`).
   static const bookingDocument = '/booking-document';
   static const notifications = '/notifications';
+
+  /// Where a notification (bell or push) leads, or null for nowhere.
+  static String? forNotification({
+    String? type,
+    String? bookingId,
+    String? conversationId,
+    String? listingId,
+    String? requestId,
+  }) {
+    if (bookingId != null) return booking(bookingId);
+    if (requestId != null) return request(requestId);
+    if (listingId != null) return item(listingId);
+    if (conversationId != null) return chat(conversationId);
+    if (type != null && type.startsWith('referral.')) return invite;
+    return null;
+  }
 
   /// The sign-in screens.
   static const public = {onboarding, login, loginVerify};

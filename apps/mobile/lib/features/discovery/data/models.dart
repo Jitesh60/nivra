@@ -400,6 +400,7 @@ class Quote {
     required this.depositPaise,
     required this.totalPaise,
     required this.available,
+    this.creditPaise = 0,
     this.unavailableReason,
   });
 
@@ -413,6 +414,7 @@ class Quote {
       rentPaise: n('rentPaise'),
       feePaise: n('feePaise'),
       depositPaise: n('depositPaise'),
+      creditPaise: (json['creditPaise'] as num?)?.toInt() ?? 0,
       totalPaise: n('totalPaise'),
       available: json['available'] as bool,
       unavailableReason: UnavailableReason.fromApi(
@@ -428,6 +430,9 @@ class Quote {
   final int rentPaise;
   final int feePaise;
   final int depositPaise;
+
+  /// Invite credit the signed-in borrower would use (already off the total).
+  final int creditPaise;
   final int totalPaise;
   final bool available;
   final UnavailableReason? unavailableReason;

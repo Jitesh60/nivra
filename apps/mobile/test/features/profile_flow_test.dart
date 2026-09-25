@@ -35,6 +35,11 @@ void main() {
     expect(currentUser(h).bio, 'Weekend trekker with spare tents.');
 
     // Clearing a field sends an empty string, which clears it on the server.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('profile-city')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await enterText(tester, 'profile-city', '');
     await tapKey(tester, 'profile-save');
     expect(currentUser(h).city, isNull);

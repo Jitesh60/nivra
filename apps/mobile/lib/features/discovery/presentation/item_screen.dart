@@ -531,6 +531,12 @@ class _QuoteCard extends StatelessWidget {
                 q.feePaise == 0 ? 'Free' : formatRupees(q.feePaise),
               ),
               line('Refundable deposit', formatRupees(q.depositPaise)),
+              if (q.creditPaise > 0)
+                line(
+                  'Invite credit',
+                  '−${formatRupees(q.creditPaise)}',
+                  key: const ValueKey('quote-credit'),
+                ),
               const Divider(),
               line(
                 'Total',

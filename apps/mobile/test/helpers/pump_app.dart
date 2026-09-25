@@ -16,6 +16,7 @@ import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/realtime/realtime_client.dart';
 import 'package:sajha/core/scanner/code_scanner.dart';
 import 'package:sajha/core/security/screen_protection.dart';
+import 'package:sajha/core/share/share.dart';
 import 'package:sajha/core/storage/app_prefs.dart';
 import 'package:sajha/core/storage/session_storage.dart';
 import 'package:sajha/features/splash/presentation/splash_screen.dart';
@@ -55,6 +56,9 @@ class TestHarness {
   /// Links opened in the browser, in order.
   final openedLinks = <Uri>[];
 
+  /// Text handed to the share sheet, in order.
+  final shared = <String>[];
+
   /// What the next QR scan returns; null means the person backed out.
   String? nextScan;
   int scans = 0;
@@ -83,6 +87,9 @@ class TestHarness {
     linkOpenerProvider.overrideWithValue((uri) async {
       openedLinks.add(uri);
       return true;
+    }),
+    textSharerProvider.overrideWithValue((text, {subject}) async {
+      shared.add(text);
     }),
     codeScannerProvider.overrideWithValue((_) async {
       scans++;
