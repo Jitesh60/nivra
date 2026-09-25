@@ -52,6 +52,71 @@ jobs:
       - run: pnpm --filter @sajha/api prisma:generate
       - run: pnpm --filter @sajha/api test:cov
 
+  api-image:
+    name: API · Docker image (build, migrate, boot, restore drill)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: sajha
+          POSTGRES_PASSWORD: sajha
+          POSTGRES_DB: sajha
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sajha -d sajha" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the image deploy.yml ships
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          build-args: GIT_SHA=${{ github.sha }}
+          tags: sajha-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Migrations run from the image (Railway's pre-deploy command)
+        run: |
+          docker run --rm --network host -e DATABASE_URL=postgresql://sajha:sajha@localhost:5432/sajha \
+            sajha-api:ci node_modules/.bin/prisma migrate deploy
+      - name: The image boots as non-root and reports its version
+        run: |
+          cat > ci.env <<'ENV'
+          NODE_ENV=test
+          DATABASE_URL=postgresql://sajha:sajha@localhost:5432/sajha
+          REDIS_URL=redis://localhost:6379
+          JWT_ACCESS_SECRET=ci-user-access-secret-0123456789abcdef
+          JWT_ADMIN_ACCESS_SECRET=ci-admin-access-secret-0123456789abcdef
+          OTP_PEPPER=ci-otp-pepper-0123456789abcdef0123456789
+          TOTP_ENC_KEY=Y2ktdG90cC1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+          ADDRESS_ENC_KEY=Y2ktYWRkcmVzcy1rZXktMzItYnl0ZXMtbG9uZyEhISE=
+          S3_ACCESS_KEY_ID=ci
+          S3_SECRET_ACCESS_KEY=ci-secret
+          S3_PUBLIC_BUCKET=sajha-public-media
+          S3_PRIVATE_BUCKET=sajha-private-docs
+          S3_PUBLIC_BASE_URL=http://localhost:9000/sajha-public-media
+          JOBS_WORKER=true
+          ENV
+          docker run -d --name api --network host --env-file ci.env sajha-api:ci
+          SMOKE_TIMEOUT_SEC=90 scripts/smoke-test.sh http://localhost:3000 "${{ github.sha }}" || { docker logs api; exit 1; }
+          test "$(docker exec api id -u)" != 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @sajha/api
+      - name: Restore drill (dump → throwaway PostGIS → migrate status → sanity counts)
+        run: scripts/restore-drill.sh --from-url postgresql://sajha:sajha@localhost:5432/sajha
+
   admin-e2e:
     name: Browser e2e · admin + website (Playwright against the real API)
     runs-on: ubuntu-latest

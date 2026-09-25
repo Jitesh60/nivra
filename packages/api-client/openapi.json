@@ -6312,6 +6312,33 @@
           "admin"
         ]
       }
+    },
+    "/v1/admin/system": {
+      "get": {
+        "operationId": "AdminSystemController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Operations: queue depth per job queue, workers listening, database and Redis latency",
+        "tags": [
+          "admin"
+        ]
+      }
     }
   },
   "info": {
@@ -12924,6 +12951,102 @@
           "series",
           "now",
           "funnel",
+          "generatedAt"
+        ]
+      },
+      "DependencyLatencyDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "latencyMs": {
+            "type": "number",
+            "nullable": true,
+            "description": "Round trip in milliseconds"
+          }
+        },
+        "required": [
+          "status",
+          "latencyMs"
+        ]
+      },
+      "QueueStatusDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "bookings"
+          },
+          "waiting": {
+            "type": "number",
+            "description": "Jobs waiting to run now"
+          },
+          "active": {
+            "type": "number",
+            "description": "Jobs running now"
+          },
+          "delayed": {
+            "type": "number",
+            "description": "Jobs scheduled for later (timers, retries)"
+          },
+          "failed": {
+            "type": "number",
+            "description": "Failed jobs kept for inspection (last 1,000)"
+          },
+          "workers": {
+            "type": "number",
+            "nullable": true,
+            "description": "Workers listening on the queue; null when Redis does not allow CLIENT LIST"
+          }
+        },
+        "required": [
+          "name",
+          "waiting",
+          "active",
+          "delayed",
+          "failed",
+          "workers"
+        ]
+      },
+      "SystemStatusDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The deployed commit (GIT_SHA), or \"dev\""
+          },
+          "uptimeSec": {
+            "type": "number",
+            "description": "Seconds since this API process started"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DependencyLatencyDto"
+          },
+          "redis": {
+            "$ref": "#/components/schemas/DependencyLatencyDto"
+          },
+          "queues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueStatusDto"
+            }
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "uptimeSec",
+          "database",
+          "redis",
+          "queues",
           "generatedAt"
         ]
       }

@@ -135,6 +135,14 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 - `PUBLIC_READ_LIMIT_PER_MIN` caps public reads per IP.
 - Security review: [docs/SECURITY.md](../../docs/SECURITY.md). Load tests: [infra/load](../../infra/load/README.md), results in [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md).
 
+## Deployment (Phase 9d)
+
+```bash
+docker build -f apps/api/Dockerfile --build-arg GIT_SHA=$(git rev-parse HEAD) -t sajha-api .   # from the repo root
+```
+
+The image runs as the `api` service (`JOBS_WORKER=false`, pre-deploy `node_modules/.bin/prisma migrate deploy`) and as the `worker` service (`JOBS_WORKER=true`). Railway settings are in `railway.json` and `railway.worker.json`; everything else is in [docs/DEPLOY.md](../../docs/DEPLOY.md). `GET /v1/admin/system` shows queue depth, workers and database and Redis latency for operators ([docs/OPERATIONS.md](../../docs/OPERATIONS.md)).
+
 ## Tests
 
 | Command | What |

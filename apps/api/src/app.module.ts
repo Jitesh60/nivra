@@ -21,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { EmailModule } from './providers/email/email.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 import { AnalyticsModule } from './modules/analytics/analytics.module.js';
+import { SystemModule } from './modules/system/system.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
 import { BookingsModule } from './modules/bookings/bookings.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
@@ -75,6 +76,7 @@ import { RedisModule } from './redis/redis.module.js';
     PaymentsModule,
     RentalsModule,
     AnalyticsModule,
+    SystemModule,
   ],
 })
 export class AppModule {}

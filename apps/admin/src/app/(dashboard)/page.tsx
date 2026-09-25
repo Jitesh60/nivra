@@ -25,10 +25,13 @@ const KPIS: { key: keyof Metrics; label: string; money?: boolean }[] = [
 
 export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
   const days = periodFrom((await searchParams).days);
-  const [me, health, a] = await Promise.all([
+  const api = await adminApi();
+  const [me, health, a, system] = await Promise.all([
     getMe(),
     getApiHealth(),
-    unwrap((await adminApi()).GET('/v1/admin/analytics', { params: { query: { days } } })),
+    unwrap(api.GET('/v1/admin/analytics', { params: { query: { days } } })),
+    // Operations detail is a bonus: the dashboard still renders without it.
+    unwrap(api.GET('/v1/admin/system')).catch(() => null),
   ]);
   const pct = (n: number) =>
     a.funnel.requested === 0 ? '—' : `${Math.round((n / a.funnel.requested) * 100)}%`;
@@ -171,20 +174,68 @@ export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
           <CardTitle>API status</CardTitle>
           <CardDescription className="font-mono">{API_URL}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {health.reachable ? (
-            <>
-              <Badge variant={health.status === 'ok' ? 'default' : 'destructive'}>
-                API {health.status}
-              </Badge>
-              {Object.entries(health.checks).map(([name, state]) => (
-                <Badge key={name} variant={state === 'up' ? 'secondary' : 'destructive'}>
-                  {name}: {state}
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {health.reachable ? (
+              <>
+                <Badge variant={health.status === 'ok' ? 'default' : 'destructive'}>
+                  API {health.status}
                 </Badge>
-              ))}
-            </>
-          ) : (
-            <Badge variant="destructive">API unreachable</Badge>
+                {Object.entries(health.checks).map(([name, state]) => (
+                  <Badge key={name} variant={state === 'up' ? 'secondary' : 'destructive'}>
+                    {name}: {state}
+                    {system &&
+                    (name === 'database' || name === 'redis') &&
+                    system[name].latencyMs !== null
+                      ? ` · ${system[name].latencyMs} ms`
+                      : ''}
+                  </Badge>
+                ))}
+                {system && (
+                  <Badge variant="outline" data-testid="api-version">
+                    version {system.version.slice(0, 7)}
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <Badge variant="destructive">API unreachable</Badge>
+            )}
+          </div>
+          {system && (
+            <table data-testid="queues" className="w-full max-w-2xl text-sm">
+              <caption className="mb-2 text-left text-muted-foreground">
+                Job queues. Waiting should drain within minutes; failed jobs are kept for a look.
+              </caption>
+              <thead className="text-left text-muted-foreground">
+                <tr>
+                  <th className="py-1 font-medium">Queue</th>
+                  <th className="py-1 text-right font-medium">Waiting</th>
+                  <th className="py-1 text-right font-medium">Running</th>
+                  <th className="py-1 text-right font-medium">Scheduled</th>
+                  <th className="py-1 text-right font-medium">Failed</th>
+                  <th className="py-1 text-right font-medium">Workers</th>
+                </tr>
+              </thead>
+              <tbody className="tabular-nums">
+                {system.queues.map((q) => (
+                  <tr key={q.name} data-testid="queue-row" className="border-t">
+                    <td className="py-1">{q.name}</td>
+                    <td className="py-1 text-right">{q.waiting}</td>
+                    <td className="py-1 text-right">{q.active}</td>
+                    <td className="py-1 text-right">{q.delayed}</td>
+                    <td
+                      className={cn(
+                        'py-1 text-right',
+                        q.failed > 0 && 'font-semibold text-destructive',
+                      )}
+                    >
+                      {q.failed}
+                    </td>
+                    <td className="py-1 text-right">{q.workers ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </CardContent>
       </Card>

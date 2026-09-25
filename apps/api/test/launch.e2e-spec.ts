@@ -192,6 +192,47 @@ describe('Launch: preferences, emails, analytics, limits (e2e)', () => {
     });
   });
 
+  describe('admin system status', () => {
+    it('shows queue depth and dependency latency to any admin, nobody else', async () => {
+      const support = await loginAdmin(app, await createAdmin(app, 'SUPPORT'));
+      const body = (
+        await http(app).get('/v1/admin/system').set(bearer(support.accessToken)).expect(200)
+      ).body;
+      expect(body.version).toBe(process.env.GIT_SHA || 'dev');
+      expect(body.database).toMatchObject({ status: 'up' });
+      expect(body.database.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(body.redis).toMatchObject({ status: 'up' });
+      expect(body.queues.map((q: { name: string }) => q.name)).toEqual([
+        'bookings',
+        'email',
+        'payments',
+        'rentals',
+      ]);
+      for (const q of body.queues) {
+        expect(q).toEqual({
+          name: q.name,
+          waiting: expect.any(Number),
+          active: expect.any(Number),
+          delayed: expect.any(Number),
+          failed: expect.any(Number),
+          workers: q.workers === null ? null : expect.any(Number),
+        });
+      }
+
+      // A queued email shows up as waiting until the worker sends it.
+      const user = await verifiedUser(app, sms);
+      await http(app).delete('/v1/me').set(bearer(user.accessToken)).expect(202);
+      const email = (
+        await http(app).get('/v1/admin/system').set(bearer(support.accessToken)).expect(200)
+      ).body.queues.find((q: { name: string }) => q.name === 'email');
+      expect(email.waiting + email.active + email.delayed).toBeGreaterThanOrEqual(1);
+      await sendQueuedEmails(app);
+
+      await http(app).get('/v1/admin/system').expect(401);
+      await http(app).get('/v1/admin/system').set(bearer(user.accessToken)).expect(401);
+    });
+  });
+
   describe('hardening', () => {
     it('limits public reads per IP with a Retry-After', async () => {
       await app.get<Redis>(REDIS).set('read:203.0.113.9', 100_000, 'EX', 60);

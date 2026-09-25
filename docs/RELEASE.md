@@ -1,6 +1,6 @@
 # Releasing Sajha
 
-The mobile part is written in Phase 9b; production infrastructure and promotion are added in 9d.
+The mobile part was written in Phase 9b, and production infrastructure in 9d. Deploying the servers is in [DEPLOY.md](DEPLOY.md), and running them in [OPERATIONS.md](OPERATIONS.md).
 
 ## Mobile app
 
@@ -57,3 +57,39 @@ Everything to paste is in [apps/mobile/store](../apps/mobile/store/README.md):
 
 - Watch Sentry (new issues, crash-free sessions) and Play's Android vitals for a week.
 - Answer reviews within two days.
+
+## Launch checklist
+
+Work through it top to bottom. Each line is done when someone has checked it on production, not just on staging.
+
+**Accounts**
+- [ ] Railway (Pro): project `sajha` with `staging` and `production`, PostGIS and Redis, and volume backups on (DEPLOY.md §1)
+- [ ] Vercel: `sajha-admin` and `sajha-web`, with domains `admin.sajha.app` and `sajha.app` and preview protection on admin
+- [ ] AWS: media, private-documents (SSE-KMS) and backup buckets in ap-south-1; separate IAM users for the API and for backups
+- [ ] Razorpay: live KYC done, Route enabled, live keys, and the webhook pointing at `https://api.sajha.app/v1/payments/webhook`
+- [ ] MSG91: DLT entity and the OTP and overdue templates approved
+- [ ] Resend: `sajha.app` verified (SPF, DKIM, DMARC)
+- [ ] Firebase: production project with Android and iOS apps, and the APNs key uploaded
+- [ ] Sentry: projects `sajha-api`, `sajha-admin`, `sajha-web`, `sajha-app`, with the alert rules from OPERATIONS.md
+- [ ] Uptime monitor on the API health check, admin and web
+
+**Production settings**
+- [ ] Every API variable in DEPLOY.md is set on both services. The API refuses to start with development settings, so a clean boot is the check.
+- [ ] GitHub environments `staging` and `production` have the Railway, `API_URL` and backup secrets, and `production` has required reviewers
+- [ ] First admin created: `railway run --service api -- node dist/cli/seed-admin.js --email … --name …`, then 2FA set up
+- [ ] Categories reviewed in Admin → Categories
+
+**Go / no-go on production**
+- [ ] `deploy.yml` promoted a commit, and `/v1/health` shows its `version`
+- [ ] A real ₹1 booking end to end: pay, handover code, return, deposit back; Admin → Payments → Ledger shows **Balanced**
+- [ ] Sign-in by SMS and by email arrives within 30 seconds
+- [ ] A push notification arrives on Android and iOS
+- [ ] `Backup` workflow ran, and `scripts/restore-drill.sh s3://…` passed on its dump; result recorded in OPERATIONS.md
+- [ ] Terms, Privacy and Delete-account pages reviewed by a lawyer, with the draft notices removed
+- [ ] Store URLs set on `sajha-web` and redeployed: the waitlist becomes download buttons
+- [ ] Waitlist exported (Admin → Waitlist) and the launch email sent
+
+**First week**
+- [ ] Sentry, uptime and Railway alerts are quiet, or each alert has an owner
+- [ ] Staged rollout on Play: 10% → 50% → 100%
+- [ ] Admin dashboard reviewed daily: bookings paid, disputes, and failed jobs in the queue table
