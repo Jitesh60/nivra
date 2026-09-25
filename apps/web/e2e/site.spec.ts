@@ -141,6 +141,17 @@ test('account deletion page (the URL Google Play asks for)', async ({ page, requ
   }
 });
 
+test('security headers on every page', async ({ request }) => {
+  for (const path of ['/', '/blog', '/delete-account']) {
+    const headers = (await request.get(path)).headers();
+    expect(headers['strict-transport-security']).toContain('max-age=63072000');
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    expect(headers['x-powered-by']).toBeUndefined();
+  }
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 

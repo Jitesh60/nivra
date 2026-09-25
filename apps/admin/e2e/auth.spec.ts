@@ -15,6 +15,15 @@ test('rejects a wrong password with a clear message', async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test('sends security headers and stays out of search engines', async ({ request }) => {
+  const headers = (await request.get('/login')).headers();
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['x-content-type-options']).toBe('nosniff');
+  expect(headers['x-robots-tag']).toBe('noindex, nofollow');
+  expect(headers['strict-transport-security']).toContain('max-age=63072000');
+  expect(headers['x-powered-by']).toBeUndefined();
+});
+
 test('redirects to /login when signed out', async ({ page }) => {
   await page.goto('/users');
   await expect(page).toHaveURL(/\/login\?next=%2Fusers/);

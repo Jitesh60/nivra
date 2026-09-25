@@ -64,5 +64,10 @@ test('Support sees the dashboard too', async ({ browser }) => {
   await expect(page).toHaveURL('/');
   await expect(page.getByTestId('kpi-confirmed')).toBeVisible();
   await expect(page.getByTestId('funnel')).toBeVisible();
+  // The API status card lists every job queue with its depth.
+  await expect(page.getByTestId('queue-row')).toHaveCount(4);
+  await expect(page.getByTestId('queues')).toContainText('bookings');
+  await expect(page.getByTestId('queues')).toContainText('email');
+  await expect(page.getByTestId('api-version')).toContainText('version');
   await page.close();
 });

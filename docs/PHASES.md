@@ -804,3 +804,26 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
   - **Category pages:** `/rent/trekking-gear`, `/rent/cameras`, `/rent/tools`, `/rent/party-gear`, each with example prices and an FAQ with FAQPage JSON-LD. They're linked from the footer.
   - The sitemap lists the blog, the posts, the category pages and `/delete-account`.
 - **Tests:** admin Playwright for the dashboard after a paid booking (KPIs, 90 and 7-day bars, the table) and Support's view; web Playwright for the blog (JSON-LD, OG image, RSS, 404), the category pages (FAQ data, waitlist without store links, footer), `/delete-account` and the sitemap.
+
+### 9d — Infra & release
+**Branch:** `phase/9d-launch-infra`
+
+- **Image:** `apps/api/Dockerfile` (multi-stage, `pnpm deploy --prod`, Node 22 slim, non-root, `GIT_SHA` baked in, a health check). The Prisma CLI moved to the production dependencies so the image can migrate. One image runs as `api` and as `worker`.
+- **Railway:**
+  - config as code in `apps/api/railway.json` and `railway.worker.json`
+  - pre-deploy migrations, `/v1/health` checks and a restart policy
+  - services pointed at an exact image digest by `scripts/railway-deploy.sh`, using Railway's GraphQL API
+- **Vercel:** `vercel.json` for admin and web (turbo build, `bom1`, `turbo-ignore`). Security headers are set in `next.config.ts`: HSTS, `nosniff`, frame options, referrer and permissions policies, and `noindex` on admin.
+- **CI/CD:**
+  - CI gains **API · Docker image**: it builds the image, migrates from it, boots it as non-root with the right version, and runs the restore drill.
+  - `deploy.yml`: every green push to `main` builds and pushes `ghcr.io/…/sajha-api:sha-…` and deploys it to staging (api, then worker), then smoke-tests it. *Run workflow* with a SHA promotes the same digest to production after the `production` environment's reviewers approve.
+  - Without secrets, the deploy steps skip with a notice.
+- **Operations:** `GET /v1/admin/system` (queue depth, workers per queue, database and Redis latency) is shown on the dashboard's API status card. [OPERATIONS.md](OPERATIONS.md) covers the alert rules (Sentry, uptime, Railway), the incident steps (payment webhooks, SMS, storage, queues, database) and secret rotation.
+- **Backups:** Railway volume backups, and `backup.yml` (a nightly `pg_dump` to S3 with SSE-KMS, checked before upload). `scripts/restore-drill.sh` was run locally on the development and load-test databases: both passed in under 10 seconds, with the results recorded in OPERATIONS.md.
+- **Docs:** [DEPLOY.md](DEPLOY.md) covers first-time setup, every variable per service and environment, and the everyday flow and rollback. RELEASE.md gains a launch checklist.
+- **Tests:**
+  - e2e for `/v1/admin/system` (shape, a queued email counted, auth)
+  - Playwright for the queue table and the security headers on admin and web
+  - the image job in CI
+  - the deploy script checked against a mock of Railway's API
+

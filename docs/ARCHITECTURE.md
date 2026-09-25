@@ -79,6 +79,7 @@ src/
     ├── notifications/      # device tokens, push when away, in-app notifications, preferences (5a, 6a, 9a)
     ├── mail/               # transactional email queue (BullMQ `email`) + worker       (Phase 9a)
     ├── analytics/          # admin dashboard numbers, IST days, cached 5 min           (Phase 9a)
+    ├── system/             # admin ops status: queue depth, workers, DB/Redis latency  (Phase 9d)
     ├── safety/             # blocks, reports, admin reports + audited transcripts  (Phase 5a)
     ├── bookings/           # state machine, requests, document sharing, timers (BullMQ) (Phase 6a)
     ├── payments/           # Razorpay orders, webhooks, refunds, ledger             (Phase 7)
@@ -712,16 +713,27 @@ The ASVS L1 review, requirement by requirement, is in [SECURITY.md](SECURITY.md)
 
 **Notifications and email (Phase 9a).** In-app notifications always arrive. Push is skipped when the user turned off the kind (`pushSwitchFor`: bookings, chat, reminders), overdue SMS when `smsReminders` is off. Emails (receipt and lender confirmation on payment, refund issued, dispute decided, account deleted) are rendered by one layout (`providers/email/layout.ts`: HTML + text, brand colours, why-you-got-this footer) and queued on BullMQ `email` (5 tries, exponential backoff, once-only job ids), only to verified addresses, and only with `emailBookings` on (account deletion always sends). Verification codes still send at once.
 
-## 13. Deployment (target)
+## 13. Deployment
+
+Details, variables and first-time setup: [DEPLOY.md](DEPLOY.md). Monitoring, incidents and backups: [OPERATIONS.md](OPERATIONS.md).
 
 ```mermaid
 flowchart LR
-  GH[GitHub PR → main] --> CI[GitHub Actions<br/>lint · test · build]
-  CI --> IMG[Docker image: api]
-  IMG --> STG[Staging<br/>API + worker]
-  STG -->|manual promote| PRD[Production<br/>API + worker]
-  CI --> VC[Vercel<br/>admin + web previews]
-  CI --> FL[Flutter build<br/>APK / IPA → Firebase App Distribution]
+  PR[PR → main] --> CI[GitHub Actions CI<br/>lint · tests · Playwright ·<br/>image boot · restore drill]
+  CI -->|green push| IMG[deploy.yml builds once<br/>ghcr.io/…/sajha-api:sha-…]
+  IMG -->|digest| STG[Railway staging<br/>api + worker]
+  STG -->|Run workflow + approval| PRD[Railway production<br/>api + worker, same digest]
+  PRD --- PG[(Postgres + PostGIS)]
+  PRD --- RD[(Redis)]
+  PRD --- S3[(S3 ap-south-1)]
+  PG -.nightly pg_dump.-> S3
+  PR --> VC[Vercel<br/>admin + web previews → production]
 ```
 
-The API and worker containers share one image with different entrypoints. Database migrations run as a pre-deploy step (`prisma migrate deploy`).
+- **One image** (`apps/api/Dockerfile`, Node 22, non-root, `GIT_SHA` baked in), two Railway services:
+  - `api` (`JOBS_WORKER=false`, public) runs `prisma migrate deploy` as its pre-deploy step.
+  - `worker` (`JOBS_WORKER=true`, private, one replica) runs the BullMQ jobs and keeps its Socket.IO server, so timer-driven updates reach apps through the Redis adapter.
+- **Promotion is by digest.** `scripts/railway-deploy.sh` points a service at `image@sha256:…` through Railway's API and waits for the deployment; `scripts/smoke-test.sh` waits for `/v1/health` to report that commit. The `production` GitHub environment requires approval. Deploy and backup jobs skip with a notice until their secrets exist.
+- **Vercel** builds admin and web from `main` (`vercel.json`: turbo build, region `bom1`, `turbo-ignore`). Security headers come from each app's `next.config.ts`.
+- **Operations:** `GET /v1/admin/system` (every admin role) returns queue depth per BullMQ queue, workers listening, and database and Redis latency; the admin dashboard shows it on the API status card. Sentry, uptime checks and Railway alerts are listed in OPERATIONS.md.
+- **Backups:** Railway volume backups, plus `backup.yml` (nightly `pg_dump` to S3 with SSE-KMS). `scripts/restore-drill.sh` restores into a throwaway PostGIS, checks `prisma migrate status` and that the ledger balances, and prints the time taken. CI runs it on every PR.

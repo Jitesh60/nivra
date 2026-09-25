@@ -7,7 +7,8 @@ import { bullConnection } from '../bookings/booking-queue.js';
 import { PaymentsService } from './payments.service.js';
 import { reportJobFailure } from '../../common/observability/report.js';
 
-const QUEUE = 'payments';
+export const PAYMENTS_QUEUE = 'payments';
+const QUEUE = PAYMENTS_QUEUE;
 
 /** Every 5 minutes: refunds for cancelled paid bookings, and failed provider calls retried. */
 @Injectable()

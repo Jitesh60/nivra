@@ -1,0 +1,20 @@
+# Only what apps/api/Dockerfile needs goes into the build context.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.husky
+apps/mobile
+apps/admin
+apps/web
+docs
+infra

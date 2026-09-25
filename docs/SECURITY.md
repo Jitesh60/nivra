@@ -9,7 +9,7 @@ Reviewed in Phase 9a against the ASVS L1 requirements that apply to Sajha: a JSO
 | Secrets never in code or the repo | Met | Env only, validated at boot (`apps/api/src/config/env.ts`). Staging and production refuse development settings: OTP bypass, console SMS/push, SMTP email, fake payments, unencrypted documents, Swagger in production, missing or `*` CORS. |
 | Separate secrets per purpose | Met | User and admin JWT secrets must differ; `OTP_PEPPER`, `TOTP_ENC_KEY`, `ADDRESS_ENC_KEY` are separate 32-byte keys. |
 | Dependencies free of known vulnerabilities | Met | `pnpm audit --prod --audit-level high` runs in CI. Two transitive advisories (mysql2, deepmerge-ts via the Prisma CLI) are pinned to fixed versions in `pnpm-workspace.yaml`. |
-| Security headers | Met | Helmet on the API; admin cookies `httpOnly`, `SameSite=Strict`, `Secure` in production. Vercel adds HSTS and frame headers for admin and web (9d). |
+| Security headers | Met | Helmet on the API; admin cookies `httpOnly`, `SameSite=Strict`, `Secure` in production. Admin and web send HSTS, `nosniff`, frame, referrer and permissions headers from `next.config.ts` (9d; the admin panel also sends `X-Robots-Tag: noindex`), checked by Playwright. |
 | Debug features off in production | Met | Swagger refused in production; the dev checkout route returns 404 unless the fake provider runs outside staging/production. |
 
 ## V2 Authentication
@@ -61,6 +61,7 @@ Reviewed in Phase 9a against the ASVS L1 requirements that apply to Sajha: a JSO
 | Requirement | Status | How |
 |---|---|---|
 | Sensitive data encrypted at rest | Met | Documents in a private bucket with SSE (required outside development); exact pickup addresses AES-256-GCM; TOTP secrets encrypted. |
+| Backups protected and restorable | Met (9d) | Railway volume backups plus a nightly `pg_dump` to S3 with SSE-KMS (`backup.yml`); `scripts/restore-drill.sh` restores into a throwaway database, checks migrations and the ledger, and runs in CI on every PR ([OPERATIONS.md](OPERATIONS.md)). |
 | Personal data only as long as needed | Met | Shared document copies purged 30 days after a booking closes; account deletion anonymises the user and removes their files, profile, devices, payout details and preferences. |
 | Sensitive data not cached | Met | Document and condition photos stream through the admin server with `no-store`; signed URLs last minutes. |
 
@@ -68,7 +69,8 @@ Reviewed in Phase 9a against the ASVS L1 requirements that apply to Sajha: a JSO
 
 | Requirement | Status | How |
 |---|---|---|
-| TLS everywhere | Met (9d) | Railway and Vercel terminate TLS; the API trusts `X-Forwarded-For` only from private networks. |
+| TLS everywhere | Met (9d) | Railway and Vercel terminate TLS; the API trusts `X-Forwarded-For` only from private networks; admin and web send HSTS. |
+| Deploys are reproducible | Met (9d) | One image per commit, run as a non-root user; production runs the exact digest tested on staging, after an approval ([DEPLOY.md](DEPLOY.md)). |
 
 ## V11 Business logic
 

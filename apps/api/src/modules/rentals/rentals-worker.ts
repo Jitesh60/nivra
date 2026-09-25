@@ -8,7 +8,8 @@ import { RemindersService } from './reminders.service.js';
 import { ReviewsService } from './reviews.service.js';
 import { reportJobFailure } from '../../common/observability/report.js';
 
-const QUEUE = 'rentals';
+export const RENTALS_QUEUE = 'rentals';
+const QUEUE = RENTALS_QUEUE;
 
 export const RentalJob = {
   /** Pickup, return and overdue reminders. */

@@ -1,0 +1,170 @@
+name: Deploy
+
+# Staging: every green push to main builds the API image once, pushes it to GHCR
+# and deploys that digest to Railway staging (api, then worker).
+# Production: "Run workflow" with a commit that is on staging; the same digest is
+# deployed after the `production` environment's reviewers approve.
+# Without the Railway secrets the deploy steps skip with a notice (docs/DEPLOY.md).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA to promote to production (already deployed to staging)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: sajha-api
+
+jobs:
+  image:
+    name: Build and push the API image
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+      digest: ${{ steps.push.outputs.digest }}
+      sha: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - id: ref
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          build-args: GIT_SHA=${{ github.event.workflow_run.head_sha }}
+          push: true
+          tags: ${{ steps.ref.outputs.image }}:sha-${{ github.event.workflow_run.head_sha }}
+          labels: org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  staging:
+    name: Deploy to staging
+    needs: image
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+      API_SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
+      WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+      API_URL: ${{ vars.API_URL }}
+      REF: ${{ needs.image.outputs.image }}@${{ needs.image.outputs.digest }}
+      SHA: ${{ needs.image.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ready
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ] || [ -z "$API_SERVICE_ID" ] || [ -z "$WORKER_SERVICE_ID" ] || [ -z "$API_URL" ]; then
+            echo "::notice title=Staging deploy skipped::Set RAILWAY_TOKEN and the Railway/API_URL variables on the staging environment (docs/DEPLOY.md). Image pushed: $REF"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: API (runs migrations before it starts)
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/railway-deploy.sh "$API_SERVICE_ID" "$REF"
+      - name: Worker
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/railway-deploy.sh "$WORKER_SERVICE_ID" "$REF"
+      - name: Smoke test
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/smoke-test.sh "$API_URL" "$SHA"
+      - name: Summary
+        run: |
+          {
+            echo "### Staging"
+            echo "- Commit: \`$SHA\`"
+            echo "- Image: \`$REF\`"
+            echo "- Deployed: ${{ steps.ready.outputs.go }}"
+            echo
+            echo "Promote with **Actions → Deploy → Run workflow**, sha \`$SHA\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  production:
+    name: Promote to production
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+      API_SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
+      WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+      API_URL: ${{ vars.API_URL }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the input
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }
+          git fetch --quiet origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Find the image staging ran
+        id: ref
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}"
+          digest=$(docker buildx imagetools inspect "$image:sha-$SHA" --format '{{json .Manifest}}' | jq -r .digest)
+          [ -n "$digest" ] && [ "$digest" != null ] || { echo "::error::No image for $SHA (was it built for staging?)"; exit 1; }
+          echo "ref=$image@$digest" >> "$GITHUB_OUTPUT"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - id: ready
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ] || [ -z "$API_SERVICE_ID" ] || [ -z "$WORKER_SERVICE_ID" ] || [ -z "$API_URL" ]; then
+            echo "::notice title=Production deploy skipped::Set RAILWAY_TOKEN and the Railway/API_URL variables on the production environment (docs/DEPLOY.md)."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: API (runs migrations before it starts)
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/railway-deploy.sh "$API_SERVICE_ID" "${{ steps.ref.outputs.ref }}"
+      - name: Worker
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/railway-deploy.sh "$WORKER_SERVICE_ID" "${{ steps.ref.outputs.ref }}"
+      - name: Smoke test
+        if: steps.ready.outputs.go == 'true'
+        run: scripts/smoke-test.sh "$API_URL" "$SHA"
+      - name: Tag the image as production
+        if: steps.ready.outputs.go == 'true'
+        run: docker buildx imagetools create --tag "${{ steps.ref.outputs.image }}:production" "${{ steps.ref.outputs.ref }}"
+      - name: Summary
+        run: |
+          {
+            echo "### Production"
+            echo "- Commit: \`$SHA\`"
+            echo "- Image: \`${{ steps.ref.outputs.ref }}\`"
+            echo "- Deployed: ${{ steps.ready.outputs.go }}"
+          } >> "$GITHUB_STEP_SUMMARY"
