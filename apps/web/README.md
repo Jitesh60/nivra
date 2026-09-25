@@ -9,7 +9,9 @@ pnpm dev        # http://localhost:3002 (the waitlist form needs the API on :300
 
 ## Pages
 
-`/` (landing), `/how-it-works`, `/lend`, `/faq`, `/contact`, `/privacy`, `/terms`, plus `/sitemap.xml`, `/robots.txt` and a generated Open Graph image. The Terms and Privacy pages are **drafts** marked for legal review before launch.
+`/` (landing), `/how-it-works`, `/lend`, `/faq`, `/contact`, `/privacy`, `/terms`, `/delete-account`, `/blog` (posts in `src/content/blog/`, feed at `/blog/rss.xml`) and `/rent/[category]` (content in `src/content/rent-pages.ts`), plus `/sitemap.xml`, `/robots.txt` and generated Open Graph images. The Terms, Privacy and Delete-account pages are **drafts** marked for legal review before launch.
+
+**Launch switch:** set `NEXT_PUBLIC_PLAY_STORE_URL` and/or `NEXT_PUBLIC_APP_STORE_URL` and rebuild. The waitlist sections become download buttons. Sentry is off unless `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` is set.
 
 ## Effects
 

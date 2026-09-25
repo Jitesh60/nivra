@@ -787,3 +787,20 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
 - **Release:** Android release builds are signed with the Play upload key from `android/key.properties`; prod bundles refuse to build without it. A new CI job builds a staging release APK (R8 on) and checks the prod refusal.
 - **Store kit** (`apps/mobile/store/`): listing copy, Play Data safety answers, App Store privacy labels, content rating, and 5 screenshots generated from the real screens (`test/store`, off by default). [docs/RELEASE.md](RELEASE.md) is the step-by-step for keys, builds, staged rollout and the store forms.
 - **Tests:** the notifications flow (save, failure rolls back), the website links, and the Sentry scrubber.
+
+### 9c — Admin + Web
+**Branch:** `phase/9c-launch-admin-web`
+
+- **Admin dashboard** (`/`, every role): a 7 / 30 / 90-day switch (`?days=`) over the 9a analytics endpoint. It shows:
+  - six KPI cards (people verified, listings published, bookings paid, GMV, Sajha's revenue, disputes opened), each with its change against the previous period
+  - daily bar charts of bookings paid and GMV: server-rendered SVG with no chart library, a tooltip per day and a table for screen readers; the colour is the `--chart-1` token, validated for light and dark
+  - the requested → paid → completed funnel, and a "right now" card (active people, live listings, items out, open disputes) linking to the lists
+  - the API status card
+- **Sentry** (`@sentry/nextjs`) in admin and web, off unless `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` is set. It has no session replay, no tracing and no default PII; `beforeSend` masks phones, emails and codes and drops request bodies and cookies. Web loads the browser SDK lazily, so a site without a DSN ships none of it.
+- **Web:**
+  - **Download links:** `NEXT_PUBLIC_PLAY_STORE_URL` / `NEXT_PUBLIC_APP_STORE_URL` swap the waitlist for store buttons (home page and category pages), so launch is an env change and a rebuild.
+  - **`/delete-account`** (the URL Play asks for): how to delete in the app or by email, what goes at once and what's kept and for how long. It's marked as a draft until reviewed.
+  - **Blog:** `/blog` and three launch posts (typed modules in `src/content/blog/`) with Article JSON-LD, an Open Graph image per post and an RSS feed at `/blog/rss.xml`.
+  - **Category pages:** `/rent/trekking-gear`, `/rent/cameras`, `/rent/tools`, `/rent/party-gear`, each with example prices and an FAQ with FAQPage JSON-LD. They're linked from the footer.
+  - The sitemap lists the blog, the posts, the category pages and `/delete-account`.
+- **Tests:** admin Playwright for the dashboard after a paid booking (KPIs, 90 and 7-day bars, the table) and Support's view; web Playwright for the blog (JSON-LD, OG image, RSS, 404), the category pages (FAQ data, waitlist without store links, footer), `/delete-account` and the sitemap.

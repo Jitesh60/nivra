@@ -678,6 +678,8 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
   - Photos come through the `/bookings/[id]/photos/[n]` and `/disputes/[id]/photos/[n]` route handlers (`src/lib/photo-proxy.ts`). They read the API's short-lived signed links and stream the bytes with `no-store`, like document images.
   - `/bookings/[id]` gains a Rental card and the condition photos.
 - **2FA setup** asks the API for a secret exactly once per page visit (each call replaces the secret), shows the QR code plus the key for manual entry, then shows the recovery codes once with copy and download buttons.
+- **Dashboard** (Phase 9c, `/`, every role): reads `GET /v1/admin/analytics?days=7|30|90` and shows KPI cards with the change against the previous period, two daily bar charts (`src/components/charts/bar-chart.tsx`: server-rendered SVG, a `<title>` tooltip per bar, an `sr-only` table, and the `--chart-1` colour token), the booking funnel, a "right now" snapshot and the API status. The API caches the numbers for 5 minutes.
+- **Sentry** (Phase 9c): `src/instrumentation.ts` (server, `SENTRY_DSN`, `onRequestError`) and `src/instrumentation-client.ts` (browser, `NEXT_PUBLIC_SENTRY_DSN`) share the options in `src/lib/sentry.ts`: no replay, no tracing, no default PII, with phones, emails and codes masked. Without a DSN nothing starts.
 
 ## 11. Marketing site architecture (`apps/web`)
 
@@ -688,6 +690,11 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 - `prefers-reduced-motion` is respected: shaders fall back to a static gradient, and animations are disabled
 - Performance budget: LCP < 2.5s on 4G. Shaders are lazy-loaded client components with a static poster first.
 - The waitlist form posts to `POST /v1/waitlist` (rate limited, with a honeypot field)
+- **Launch (Phase 9c):**
+  - `DownloadOrWaitlist` shows store buttons when `NEXT_PUBLIC_PLAY_STORE_URL` / `NEXT_PUBLIC_APP_STORE_URL` are set at build time, and the waitlist otherwise.
+  - `/delete-account` is the account-deletion URL for the Play listing.
+  - The blog (`/blog`, `/blog/[slug]`, `/blog/rss.xml`) and the category pages (`/rent/[category]`) are static, built from typed content in `src/content/`, with `dynamicParams = false` so unknown slugs 404. They carry Article or FAQPage JSON-LD and per-post Open Graph images, and all of them are in the sitemap.
+  - Sentry works as in admin, but the browser SDK is imported lazily, only when a DSN is set.
 
 ## 12. Security
 
@@ -697,7 +704,7 @@ The ASVS L1 review, requirement by requirement, is in [SECURITY.md](SECURITY.md)
 - Secrets only from env, validated at boot; staging and production refuse every development setting (OTP bypass, console SMS/push, SMTP email, fake payments, unencrypted documents, Swagger in production).
 - Rate limits: OTP (per number, per IP, cooldown, lockout), admin login lockout, bookings, chats, messages, reports, waitlist, and public reads per IP (`PUBLIC_READ_LIMIT_PER_MIN`, Phase 9a).
 - Input validation on every DTO; Prisma parameterised queries; raw SQL only through tagged templates.
-- PII redaction in logs; **Sentry** (API, when `SENTRY_DSN` is set) reports 5xx errors and failed jobs after `scrubEvent` drops bodies, cookies, auth headers and user details but the id, and masks phones, emails and codes.
+- PII redaction in logs; **Sentry** (API, Flutter, admin and web, each only when its DSN is set) reports 5xx errors and failed jobs after `scrubEvent` drops bodies, cookies, auth headers and user details but the id, and masks phones, emails and codes.
 - Private bucket with SSE for documents; field encryption for addresses and TOTP secrets.
 - Audit log for admin actions, document and transcript views, refunds and dispute decisions.
 - `pnpm audit --prod --audit-level high` in CI.

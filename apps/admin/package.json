@@ -13,6 +13,7 @@
   "dependencies": {
     "@sajha/api-client": "workspace:*",
     "@sajha/design-tokens": "workspace:*",
+    "@sentry/nextjs": "^11.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.48.0",

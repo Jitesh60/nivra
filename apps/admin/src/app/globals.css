@@ -26,6 +26,8 @@
   --border: var(--color-ink-200);
   --input: var(--color-ink-200);
   --ring: var(--color-brand-500);
+  /* Single-series chart marks (validated: lightness, chroma, 3:1 vs the card). */
+  --chart-1: var(--color-brand-600);
 }
 
 .dark {
@@ -47,6 +49,7 @@
   --border: var(--color-ink-800);
   --input: var(--color-ink-700);
   --ring: var(--color-brand-400);
+  --chart-1: var(--color-brand-500);
 }
 
 @theme inline {
@@ -55,6 +58,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-chart-1: var(--chart-1);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);

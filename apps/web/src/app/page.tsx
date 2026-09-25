@@ -1,10 +1,10 @@
 import { CategoryGrid } from '@/components/sections/categories';
+import { DownloadOrWaitlist } from '@/components/sections/download';
 import { EarningsCalculator } from '@/components/sections/earnings-calculator';
 import { FaqList } from '@/components/sections/faq';
 import { Hero } from '@/components/sections/hero';
 import { HowItWorksTabs } from '@/components/sections/how-it-works';
 import { TrustGrid } from '@/components/sections/trust';
-import { WaitlistSection } from '@/components/sections/waitlist-section';
 import { WhySajha } from '@/components/sections/why-sajha';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
@@ -56,7 +56,7 @@ export default function Home() {
             See all questions
           </GlowLink>
         </Section>
-        <WaitlistSection />
+        <DownloadOrWaitlist />
       </main>
       <Footer />
     </>

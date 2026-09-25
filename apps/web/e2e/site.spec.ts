@@ -60,6 +60,87 @@ test('inner pages, legal pages, SEO files and 404', async ({ page, request }) =>
   expect((await request.get('/nope')).status()).toBe(404);
 });
 
+test('blog: index, a post with its structured data, and the RSS feed', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/blog');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Blog');
+  await expect(page.getByTestId('post-card')).toHaveCount(3);
+  await page
+    .getByRole('link', { name: /How deposits and handover codes/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/blog\/how-deposits-and-handover-codes-keep-you-safe$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'How deposits and handover codes keep both sides safe',
+  );
+  await expect(page.getByRole('heading', { name: 'Late returns' })).toBeVisible();
+  const ld = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
+  ) as { '@type': string; headline: string };
+  expect(ld).toMatchObject({
+    '@type': 'Article',
+    headline: 'How deposits and handover codes keep both sides safe',
+  });
+  const og = await page.locator('meta[property="og:image"]').getAttribute('content');
+  const ogPath = new URL(og!).pathname;
+  expect((await request.get(ogPath)).headers()['content-type']).toBe('image/png');
+
+  const rss = await request.get('/blog/rss.xml');
+  expect(rss.headers()['content-type']).toContain('application/rss+xml');
+  const xml = await rss.text();
+  expect(xml.match(/<item>/g)).toHaveLength(3);
+  expect(xml).toContain('/blog/rent-or-buy-trekking-gear-pune</link>');
+  expect((await request.get('/blog/no-such-post')).status()).toBe(404);
+});
+
+test('category landing pages with prices and FAQ structured data', async ({ page, request }) => {
+  await page.goto('/rent/cameras');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Rent cameras and lenses in Pune',
+  );
+  await expect(page.getByTestId('price-table').getByRole('row')).toHaveCount(4);
+  const ld = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
+  ) as { '@type': string; mainEntity: unknown[] };
+  expect(ld['@type']).toBe('FAQPage');
+  expect(ld.mainEntity).toHaveLength(2);
+  // Before launch, the page ends with the waitlist, not store buttons.
+  await expect(page.locator('#waitlist')).toBeVisible();
+  await expect(page.getByTestId('download')).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: 'Rent in Pune' })
+    .getByRole('link', { name: 'Tools' })
+    .click();
+  await expect(page).toHaveURL(/\/rent\/tools$/);
+  expect((await request.get('/rent/boats')).status()).toBe(404);
+});
+
+test('account deletion page (the URL Google Play asks for)', async ({ page, request }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Delete your account' }).click();
+  await expect(page).toHaveURL(/\/delete-account$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Delete your account');
+  for (const h of [
+    'In the app',
+    'By email',
+    'What’s deleted straight away',
+    'What we keep, and for how long',
+  ]) {
+    await expect(page.getByRole('heading', { name: h })).toBeVisible();
+  }
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  for (const path of [
+    '/delete-account',
+    '/blog',
+    '/blog/lenders-guide-earn-from-things-you-rarely-use',
+    '/rent/trekking-gear',
+  ]) {
+    expect(sitemap).toContain(`${path}</loc>`);
+  }
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
