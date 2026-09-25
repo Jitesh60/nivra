@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -254,7 +255,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
             : IconButton(
                 key: const ValueKey('item-home'),
                 tooltip: 'Home',
-                icon: const Icon(Icons.home_outlined),
+                icon: const Icon(LucideIcons.house),
                 onPressed: () => context.go(Routes.home),
               ),
         actions: [
@@ -294,7 +295,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
               child: TextButton.icon(
                 key: const ValueKey('report-listing'),
                 onPressed: () => _reportListing(listing),
-                icon: const Icon(Icons.flag_outlined, size: 18),
+                icon: const Icon(LucideIcons.flag, size: 18),
                 label: const Text('Report this listing'),
               ),
             ),
@@ -415,7 +416,7 @@ class _BottomBar extends StatelessWidget {
                         minimumSize: const Size(0, 48),
                       ),
                       onPressed: onChat,
-                      icon: const Icon(Icons.chat_bubble_outline),
+                      icon: const Icon(LucideIcons.messageCircle),
                       label: const Text('Chat'),
                     ),
                   ),
@@ -505,7 +506,7 @@ class _QuoteCard extends StatelessWidget {
               Row(
                 key: const ValueKey('quote-unavailable'),
                 children: [
-                  const Icon(Icons.event_busy, color: SajhaColors.danger),
+                  const Icon(LucideIcons.calendarX, color: SajhaColors.danger),
                   const SizedBox(width: SajhaSpacing.sm),
                   Expanded(
                     child: Text(
@@ -609,9 +610,9 @@ class _LenderTile extends StatelessWidget {
         ),
         Wrap(
           children: [
-            badge(lender.phoneVerified, Icons.phone_iphone, 'Phone'),
-            badge(lender.emailVerified, Icons.alternate_email, 'Email'),
-            badge(lender.idVerified, Icons.verified, 'ID verified'),
+            badge(lender.phoneVerified, LucideIcons.smartphone, 'Phone'),
+            badge(lender.emailVerified, LucideIcons.atSign, 'Email'),
+            badge(lender.idVerified, LucideIcons.badgeCheck, 'ID verified'),
           ],
         ),
       ],

@@ -78,7 +78,7 @@ extension FakeGrowthApi on FakeSajhaApi {
   // ─── Helpers for tests ────────────────────────────────────────────────────
 
   String referralCodeFor(String userId) => growth.codes.putIfAbsent(userId, () {
-    final first = (_users[userId]?.name ?? 'Sajha').split(' ').first;
+    final first = (_users[userId]?.name ?? 'Nivra').split(' ').first;
     return '${first.toUpperCase()}${++_seq}';
   });
 

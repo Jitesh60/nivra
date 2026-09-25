@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sajha/core/location/location_service.dart';
@@ -176,7 +177,7 @@ void main() {
     await tapKey(tester, 'cancel-sign-in');
     expect(location(h), Routes.item(m.tent));
     expect(api.favorites, isEmpty);
-    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    expect(find.byIcon(LucideIcons.heart), findsOneWidget);
   });
 
   testWidgets('first run: onboarding, then browse without an account', (

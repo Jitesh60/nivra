@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,7 @@ import '../../../core/effects/motion.dart';
 import '../../../core/effects/shader_background.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../../shared/widgets/nivra_logo.dart';
 
 class _Slide {
   const _Slide(this.icon, this.title, this.body);
@@ -17,17 +19,17 @@ class _Slide {
 
 const _slides = [
   _Slide(
-    Icons.hiking,
+    LucideIcons.mountain,
     'Borrow for a day, not forever',
     'Trekking shoes for one trek, a camera for one trip. Rent from people near you for a small price.',
   ),
   _Slide(
-    Icons.volunteer_activism_outlined,
+    LucideIcons.handHeart,
     'Earn from things you rarely use',
     'List what sits in your cupboard most of the year. You set the price, the dates and the deposit.',
   ),
   _Slide(
-    Icons.verified_user_outlined,
+    LucideIcons.shieldCheck,
     'Safe on both sides',
     'Verified phone and email, refundable deposits, documents when the lender needs them, and reviews.',
   ),
@@ -71,12 +73,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: _finish,
-                  style: TextButton.styleFrom(foregroundColor: Colors.white),
-                  child: const Text('Skip'),
+              Padding(
+                padding: const EdgeInsets.only(left: SajhaSpacing.lg),
+                child: Row(
+                  children: [
+                    const NivraLogo(size: 32, inverse: true),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _finish,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Skip'),
+                    ),
+                  ],
                 ),
               ),
               Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -49,7 +50,7 @@ class _ScannerScreenState extends State<_ScannerScreen> {
         actions: [
           IconButton(
             tooltip: 'Torch',
-            icon: const Icon(Icons.flashlight_on_outlined),
+            icon: const Icon(LucideIcons.flashlight),
             onPressed: _controller.toggleTorch,
           ),
         ],

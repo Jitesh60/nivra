@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -91,11 +92,11 @@ class _Tile extends StatelessWidget {
     return ListTile(
       key: ValueKey('notification-${n.id}'),
       leading: Icon(switch (n.type) {
-        final t when t.contains('docs') => Icons.badge_outlined,
-        final t when t.startsWith('search.') => Icons.bookmark_outline,
-        final t when t.startsWith('request.') => Icons.campaign_outlined,
-        final t when t.startsWith('referral.') => Icons.card_giftcard,
-        _ => Icons.event_note,
+        final t when t.contains('docs') => LucideIcons.idCard,
+        final t when t.startsWith('search.') => LucideIcons.bookmark,
+        final t when t.startsWith('request.') => LucideIcons.megaphone,
+        final t when t.startsWith('referral.') => LucideIcons.gift,
+        _ => LucideIcons.calendarDays,
       }, color: n.unread ? SajhaColors.brand600 : null),
       title: Text(n.title, style: TextStyle(fontWeight: bold)),
       subtitle: Text(n.body),

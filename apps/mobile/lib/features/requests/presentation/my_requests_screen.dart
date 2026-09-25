@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,7 +23,7 @@ class MyRequestsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('my-requests-new'),
         onPressed: () => context.push(Routes.newRequest),
-        icon: const Icon(Icons.add),
+        icon: const Icon(LucideIcons.plus),
         label: const Text('Ask for something'),
       ),
       body: switch (mine) {
@@ -30,7 +31,7 @@ class MyRequestsScreen extends ConsumerWidget {
           child: Padding(
             padding: EdgeInsets.all(SajhaSpacing.xl),
             child: Text(
-              'Can’t find something on Sajha? Ask, and lenders nearby can '
+              'Can’t find something on Nivra? Ask, and lenders nearby can '
               'offer theirs.',
               key: ValueKey('my-requests-empty'),
               textAlign: TextAlign.center,
@@ -108,7 +109,7 @@ class _MyRequestCard extends ConsumerWidget {
                 [if (!open) r.status.label, r.areaLabel, ?terms].join(' · '),
                 style: TextStyle(color: muted),
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.request(r.id)),
             ),
             Text(

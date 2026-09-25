@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -48,21 +49,21 @@ class MyListingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.visibility_outlined),
+              leading: const Icon(LucideIcons.eye),
               title: const Text('Preview'),
               onTap: () => Navigator.pop(context, 'preview'),
             ),
             if (l.status.editable)
               ListTile(
                 key: const ValueKey('action-edit'),
-                leading: const Icon(Icons.edit_outlined),
+                leading: const Icon(LucideIcons.pencil),
                 title: const Text('Edit'),
                 onTap: () => Navigator.pop(context, 'edit'),
               ),
             if (l.status == ListingStatus.live)
               ListTile(
                 key: const ValueKey('action-pause'),
-                leading: const Icon(Icons.pause_circle_outline),
+                leading: const Icon(LucideIcons.circlePause),
                 title: const Text('Pause'),
                 subtitle: const Text('Hide it until you resume'),
                 onTap: () => Navigator.pop(context, 'pause'),
@@ -70,14 +71,14 @@ class MyListingsScreen extends ConsumerWidget {
             if (l.status == ListingStatus.paused)
               ListTile(
                 key: const ValueKey('action-resume'),
-                leading: const Icon(Icons.play_circle_outline),
+                leading: const Icon(LucideIcons.circlePlay),
                 title: const Text('Resume'),
                 onTap: () => Navigator.pop(context, 'resume'),
               ),
             ListTile(
               key: const ValueKey('action-delete'),
               leading: Icon(
-                Icons.delete_outline,
+                LucideIcons.trash2,
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(
@@ -136,7 +137,7 @@ class MyListingsScreen extends ConsumerWidget {
           await context.push(Routes.newListing);
           ref.invalidate(myListingsProvider);
         },
-        icon: const Icon(Icons.add),
+        icon: const Icon(LucideIcons.plus),
         label: const Text('List an item'),
       ),
       body: switch (listings) {
@@ -193,12 +194,12 @@ class _ListingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = listing;
     final (color, icon) = switch (l.status) {
-      ListingStatus.live => (SajhaColors.success, Icons.check_circle),
-      ListingStatus.pending => (SajhaColors.info, Icons.hourglass_top),
-      ListingStatus.paused => (SajhaColors.ink500, Icons.pause_circle),
+      ListingStatus.live => (SajhaColors.success, LucideIcons.circleCheck),
+      ListingStatus.pending => (SajhaColors.info, LucideIcons.hourglass),
+      ListingStatus.paused => (SajhaColors.ink500, LucideIcons.circlePause),
       ListingStatus.rejected ||
-      ListingStatus.removed => (SajhaColors.danger, Icons.error_outline),
-      _ => (SajhaColors.warning, Icons.edit_note),
+      ListingStatus.removed => (SajhaColors.danger, LucideIcons.circleAlert),
+      _ => (SajhaColors.warning, LucideIcons.notebookPen),
     };
     final reason = switch (l.status) {
       ListingStatus.rejected => 'Edit it to fix: ${l.rejectionReason}',
@@ -217,7 +218,7 @@ class _ListingTile extends StatelessWidget {
           child: l.cover == null
               ? const ColoredBox(
                   color: SajhaColors.ink100,
-                  child: Icon(Icons.image_outlined),
+                  child: Icon(LucideIcons.image),
                 )
               : ViewPhoto.url(l.cover!.thumbUrl).image(),
         ),
@@ -238,7 +239,7 @@ class _ListingTile extends StatelessWidget {
         ],
       ),
       isThreeLine: true,
-      trailing: const Icon(Icons.more_vert),
+      trailing: const Icon(LucideIcons.ellipsisVertical),
     );
   }
 }

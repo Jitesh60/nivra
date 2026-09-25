@@ -13,7 +13,7 @@ enum CreditKind {
   grantReferrer('GRANT_REFERRER', 'Invite reward'),
   hold('HOLD', 'Used on a booking'),
   release('RELEASE', 'Given back'),
-  revoke('REVOKE', 'Removed by Sajha');
+  revoke('REVOKE', 'Removed by Nivra');
 
   const CreditKind(this.apiValue, this.label);
   final String apiValue;

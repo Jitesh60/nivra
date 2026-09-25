@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -61,7 +63,7 @@ class PhotoGrid extends ConsumerWidget {
                   key: ValueKey('photo-remove-$i'),
                   visualDensity: VisualDensity.compact,
                   tooltip: 'Remove',
-                  icon: const Icon(Icons.close, size: 16),
+                  icon: const Icon(LucideIcons.x, size: 16),
                   onPressed: () => onChanged([...photos]..removeAt(i)),
                 ),
               ),
@@ -78,7 +80,7 @@ class PhotoGrid extends ConsumerWidget {
             onPressed: () => _add(context, ref),
             child: const Column(
               mainAxisSize: MainAxisSize.min,
-              children: [Icon(Icons.add_a_photo_outlined), Text('Add')],
+              children: [Icon(LucideIcons.imagePlus), Text('Add')],
             ),
           ),
       ],

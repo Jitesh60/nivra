@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -86,7 +87,7 @@ class _InviteCodeCardState extends ConsumerState<InviteCodeCard> {
                     key: const ValueKey('dismiss-invite-card'),
                     tooltip: 'Not now',
                     visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(LucideIcons.x),
                     onPressed: widget.onDismiss,
                   ),
               ],

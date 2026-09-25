@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -183,7 +185,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             const SizedBox(height: SajhaSpacing.md),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_outlined),
+              leading: const Icon(LucideIcons.calendar),
               title: Text(
                 _expiresOn == null
                     ? 'Expiry date (optional)'
@@ -193,7 +195,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   ? null
                   : IconButton(
                       tooltip: 'Clear expiry date',
-                      icon: const Icon(Icons.clear),
+                      icon: const Icon(LucideIcons.x),
                       onPressed: () => setState(() => _expiresOn = null),
                     ),
               onTap: _progress == null ? _pickExpiry : null,
@@ -283,7 +285,7 @@ class _PhotoSlot extends StatelessWidget {
     final placeholder = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.add_a_photo_outlined, color: scheme.primary),
+        Icon(LucideIcons.imagePlus, color: scheme.primary),
         const SizedBox(height: SajhaSpacing.xs),
         Text('Add ${label.toLowerCase()}'),
       ],
@@ -319,7 +321,7 @@ class _PhotoSlot extends StatelessWidget {
                         bottom: SajhaSpacing.xs,
                         child: Chip(
                           visualDensity: VisualDensity.compact,
-                          avatar: const Icon(Icons.check, size: 16),
+                          avatar: const Icon(LucideIcons.check, size: 16),
                           label: Text(label),
                         ),
                       ),

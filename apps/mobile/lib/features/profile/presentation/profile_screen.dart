@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -203,59 +204,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ListTile(
               key: const ValueKey('open-my-bookings'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_note_outlined),
+              leading: const Icon(LucideIcons.calendarDays),
               title: const Text('My bookings'),
               subtitle: const Text('Things you’re borrowing and lending'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.bookings),
             ),
             ListTile(
               key: const ValueKey('open-saved-searches'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.bookmark_border),
+              leading: const Icon(LucideIcons.bookmark),
               title: const Text('Saved searches'),
               subtitle: const Text('Alerts for new listings you’d like'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.savedSearches),
             ),
             ListTile(
               key: const ValueKey('open-my-requests'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.campaign_outlined),
+              leading: const Icon(LucideIcons.megaphone),
               title: const Text('My requests'),
               subtitle: const Text('Things you asked the community for'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.myRequests),
             ),
             ListTile(
               key: const ValueKey('open-invite'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.card_giftcard),
+              leading: const Icon(LucideIcons.gift),
               title: const Text('Invite friends'),
               subtitle: const Text('Give credit, get credit'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.invite),
             ),
             ListTile(
               key: const ValueKey('open-earnings'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_balance_wallet_outlined),
+              leading: const Icon(LucideIcons.wallet),
               title: const Text('Earnings & payouts'),
               subtitle: const Text('Money from lending, and your bank account'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.earnings),
             ),
             ListTile(
               key: const ValueKey('open-documents'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.badge_outlined),
+              leading: const Icon(LucideIcons.idCard),
               title: const Text('My documents'),
               subtitle: Text(
                 user.idVerified
                     ? 'ID verified'
                     : 'Add an ID to get the verified badge',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.documents),
             ),
             Text(
@@ -311,7 +312,7 @@ class _AvatarEditor extends StatelessWidget {
                 radius: 16,
                 backgroundColor: scheme.primary,
                 child: Icon(
-                  Icons.photo_camera,
+                  LucideIcons.camera,
                   size: 16,
                   color: scheme.onPrimary,
                 ),

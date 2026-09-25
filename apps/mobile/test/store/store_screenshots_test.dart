@@ -202,7 +202,8 @@ String _day(int offset) {
   return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
-/// Roboto and Material icons from the Flutter SDK, so text isn't boxes.
+/// Real fonts, so text and icons aren't boxes: Roboto and Material icons
+/// from the Flutter SDK, plus the app's bundled fonts and Lucide.
 Future<void> _loadFonts() async {
   var dir = File(Platform.resolvedExecutable).parent;
   while (!Directory('${dir.path}/material_fonts').existsSync()) {
@@ -219,6 +220,31 @@ Future<void> _loadFonts() async {
   await (FontLoader(
     'MaterialIcons',
   )..addFont(bytes('MaterialIcons-Regular.otf'))).load();
+
+  // The bundled DESIGN.md fonts and the Lucide icons (from the asset bundle).
+  Future<void> family(String name, List<String> assets) async {
+    final loader = FontLoader(name);
+    for (final a in assets) {
+      loader.addFont(rootBundle.load(a));
+    }
+    await loader.load();
+  }
+
+  await family('Plus Jakarta Sans', [
+    for (final w in ['400Regular', '500Medium', '600SemiBold', '700Bold'])
+      'assets/fonts/PlusJakartaSans_$w.ttf',
+  ]);
+  await family('Bricolage Grotesque', [
+    'assets/fonts/BricolageGrotesque_600SemiBold.ttf',
+    'assets/fonts/BricolageGrotesque_700Bold.ttf',
+  ]);
+  await family('JetBrains Mono', [
+    'assets/fonts/JetBrainsMono_400Regular.ttf',
+    'assets/fonts/JetBrainsMono_500Medium.ttf',
+  ]);
+  await family('packages/lucide_icons_flutter/Lucide', [
+    'packages/lucide_icons_flutter/assets/lucide.ttf',
+  ]);
 }
 
 /// Serves the placeholder photos for listing image URLs; 404 for anything else.

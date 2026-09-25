@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -79,7 +80,7 @@ class _PickupMapState extends ConsumerState<PickupMap> {
             child: Padding(
               padding: EdgeInsets.only(bottom: 40),
               child: Icon(
-                Icons.location_on,
+                LucideIcons.mapPin,
                 key: ValueKey('map-pin'),
                 size: 44,
                 color: SajhaColors.accent600,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +16,7 @@ import 'invite_code_card.dart';
 
 /// What the share sheet sends: the code and the link.
 String inviteText(Referral r) =>
-    'Borrow what you need from people nearby on Sajha. Use my code ${r.code} '
+    'Borrow what you need from people nearby on Nivra. Use my code ${r.code} '
     'for ${formatRupees(r.rules.refereeCreditPaise)} off your first rental: '
     '${r.link}';
 
@@ -124,7 +125,7 @@ class _Body extends ConsumerWidget {
                 IconButton(
                   key: const ValueKey('copy-code'),
                   tooltip: 'Copy code',
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(LucideIcons.copy),
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     await Clipboard.setData(ClipboardData(text: r.code));
@@ -144,9 +145,9 @@ class _Body extends ConsumerWidget {
           key: const ValueKey('share-invite'),
           onPressed: () => ref.read(textSharerProvider)(
             inviteText(r),
-            subject: 'Join me on Sajha',
+            subject: 'Join me on Nivra',
           ),
-          icon: const Icon(Icons.share_outlined),
+          icon: const Icon(LucideIcons.share2),
           label: const Text('Share your invite'),
         ),
         const SizedBox(height: SajhaSpacing.lg),

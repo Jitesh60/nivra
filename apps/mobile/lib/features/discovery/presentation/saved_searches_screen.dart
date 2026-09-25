@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -170,11 +171,7 @@ class _Empty extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.bookmark_border,
-            size: 48,
-            color: SajhaColors.ink400,
-          ),
+          const Icon(LucideIcons.bookmark, size: 48, color: SajhaColors.ink400),
           const SizedBox(height: SajhaSpacing.md),
           Text(
             'No saved searches yet',

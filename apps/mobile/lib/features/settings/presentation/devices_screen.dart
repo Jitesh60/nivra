@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -59,8 +60,8 @@ class DevicesScreen extends ConsumerWidget {
                 ListTile(
                   leading: Icon(
                     s.platform == 'ios'
-                        ? Icons.phone_iphone
-                        : Icons.phone_android,
+                        ? LucideIcons.smartphone
+                        : LucideIcons.smartphone,
                   ),
                   title: Text(s.deviceName ?? 'Unknown device'),
                   subtitle: Text(

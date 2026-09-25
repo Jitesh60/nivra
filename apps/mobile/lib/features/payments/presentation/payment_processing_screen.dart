@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,7 +77,7 @@ class _PaymentProcessingScreenState
     final (Widget icon, String title, String body) = confirmed
         ? (
             const Icon(
-              Icons.check_circle,
+              LucideIcons.circleCheck,
               size: 72,
               color: SajhaColors.success,
             ),
@@ -91,7 +93,7 @@ class _PaymentProcessingScreenState
         : _error != null
         ? (
             const Icon(
-              Icons.error_outline,
+              LucideIcons.circleAlert,
               size: 72,
               color: SajhaColors.danger,
             ),

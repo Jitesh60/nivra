@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -91,18 +92,18 @@ class _EditorState extends ConsumerState<_Editor> {
   Future<void> _done(SaveOutcome outcome) async {
     final (icon, title, body) = switch (outcome) {
       SaveOutcome.sentForReview => (
-        Icons.hourglass_top,
+        LucideIcons.hourglass,
         'Sent for review',
         'We check every lender’s first listing. You’ll see it go live in '
             'My listings, usually within a day.',
       ),
       SaveOutcome.live => (
-        Icons.celebration_outlined,
+        LucideIcons.partyPopper,
         'Your listing is live',
         'Borrowers near you can find it now.',
       ),
       SaveOutcome.saved => (
-        Icons.check_circle_outline,
+        LucideIcons.circleCheck,
         'Changes saved',
         'Your listing is up to date.',
       ),
@@ -174,7 +175,7 @@ class _EditorState extends ConsumerState<_Editor> {
             children: [
               if (draft.rejectionReason != null && _step == ListingStep.photos)
                 MaterialBanner(
-                  leading: const Icon(Icons.info_outline),
+                  leading: const Icon(LucideIcons.info),
                   content: Text('Reviewer’s note: ${draft.rejectionReason}'),
                   actions: const [SizedBox.shrink()],
                 ),

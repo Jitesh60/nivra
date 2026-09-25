@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -212,7 +213,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                         if (_dates != null)
                           IconButton(
                             tooltip: 'Any dates',
-                            icon: const Icon(Icons.close),
+                            icon: const Icon(LucideIcons.x),
                             onPressed: () => setState(() => _dates = null),
                           ),
                         TextButton(

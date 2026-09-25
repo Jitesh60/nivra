@@ -293,7 +293,7 @@ void main() {
       rahul,
       'search.alert',
       'New for “tent”',
-      'Quechua trekking tent is on Sajha now.',
+      'Quechua trekking tent is on Nivra now.',
       listingId: m.listing,
     );
     final alert = m.api.notificationsFor(rahul).last;

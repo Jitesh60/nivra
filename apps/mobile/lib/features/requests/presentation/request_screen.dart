@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -93,7 +94,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
         await askToVerifyEmail(
           context,
           why:
-              'To keep chats safe, everyone chatting on Sajha has a '
+              'To keep chats safe, everyone chatting on Nivra has a '
               'verified phone and email.',
         );
       } else {
@@ -118,7 +119,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
             note: draft.note,
           );
       messenger.showSnackBar(
-        const SnackBar(content: Text('Thanks. Sajha will look into it.')),
+        const SnackBar(content: Text('Thanks. Nivra will look into it.')),
       );
     } on ApiException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
@@ -209,9 +210,9 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
         Text(r.details, style: text.bodyLarge),
         const SizedBox(height: SajhaSpacing.md),
         for (final (icon, line) in [
-          (Icons.place_outlined, r.placeLine),
-          if (r.category case final c?) (Icons.category_outlined, c.name),
-          if (terms != null) (Icons.event_outlined, terms),
+          (LucideIcons.mapPin, r.placeLine),
+          if (r.category case final c?) (LucideIcons.layoutGrid, c.name),
+          if (terms != null) (LucideIcons.calendar, terms),
         ])
           Padding(
             padding: const EdgeInsets.only(bottom: SajhaSpacing.xs),
@@ -234,7 +235,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                 if (r.borrower.idVerified) ...[
                   const SizedBox(width: SajhaSpacing.xs),
                   const Icon(
-                    Icons.verified,
+                    LucideIcons.badgeCheck,
                     size: 16,
                     color: SajhaColors.brand600,
                     semanticLabel: 'ID verified',
@@ -249,7 +250,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
             FilledButton.icon(
               key: const ValueKey('offer-item'),
               onPressed: _busy ? null : () => _offer(r),
-              icon: const Icon(Icons.volunteer_activism_outlined),
+              icon: const Icon(LucideIcons.handHeart),
               label: Text(
                 r.answeredByMe ? 'Offer another item' : 'Offer your item',
               ),
@@ -315,7 +316,7 @@ class ResponseTile extends StatelessWidget {
         ].join(' · '),
       ),
       subtitle: Text(x.message, maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: const Icon(Icons.chat_bubble_outline),
+      trailing: const Icon(LucideIcons.messageCircle),
       onTap: () => context.push(Routes.chat(x.conversationId)),
     );
   }
@@ -405,8 +406,8 @@ class _OfferItemSheetState extends ConsumerState<OfferItemSheet> {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(
                         _listingId == l.id
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
+                            ? LucideIcons.circleDot
+                            : LucideIcons.circle,
                         color: _listingId == l.id ? SajhaColors.brand600 : null,
                       ),
                       title: Text(l.title),

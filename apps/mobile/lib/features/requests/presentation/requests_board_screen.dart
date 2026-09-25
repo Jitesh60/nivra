@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,7 +57,7 @@ class _RequestsBoardScreenState extends ConsumerState<RequestsBoardScreen> {
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('new-request'),
         onPressed: () => context.push(Routes.newRequest),
-        icon: const Icon(Icons.add),
+        icon: const Icon(LucideIcons.plus),
         label: const Text('Ask for something'),
       ),
       body: area == null && !board.isLoading
@@ -74,7 +75,7 @@ class _RequestsBoardScreenState extends ConsumerState<RequestsBoardScreen> {
                       if (area != null) ...[
                         ActionChip(
                           key: const ValueKey('requests-area'),
-                          avatar: const Icon(Icons.place_outlined, size: 18),
+                          avatar: const Icon(LucideIcons.mapPin, size: 18),
                           label: Text(area.label),
                           onPressed: () => showAreaSheet(context),
                         ),
@@ -179,7 +180,7 @@ class _NoArea extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.near_me_outlined,
+            LucideIcons.navigation,
             size: 48,
             color: SajhaColors.ink400,
           ),

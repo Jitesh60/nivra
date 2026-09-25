@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -85,18 +87,18 @@ Future<PhotoSourceChoice?> choosePhotoSource(
       mainAxisSize: MainAxisSize.min,
       children: [
         ListTile(
-          leading: const Icon(Icons.photo_camera_outlined),
+          leading: const Icon(LucideIcons.camera),
           title: const Text('Take photo'),
           onTap: () => Navigator.pop(context, PhotoSourceChoice.camera),
         ),
         ListTile(
-          leading: const Icon(Icons.photo_library_outlined),
+          leading: const Icon(LucideIcons.images),
           title: const Text('Choose from gallery'),
           onTap: () => Navigator.pop(context, PhotoSourceChoice.gallery),
         ),
         if (allowRemove)
           ListTile(
-            leading: const Icon(Icons.delete_outline),
+            leading: const Icon(LucideIcons.trash2),
             title: const Text('Remove photo'),
             onTap: () => Navigator.pop(context, PhotoSourceChoice.remove),
           ),

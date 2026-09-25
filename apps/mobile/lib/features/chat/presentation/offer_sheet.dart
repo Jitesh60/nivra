@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -113,7 +114,7 @@ class _OfferSheetState extends ConsumerState<OfferSheet> {
           OutlinedButton.icon(
             key: const ValueKey('offer-dates'),
             onPressed: _chooseDates,
-            icon: const Icon(Icons.event_outlined),
+            icon: const Icon(LucideIcons.calendar),
             label: Text(
               _dates == null
                   ? 'Choose dates'
