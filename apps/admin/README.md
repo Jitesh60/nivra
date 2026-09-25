@@ -22,6 +22,8 @@ pnpm --filter @sajha/api seed:admin -- --email you@sajha.app --name "Your Name"
 - Navigation per role: `src/lib/roles.ts`. The API enforces the same rules.
 - Document images are served by `src/app/(dashboard)/documents/[id]/image/route.ts`: it asks the API for a 5-minute signed URL (the API logs the view), fetches the bytes on the server and returns them with `Cache-Control: no-store`. The storage URL never reaches the browser.
 - Rental condition and dispute photos are served the same way by `bookings/[id]/photos/[n]` and `disputes/[id]/photos/[n]` (`src/lib/photo-proxy.ts`; add `?thumb=1` for the thumbnail).
+- The overview (`/`) is the analytics dashboard: KPIs, daily charts (`src/components/charts/bar-chart.tsx`, plain SVG), the funnel and a live snapshot, over 7, 30 or 90 days.
+- Sentry is off unless `SENTRY_DSN` (server) / `NEXT_PUBLIC_SENTRY_DSN` (browser) is set; options and scrubbing are in `src/lib/sentry.ts`.
 - UI components are in `src/components/ui` (shadcn/ui, see `components.json`). Add more with `pnpm dlx shadcn@latest add <component>`.
 
 ## Tests

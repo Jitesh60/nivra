@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import { RENT_PAGES } from '@/content/rent-pages';
 import { CONTACT_EMAIL, NAV } from '@/lib/site';
 
 export function Footer() {
   return (
     <footer className="bg-ink-950 px-4 text-ink-300">
-      <div className="mx-auto grid max-w-6xl gap-8 py-12 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-8 py-12 sm:grid-cols-4">
         <div>
           <p className="font-display text-xl font-bold text-white">Sajha</p>
           <p className="mt-2 text-sm">Borrow what you need. Lend what you don’t use.</p>
@@ -19,12 +20,22 @@ export function Footer() {
             Contact
           </Link>
         </nav>
+        <nav aria-label="Rent in Pune" className="grid content-start gap-2 text-sm">
+          {RENT_PAGES.map((p) => (
+            <Link key={p.slug} href={`/rent/${p.slug}`} className="hover:text-white">
+              {p.name}
+            </Link>
+          ))}
+        </nav>
         <div className="grid content-start gap-2 text-sm">
           <Link href="/terms" className="hover:text-white">
             Terms of Service
           </Link>
           <Link href="/privacy" className="hover:text-white">
             Privacy Policy
+          </Link>
+          <Link href="/delete-account" className="hover:text-white">
+            Delete your account
           </Link>
           <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">
             {CONTACT_EMAIL}
