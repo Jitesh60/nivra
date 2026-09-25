@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 
 part 'fake_bookings.dart';
 part 'fake_chat.dart';
+part 'fake_growth.dart';
 part 'fake_payments.dart';
 part 'fake_rentals.dart';
 
@@ -149,6 +150,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       'emailBookings': true,
       'smsReminders': true,
       'marketing': false,
+      'pushSearchAlerts': true,
+      'pushRequests': true,
     },
   );
 
@@ -292,6 +295,9 @@ class FakeSajhaApi implements HttpClientAdapter {
   /// Bookings and notifications (see fake_bookings.dart).
   final bookingState = FakeBookings();
   final payments = FakePayments();
+
+  /// Saved searches, requests and invite credit (see fake_growth.dart).
+  final growth = FakeGrowth();
 
   /// The user the app is signed in as (the last authenticated caller).
   String? appUserId;
@@ -691,6 +697,8 @@ class FakeSajhaApi implements HttpClientAdapter {
     if (paymentResult != null) return paymentResult;
     final bookingResult = _bookings(method, path, body, query, user);
     if (bookingResult != null) return bookingResult;
+    final growthResult = _growth(method, path, body, query, user);
+    if (growthResult != null) return growthResult;
     final chatResult = _chat(method, path, body, query, user);
     if (chatResult != null) return chatResult;
     return _error(404, 'NOT_FOUND', 'Cannot $method $path');
@@ -851,6 +859,7 @@ class FakeSajhaApi implements HttpClientAdapter {
           l,
           DateTime.parse(query['startDate']!),
           DateTime.parse(query['endDate']!),
+          borrowerId: viewer?.id,
         ),
       );
     }
@@ -946,7 +955,12 @@ class FakeSajhaApi implements HttpClientAdapter {
   }
 
   /// Same rules as the API's `pricing.ts`.
-  Map<String, dynamic> _quote(FakeListing l, DateTime start, DateTime end) {
+  Map<String, dynamic> _quote(
+    FakeListing l,
+    DateTime start,
+    DateTime end, {
+    String? borrowerId,
+  }) {
     final f = l.fields;
     final days = end.difference(start).inDays + 1;
     final price = f['pricePerDayPaise'] as int;
@@ -973,6 +987,9 @@ class FakeSajhaApi implements HttpClientAdapter {
         ? 'BLOCKED'
         : null;
     final deposit = f['depositPaise'] as int;
+    final credit = borrowerId == null || borrowerId == l.lenderId
+        ? 0
+        : creditFor(borrowerId, before - discount);
     return {
       'days': days,
       'pricePerDayPaise': price,
@@ -981,7 +998,8 @@ class FakeSajhaApi implements HttpClientAdapter {
       'rentPaise': before - discount,
       'feePaise': 0,
       'depositPaise': deposit,
-      'totalPaise': before - discount + deposit,
+      'creditPaise': credit,
+      'totalPaise': before - discount + deposit - credit,
       'available': reason == null,
       'unavailableReason': reason,
     };

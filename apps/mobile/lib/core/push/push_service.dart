@@ -4,13 +4,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// What a tapped notification points to.
 class PushOpen {
-  const PushOpen({this.conversationId, this.bookingId});
+  const PushOpen({
+    this.conversationId,
+    this.bookingId,
+    this.listingId,
+    this.requestId,
+    this.type,
+  });
   final String? conversationId;
   final String? bookingId;
+
+  /// A new listing for a saved search.
+  final String? listingId;
+  final String? requestId;
+
+  /// The notification type, e.g. `referral.rewarded`.
+  final String? type;
 
   static PushOpen fromData(Map<String, dynamic> data) => PushOpen(
     conversationId: data['conversationId'] as String?,
     bookingId: data['bookingId'] as String?,
+    listingId: data['listingId'] as String?,
+    requestId: data['requestId'] as String?,
+    type: data['type'] as String?,
   );
 }
 

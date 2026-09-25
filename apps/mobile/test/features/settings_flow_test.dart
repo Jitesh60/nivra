@@ -48,6 +48,8 @@ void main() {
       'emailBookings': true,
       'smsReminders': true,
       'marketing': true,
+      'pushSearchAlerts': true,
+      'pushRequests': true,
     });
   });
 

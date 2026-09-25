@@ -225,7 +225,11 @@ extension FakePaymentsApi on FakeSajhaApi {
         final open = orderFor(b.id);
         final order = open != null && open.status != 'CAPTURED'
             ? (open..status = 'CREATED')
-            : FakePayment('order_${++_seq}', b.id, b.rent + b.deposit);
+            : FakePayment(
+                'order_${++_seq}',
+                b.id,
+                b.rent + b.deposit - b.credit,
+              );
         payments.orders[order.orderId] = order;
         return (
           200,
@@ -334,8 +338,9 @@ extension FakePaymentsApi on FakeSajhaApi {
         : hours >= 24
         ? 'HALF_RENT'
         : 'DEPOSIT_ONLY';
+    // Credit paid part of the rent: a full refund gives it back as credit.
     final rent = switch (tier) {
-      'FULL' => b.rent,
+      'FULL' => b.rent - b.credit,
       'HALF_RENT' => (b.rent / 2).round(),
       _ => 0,
     };
@@ -346,6 +351,7 @@ extension FakePaymentsApi on FakeSajhaApi {
       'rentPaise': rent,
       'feePaise': 0,
       'depositPaise': b.deposit,
+      'creditBackPaise': tier == 'FULL' ? b.credit : 0,
       'tier': tier,
       'summary': lender
           ? 'The borrower gets everything back ($rupees), and the '

@@ -26,6 +26,16 @@ class NotificationSettingsScreen extends ConsumerWidget {
               'Reminders',
               'Pickup tomorrow, return tomorrow, due today',
             ),
+            (
+              NotificationSwitch.pushSearchAlerts,
+              'Saved search alerts',
+              'New listings that match a search you saved',
+            ),
+            (
+              NotificationSwitch.pushRequests,
+              'Requests near you',
+              'Someone nearby needs something you lend, and answers to your requests',
+            ),
           ],
         ),
         (

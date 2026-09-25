@@ -70,6 +70,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     var message = b.isBorrower
         ? 'Nothing has been paid, so there’s nothing to refund.'
         : 'Cancelling after accepting counts against you as a lender.';
+    if (b.isBorrower && b.creditPaise > 0) {
+      message += ' Your invite credit goes back to your balance.';
+    }
     if (d.payment?.status.paid ?? false) {
       // What comes back depends on how close pickup is: ask the API.
       setState(() => _busy = true);
@@ -78,6 +81,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             .read(bookingsRepositoryProvider)
             .cancelPreview(b.id);
         message = preview.summary;
+        if (preview.creditBackPaise > 0) {
+          message +=
+              ' Your invite credit of ${formatRupees(preview.creditBackPaise)} '
+              'goes back to your balance.';
+        }
       } on ApiException catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context)
@@ -384,6 +392,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         ),
         if (b.feePaise > 0) _line('Service fee', formatRupees(b.feePaise)),
         _line('Refundable deposit', formatRupees(b.depositPaise)),
+        if (b.creditPaise > 0)
+          _line(
+            b.isBorrower ? 'Invite credit' : 'Borrower’s invite credit',
+            '− ${formatRupees(b.creditPaise)}',
+            key: 'booking-credit',
+          ),
         _line('Total', formatRupees(b.totalPaise), bold: true),
         if (b.fromOffer)
           Text(

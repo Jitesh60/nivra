@@ -21,6 +21,8 @@ import '../../discovery/presentation/area_sheet.dart';
 import '../../discovery/presentation/listing_card.dart';
 import '../../listings/presentation/category_icon.dart';
 import '../../../shared/widgets/nivra_logo.dart';
+import '../../referrals/application/referral_controller.dart';
+import '../../referrals/presentation/invite_code_card.dart';
 
 /// The borrower's front page: search, the area, categories and feeds.
 /// Guests see it too; signed-in users also get verification and lending.
@@ -148,10 +150,20 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
             },
+            if (user != null) const _InviteCodeSlot(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 SajhaSpacing.lg,
                 SajhaSpacing.xl,
+                SajhaSpacing.lg,
+                0,
+              ),
+              child: _AskCard(signedIn: user != null),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                SajhaSpacing.lg,
+                SajhaSpacing.md,
                 SajhaSpacing.lg,
                 0,
               ),
@@ -375,6 +387,59 @@ class _VerificationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// New members who can still enter a friend's code are offered to, once.
+class _InviteCodeSlot extends ConsumerWidget {
+  const _InviteCodeSlot();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final referral = ref.watch(referralProvider).value;
+    if (referral == null ||
+        !referral.canRedeem ||
+        ref.watch(inviteCardDismissedProvider)) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        SajhaSpacing.lg,
+        SajhaSpacing.xl,
+        SajhaSpacing.lg,
+        0,
+      ),
+      child: InviteCodeCard(
+        referral: referral,
+        onDismiss: ref.read(inviteCardDismissedProvider.notifier).dismiss,
+      ),
+    );
+  }
+}
+
+/// The way into the requests board.
+class _AskCard extends ConsumerWidget {
+  const _AskCard({required this.signedIn});
+  final bool signedIn;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Card(
+    child: ListTile(
+      key: const ValueKey('open-requests'),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: SajhaSpacing.md,
+        vertical: SajhaSpacing.xs,
+      ),
+      leading: const Icon(LucideIcons.megaphone),
+      title: const Text('Can’t find it? Ask the community'),
+      subtitle: const Text(
+        'Tell people nearby what you need, or see what they’re looking for.',
+      ),
+      trailing: const Icon(LucideIcons.chevronRight),
+      onTap: () => signedIn
+          ? context.push(Routes.requests)
+          : requireSignIn(context, ref, Routes.requests),
+    ),
+  );
 }
 
 class _LendCard extends ConsumerWidget {

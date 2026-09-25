@@ -310,7 +310,8 @@ enum ReportReason {
 enum ReportTarget {
   user('USER'),
   listing('LISTING'),
-  message('MESSAGE');
+  message('MESSAGE'),
+  request('REQUEST');
 
   const ReportTarget(this.apiValue);
   final String apiValue;

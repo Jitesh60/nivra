@@ -101,6 +101,14 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => context.push(Routes.notificationSettings),
           ),
+          ListTile(
+            key: const ValueKey('settings-invite'),
+            leading: const Icon(LucideIcons.gift),
+            title: const Text('Invite friends'),
+            subtitle: const Text('Your code, and credit you’ve earned'),
+            trailing: const Icon(LucideIcons.chevronRight),
+            onTap: () => context.push(Routes.invite),
+          ),
           const Divider(),
           ListTile(
             key: const ValueKey('devices'),

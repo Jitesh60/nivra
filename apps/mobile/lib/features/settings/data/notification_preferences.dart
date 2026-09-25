@@ -12,6 +12,8 @@ enum NotificationSwitch {
   emailBookings,
   smsReminders,
   marketing,
+  pushSearchAlerts,
+  pushRequests,
 }
 
 /// What the user wants to hear about by push, email and SMS. In-app

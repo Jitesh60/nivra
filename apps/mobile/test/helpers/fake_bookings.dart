@@ -33,6 +33,9 @@ class FakeBooking {
   final int rent;
   final int deposit;
   final bool fromOffer;
+
+  /// Invite credit held for this booking.
+  int credit = 0;
   String status;
   DateTime? expiresAt = DateTime.now().toUtc().add(const Duration(hours: 24));
   String? declineReason;
@@ -65,14 +68,18 @@ class FakeNotification {
     this.type,
     this.title,
     this.body,
-    this.bookingId,
-  );
+    this.bookingId, {
+    this.listingId,
+    this.requestId,
+  });
   final String id;
   final String userId;
   final String type;
   final String title;
   final String body;
   final String? bookingId;
+  final String? listingId;
+  final String? requestId;
   final createdAt = DateTime.now().toUtc();
   DateTime? readAt;
 
@@ -82,6 +89,8 @@ class FakeNotification {
     'title': title,
     'body': body,
     'bookingId': bookingId,
+    'listingId': listingId,
+    'requestId': requestId,
     'readAt': readAt?.toIso8601String(),
     'createdAt': createdAt.toIso8601String(),
   };
@@ -258,6 +267,7 @@ extension FakeBookingsApi on FakeSajhaApi {
           start: body['startDate'] as String,
           end: body['endDate'] as String,
         );
+        _holdCredit(b);
         _system(
           chat.conversations[b.conversationId]!,
           user.id,
@@ -423,6 +433,7 @@ extension FakeBookingsApi on FakeSajhaApi {
           ..cancelledBy = lender ? 'LENDER' : 'BORROWER'
           ..cancelReason = (body['reason'] as String).trim();
         if (paid) _refundCancelled(b, lender: lender);
+        _releaseCredit(b);
         _move(b, 'CANCELLED', 'CANCELLED', user.id, note: b.cancelReason);
         _notify(
           lender ? b.borrowerId : b.lenderId,
@@ -579,8 +590,10 @@ extension FakeBookingsApi on FakeSajhaApi {
     String type,
     String title,
     String body,
-    String bookingId, {
+    String? bookingId, {
     required bool push,
+    String? listingId,
+    String? requestId,
   }) {
     final n = FakeNotification(
       'notif-${(++_seq).toString().padLeft(6, '0')}',
@@ -589,6 +602,8 @@ extension FakeBookingsApi on FakeSajhaApi {
       title,
       body,
       bookingId,
+      listingId: listingId,
+      requestId: requestId,
     );
     bookingState.notifications.add(n);
     onRealtime?.call(userId, 'notification:new', n.json);
@@ -635,7 +650,8 @@ extension FakeBookingsApi on FakeSajhaApi {
       'rentPaise': b.rent,
       'feePaise': 0,
       'depositPaise': b.deposit,
-      'totalPaise': b.rent + b.deposit,
+      'creditPaise': b.credit,
+      'totalPaise': b.rent + b.deposit - b.credit,
       'expiresAt': b.expiresAt?.toIso8601String(),
       'declineReason': b.declineReason,
       'cancelledBy': b.cancelledBy,
