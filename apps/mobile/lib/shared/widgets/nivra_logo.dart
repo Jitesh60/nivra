@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/tokens.g.dart';
@@ -45,46 +47,62 @@ class NivraLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onDark = inverse ?? Theme.of(context).brightness == Brightness.dark;
-    return Semantics(
-      label: 'Nivra',
-      excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NivraMark(size: size),
-          SizedBox(width: size * 0.3),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'nivra',
-                style: TextStyle(
-                  fontFamily: SajhaFonts.display,
-                  fontWeight: FontWeight.w700,
-                  fontSize: size * 0.72,
-                  height: 1,
-                  letterSpacing: size * 0.72 * -0.04,
-                  color: onDark ? cream : green,
-                ),
-              ),
-              if (tagline) ...[
-                SizedBox(height: size * 0.12),
+    // Where there's no room for the wordmark (a busy app bar), show the tile.
+    return LayoutBuilder(
+      builder: (context, constraints) => Semantics(
+        label: 'Nivra',
+        excludeSemantics: true,
+        child: constraints.maxWidth < size * 3.4
+            ? NivraMark(size: math.min(size, constraints.maxWidth))
+            : _full(onDark),
+      ),
+    );
+  }
+
+  Widget _full(bool onDark) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        NivraMark(size: size),
+        SizedBox(width: size * 0.3),
+        // Scales down rather than overflowing in tight spots.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'BORROW · LEND · SHARE',
+                  'nivra',
                   style: TextStyle(
-                    fontFamily: SajhaFonts.sans,
-                    fontWeight: FontWeight.w600,
-                    fontSize: size * 0.24,
-                    letterSpacing: size * 0.24 * 0.3,
-                    color: orange,
+                    fontFamily: SajhaFonts.display,
+                    fontWeight: FontWeight.w700,
+                    fontSize: size * 0.72,
+                    height: 1,
+                    letterSpacing: size * 0.72 * -0.04,
+                    color: onDark ? cream : green,
                   ),
                 ),
+                if (tagline) ...[
+                  SizedBox(height: size * 0.12),
+                  Text(
+                    'BORROW · LEND · SHARE',
+                    style: TextStyle(
+                      fontFamily: SajhaFonts.sans,
+                      fontWeight: FontWeight.w600,
+                      fontSize: size * 0.24,
+                      letterSpacing: size * 0.24 * 0.3,
+                      color: orange,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

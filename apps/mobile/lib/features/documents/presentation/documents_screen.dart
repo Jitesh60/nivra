@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -57,20 +58,20 @@ class DocumentsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.visibility_outlined),
+              leading: const Icon(LucideIcons.eye),
               title: Text(doc.hasBack ? 'View front' : 'View'),
               onTap: () => Navigator.pop(context, _Action.viewFront),
             ),
             if (doc.hasBack)
               ListTile(
-                leading: const Icon(Icons.flip_outlined),
+                leading: const Icon(LucideIcons.flipHorizontal),
                 title: const Text('View back'),
                 onTap: () => Navigator.pop(context, _Action.viewBack),
               ),
             ListTile(
               key: const ValueKey('delete-document'),
               leading: Icon(
-                Icons.delete_outline,
+                LucideIcons.trash2,
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(
@@ -136,7 +137,7 @@ class DocumentsScreen extends ConsumerWidget {
           ? FloatingActionButton.extended(
               key: const ValueKey('add-document'),
               onPressed: () => _add(context, ref),
-              icon: const Icon(Icons.add),
+              icon: const Icon(LucideIcons.plus),
               label: const Text('Add document'),
             )
           : null,
@@ -205,7 +206,7 @@ class _PrivacyNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock_outline, color: scheme.primary),
+          Icon(LucideIcons.lock, color: scheme.primary),
           const SizedBox(width: SajhaSpacing.sm),
           const Expanded(
             child: Text(
@@ -230,21 +231,21 @@ class _DocumentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final expired = doc.status == DocumentStatus.approved && doc.isExpired();
     final (label, color, icon) = switch (doc.status) {
-      _ when expired => ('Expired', SajhaColors.warning, Icons.event_busy),
+      _ when expired => ('Expired', SajhaColors.warning, LucideIcons.calendarX),
       DocumentStatus.pending => (
         'Under review',
         SajhaColors.info,
-        Icons.hourglass_top,
+        LucideIcons.hourglass,
       ),
       DocumentStatus.approved => (
         'Approved',
         SajhaColors.success,
-        Icons.verified,
+        LucideIcons.badgeCheck,
       ),
       DocumentStatus.rejected => (
         'Rejected',
         SajhaColors.danger,
-        Icons.cancel_outlined,
+        LucideIcons.circleX,
       ),
     };
     final reason = doc.status == DocumentStatus.rejected
@@ -253,7 +254,7 @@ class _DocumentTile extends StatelessWidget {
 
     return ListTile(
       key: ValueKey('document-${doc.id}'),
-      leading: const Icon(Icons.badge_outlined),
+      leading: const Icon(LucideIcons.idCard),
       title: Text(doc.title),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,7 +272,7 @@ class _DocumentTile extends StatelessWidget {
         ],
       ),
       isThreeLine: reason != null,
-      trailing: const Icon(Icons.more_vert),
+      trailing: const Icon(LucideIcons.ellipsisVertical),
       onTap: onTap,
     );
   }

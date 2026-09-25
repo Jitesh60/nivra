@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -102,7 +103,7 @@ class ListingCardTile extends StatelessWidget {
                 children: [
                   if (card.lender.idVerified) ...[
                     const Icon(
-                      Icons.verified,
+                      LucideIcons.badgeCheck,
                       size: 14,
                       color: SajhaColors.brand600,
                       semanticLabel: 'ID-verified lender',
@@ -134,7 +135,7 @@ class _Thumb extends StatelessWidget {
   Widget build(BuildContext context) {
     const placeholder = ColoredBox(
       color: SajhaColors.ink100,
-      child: Center(child: Icon(Icons.image_outlined)),
+      child: Center(child: Icon(LucideIcons.image)),
     );
     if (url == null) return placeholder;
     return Image.network(
@@ -212,7 +213,8 @@ class SaveButton extends ConsumerWidget {
     }
 
     final icon = Icon(
-      saved ? Icons.favorite : Icons.favorite_border,
+      // Lucide has no filled heart: the saved state keeps Material's.
+      saved ? Icons.favorite : LucideIcons.heart,
       color: saved ? SajhaColors.accent600 : (onPhoto ? Colors.white : null),
     );
     return IconButton(

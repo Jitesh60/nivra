@@ -9,7 +9,7 @@ Where the components live:
 | App | Components |
 |---|---|
 | Web + admin | **`packages/ui`** (`@sajha/ui`): React + Tailwind |
-| Mobile | `apps/mobile/lib/shared/widgets/` plus the Material theme in `app_theme.dart` |
+| Mobile | `apps/mobile/lib/shared/widgets/` (`SajhaButton`, `SajhaCard`, `SajhaBadge`, `DotsLoader`, `EmptyState`, `NivraLogo`) plus the Material theme and `SajhaTokens` extension in `app_theme.dart`; fonts bundled in `assets/fonts/` |
 
 A component looks and measures the same on every platform. When you change one, change all three.
 
@@ -31,7 +31,7 @@ The Nivra mark: two people whose arms form a heart around a shared box. The artw
 | `mark-light.svg` / `mark-dark.svg` | the mark alone (cream or green), e.g. on the splash screen |
 
 - **Web and admin:** `<Logo />` (tile + "nivra" wordmark; `inverse` on dark backgrounds, `suffix="Admin"`, `tagline` for "Borrow · Lend · Share") and `<LogoMark />` from `@sajha/ui`. `ICON_SVG` is the tile as a string, for generated images.
-- **Mobile:** launcher icon, splash and in-app logo are rendered from the same SVGs (`apps/mobile/assets/brand/render.mjs`).
+- **Mobile:** launcher icon, adaptive icon, splash and the in-app tile (`logo-mark.png`, used by `NivraLogo`/`NivraMark`) are rendered from the same artwork (`apps/mobile/assets/brand/nivra-*.svg`, `render.mjs`).
 - **Wordmark:** "nivra" in lowercase, display type, bold, tracking −4%, deep green `#1E4D3A` (cream `#FBF8F2` on dark). The tagline is caption type, uppercase, tracking 0.3em, orange `#EC7A3A`.
 - Keep clear space of at least half the tile's width around the logo. Don't recolour, stretch or add effects to the mark.
 
@@ -110,7 +110,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 | full | buttons, badges, avatars, segmented toggles |
 
 - **Borders:** 1 px, in `border`.
-- **Icons:** **Lucide** everywhere (`lucide-react`, `lucide_icons_flutter`). Sizes 16 inline, 20 in buttons and lists, 24 in navigation. Stroke width 2.
+- **Icons:** **Lucide** everywhere (`lucide-react`, `lucide_icons_flutter`). Sizes 16 inline, 20 in buttons and lists, 24 in navigation. Stroke width 2. One exception: Lucide has no filled icons, so the app's "saved" heart stays Material's filled heart in accent orange.
 - **Elevation:**
 
 | Level | Used for |

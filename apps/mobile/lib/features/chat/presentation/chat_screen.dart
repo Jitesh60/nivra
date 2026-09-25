@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -207,7 +208,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
                         if (c.other.idVerified) ...[
                           const SizedBox(width: 4),
                           const Icon(
-                            Icons.verified,
+                            LucideIcons.badgeCheck,
                             size: 16,
                             color: SajhaColors.brand600,
                           ),
@@ -363,10 +364,7 @@ class _DealBanner extends StatelessWidget {
       key: const ValueKey('deal-banner'),
       color: SajhaColors.brand50,
       child: ListTile(
-        leading: const Icon(
-          Icons.handshake_outlined,
-          color: SajhaColors.brand700,
-        ),
+        leading: const Icon(LucideIcons.handshake, color: SajhaColors.brand700),
         title: Text(
           o == null
               ? 'Booking in progress'
@@ -452,13 +450,13 @@ class _Composer extends StatelessWidget {
                 key: const ValueKey('send-photo'),
                 tooltip: 'Send a photo',
                 onPressed: onPhoto,
-                icon: const Icon(Icons.photo_outlined),
+                icon: const Icon(LucideIcons.image),
               ),
               IconButton(
                 key: const ValueKey('make-offer'),
                 tooltip: 'Make an offer',
                 onPressed: onOffer,
-                icon: const Icon(Icons.local_offer_outlined),
+                icon: const Icon(LucideIcons.tag),
               ),
               Expanded(
                 child: TextField(
@@ -481,7 +479,7 @@ class _Composer extends StatelessWidget {
                 key: const ValueKey('send-message'),
                 tooltip: 'Send',
                 onPressed: onSend,
-                icon: const Icon(Icons.send, color: SajhaColors.brand600),
+                icon: const Icon(LucideIcons.send, color: SajhaColors.brand600),
               ),
             ],
           ),
@@ -571,13 +569,12 @@ class _Bubble extends StatelessWidget {
           ? Image.memory(
               m.localImage!,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const Icon(Icons.image_outlined),
+              errorBuilder: (_, _, _) => const Icon(LucideIcons.image),
             )
           : Image.network(
               m.thumbUrl ?? '',
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image_outlined),
+              errorBuilder: (_, _, _) => const Icon(LucideIcons.imageOff),
             );
       content = GestureDetector(
         onTap: m.imageUrl == null
@@ -645,7 +642,7 @@ class _Bubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.lock_outline,
+                  LucideIcons.lock,
                   size: 12,
                   color: scheme.onSurfaceVariant,
                 ),
@@ -669,7 +666,7 @@ class _Bubble extends StatelessWidget {
             key: ValueKey('retry-${m.clientId}'),
             onPressed: onRetry,
             icon: const Icon(
-              Icons.error_outline,
+              LucideIcons.circleAlert,
               color: SajhaColors.danger,
               size: 16,
             ),
@@ -687,21 +684,21 @@ class _Ticks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (message.sendState) {
-    SendState.sending => Icon(Icons.schedule, size: 14, color: color),
+    SendState.sending => Icon(LucideIcons.clock, size: 14, color: color),
     SendState.failed => const Icon(
-      Icons.error_outline,
+      LucideIcons.circleAlert,
       size: 14,
       color: Colors.white,
     ),
     SendState.sent when message.readAt != null => Icon(
-      Icons.done_all,
+      LucideIcons.checkCheck,
       size: 14,
       color: SajhaColors.accent200,
       semanticLabel: 'Read',
       key: ValueKey('read-${message.id}'),
     ),
     SendState.sent => Icon(
-      Icons.done,
+      LucideIcons.check,
       size: 14,
       color: color,
       semanticLabel: 'Sent',
@@ -767,7 +764,7 @@ class _OfferCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.local_offer_outlined, size: 18),
+                    const Icon(LucideIcons.tag, size: 18),
                     const SizedBox(width: SajhaSpacing.xs),
                     Expanded(
                       child: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,12 +58,12 @@ class PhotosStep extends ConsumerWidget {
           children: [
             if (!isCover)
               ListTile(
-                leading: const Icon(Icons.star_outline),
+                leading: const Icon(LucideIcons.star),
                 title: const Text('Make cover photo'),
                 onTap: () => Navigator.pop(context, 'cover'),
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline),
+              leading: const Icon(LucideIcons.trash2),
               title: const Text('Remove'),
               onTap: () => Navigator.pop(context, 'remove'),
             ),
@@ -135,7 +136,7 @@ class PhotosStep extends ConsumerWidget {
               child: OutlinedButton.icon(
                 key: const ValueKey('add-photos'),
                 onPressed: full ? null : () => _add(context, ref, false),
-                icon: const Icon(Icons.photo_library_outlined),
+                icon: const Icon(LucideIcons.images),
                 label: const Text('Choose photos'),
               ),
             ),
@@ -144,7 +145,7 @@ class PhotosStep extends ConsumerWidget {
               child: OutlinedButton.icon(
                 key: const ValueKey('take-photo'),
                 onPressed: full ? null : () => _add(context, ref, true),
-                icon: const Icon(Icons.photo_camera_outlined),
+                icon: const Icon(LucideIcons.camera),
                 label: const Text('Take photo'),
               ),
             ),
@@ -487,7 +488,7 @@ class AvailabilityStep extends ConsumerWidget {
             onPressed: d.blocks.length >= rules.maxBlockedRanges
                 ? null
                 : () => _block(context, ref),
-            icon: const Icon(Icons.event_busy_outlined),
+            icon: const Icon(LucideIcons.calendarX),
             label: const Text('Block dates'),
           ),
         ),
@@ -530,13 +531,13 @@ class _Counter extends StatelessWidget {
           key: ValueKey('$keyName-minus'),
           tooltip: 'Less',
           onPressed: value > min ? () => onChanged(value - 1) : null,
-          icon: const Icon(Icons.remove_circle_outline),
+          icon: const Icon(LucideIcons.circleMinus),
         ),
         IconButton(
           key: ValueKey('$keyName-plus'),
           tooltip: 'More',
           onPressed: value < max ? () => onChanged(value + 1) : null,
-          icon: const Icon(Icons.add_circle_outline),
+          icon: const Icon(LucideIcons.circlePlus),
         ),
       ],
     ),
@@ -633,7 +634,7 @@ class _LocationStepState extends ConsumerState<LocationStep> {
             TextButton.icon(
               key: const ValueKey('use-my-location'),
               onPressed: _locating ? null : _useMyLocation,
-              icon: const Icon(Icons.my_location),
+              icon: const Icon(LucideIcons.locateFixed),
               label: Text(_locating ? 'Locating…' : 'Use my location'),
             ),
           ],
@@ -661,7 +662,7 @@ class _LocationStepState extends ConsumerState<LocationStep> {
             labelText: 'Exact address (optional, private)',
             helperText:
                 'Stored encrypted. Shared only with a confirmed borrower.',
-            prefixIcon: Icon(Icons.lock_outline),
+            prefixIcon: Icon(LucideIcons.lock),
           ),
           onChanged: (v) =>
               _editor(ref).update((d) => d.copyWith(exactAddress: v)),
@@ -764,7 +765,7 @@ class PreviewStep extends ConsumerWidget {
         if (problems.isNotEmpty)
           MaterialBanner(
             content: Text(problems.join('\n')),
-            leading: const Icon(Icons.error_outline),
+            leading: const Icon(LucideIcons.circleAlert),
             actions: const [SizedBox.shrink()],
           ),
         Expanded(

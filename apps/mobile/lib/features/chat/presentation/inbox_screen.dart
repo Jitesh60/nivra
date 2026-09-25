@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -89,7 +90,7 @@ class _ConversationTile extends StatelessWidget {
                 child: c.listing.thumbUrl == null
                     ? const ColoredBox(
                         color: SajhaColors.ink100,
-                        child: Icon(Icons.image_outlined),
+                        child: Icon(LucideIcons.image),
                       )
                     : Image.network(
                         c.listing.thumbUrl!,
@@ -173,7 +174,7 @@ class _Empty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.chat_bubble_outline,
+            LucideIcons.messageCircle,
             size: 48,
             color: SajhaColors.ink400,
           ),

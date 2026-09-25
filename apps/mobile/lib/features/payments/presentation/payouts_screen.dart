@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,7 +74,7 @@ class _AccountView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.account_balance, color: color),
+            Icon(LucideIcons.landmark, color: color),
             const SizedBox(width: SajhaSpacing.sm),
             Text(
               a.status.label,

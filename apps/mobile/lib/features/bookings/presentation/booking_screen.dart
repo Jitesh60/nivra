@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -222,7 +223,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             key: const ValueKey('booking-chat'),
             style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
             onPressed: () => context.push(Routes.chat(b.conversationId)),
-            icon: const Icon(Icons.chat_bubble_outline, size: 18),
+            icon: const Icon(LucideIcons.messageCircle, size: 18),
             label: const Text('Chat'),
           ),
         ),
@@ -261,7 +262,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             key: const ValueKey('booking-pickup'),
             margin: const EdgeInsets.only(bottom: SajhaSpacing.sm),
             child: ListTile(
-              leading: const Icon(Icons.place_outlined),
+              leading: const Icon(LucideIcons.mapPin),
               title: const Text('Pickup address'),
               subtitle: SelectableText(d.pickupAddress!),
             ),
@@ -272,7 +273,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           FilledButton.icon(
             key: const ValueKey('booking-show-code'),
             onPressed: () => context.push(Routes.bookingCode(b.id)),
-            icon: const Icon(Icons.qr_code_2),
+            icon: const Icon(LucideIcons.qrCode),
             label: Text(
               b.isBorrower ? 'Show handover code' : 'Show return code',
             ),
@@ -283,7 +284,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             onPressed: _busy
                 ? null
                 : () => context.push(Routes.bookingHandover(b.id)),
-            icon: const Icon(Icons.qr_code_scanner),
+            icon: const Icon(LucideIcons.scanQrCode),
             label: const Text('Hand over'),
           ),
         if (can.returnItem)
@@ -292,7 +293,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             onPressed: _busy
                 ? null
                 : () => context.push(Routes.bookingReturn(b.id)),
-            icon: const Icon(Icons.qr_code_scanner),
+            icon: const Icon(LucideIcons.scanQrCode),
             label: const Text('Return it'),
           ),
         if (can.respond)
@@ -305,14 +306,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           FilledButton.icon(
             key: const ValueKey('booking-review'),
             onPressed: () => context.push(Routes.bookingReview(b.id)),
-            icon: const Icon(Icons.star_outline),
+            icon: const Icon(LucideIcons.star),
             label: Text('Rate ${b.other.firstName}'),
           ),
         if (can.addPhotos)
           OutlinedButton.icon(
             key: const ValueKey('booking-add-photos'),
             onPressed: _busy ? null : () => _addPhotos(b),
-            icon: const Icon(Icons.add_a_photo_outlined),
+            icon: const Icon(LucideIcons.imagePlus),
             label: const Text('Add condition photos'),
           ),
         if (can.dispute)
@@ -331,7 +332,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           FilledButton.icon(
             key: const ValueKey('booking-pay'),
             onPressed: _busy ? null : _pay,
-            icon: const Icon(Icons.lock_outline),
+            icon: const Icon(LucideIcons.lock),
             label: Text('Pay ${formatRupees(b.totalPaise)}'),
           ),
         if (can.accept)
@@ -354,7 +355,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             onPressed: _busy
                 ? null
                 : () => context.push(Routes.bookingShare(b.id)),
-            icon: const Icon(Icons.badge_outlined),
+            icon: const Icon(LucideIcons.idCard),
             label: const Text('Share documents'),
           ),
         if (can.reviewDocs) ...[
@@ -433,7 +434,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             for (final r in d.requiredDocs)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.badge_outlined),
+                leading: const Icon(LucideIcons.idCard),
                 title: Text(r.title),
                 subtitle: const Text('Not shared yet'),
               )
@@ -461,7 +462,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             key: ValueKey('booking-event-$i'),
             contentPadding: EdgeInsets.zero,
             dense: true,
-            leading: const Icon(Icons.circle, size: 10),
+            leading: const Icon(LucideIcons.circle, size: 10),
             title: Text(eventText(e, b)),
             subtitle: Text(
               [
@@ -560,14 +561,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return ListTile(
       key: ValueKey('shared-${s.id}'),
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        s.verified ? Icons.verified_user_outlined : Icons.badge_outlined,
-      ),
+      leading: Icon(s.verified ? LucideIcons.shieldCheck : LucideIcons.idCard),
       title: Text(s.title),
       subtitle: Text(
         [status, if (s.verified) 'Verified by Nivra', ?views].join(' · '),
       ),
-      trailing: s.viewable ? const Icon(Icons.chevron_right) : null,
+      trailing: s.viewable ? const Icon(LucideIcons.chevronRight) : null,
       onTap: s.viewable
           ? () => context.push(
               Routes.bookingDocument,

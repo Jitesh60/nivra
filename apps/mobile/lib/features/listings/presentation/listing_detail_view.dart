@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/tokens.g.dart';
@@ -106,7 +108,7 @@ class ViewPhoto {
     Widget fallback(BuildContext _, Object _, StackTrace? _) =>
         const ColoredBox(
           color: SajhaColors.ink100,
-          child: Center(child: Icon(Icons.image_outlined)),
+          child: Center(child: Icon(LucideIcons.image)),
         );
     return url != null
         ? Image.network(url!, fit: fit, errorBuilder: fallback)
@@ -209,7 +211,7 @@ class ListingDetailView extends StatelessWidget {
               Text(data.description, style: text.bodyLarge),
               const Divider(height: SajhaSpacing.x2xl),
               _Fact(
-                icon: Icons.place_outlined,
+                icon: LucideIcons.mapPin,
                 title: [
                   data.areaLabel?.isNotEmpty == true
                       ? data.areaLabel!
@@ -220,7 +222,7 @@ class ListingDetailView extends StatelessWidget {
                 subtitle: 'Exact address shared after the booking is confirmed',
               ),
               _Fact(
-                icon: Icons.event_available_outlined,
+                icon: LucideIcons.calendarCheck,
                 title: data.minDays == data.maxDays
                     ? 'Rent for ${data.minDays} ${data.minDays == 1 ? 'day' : 'days'}'
                     : 'Rent for ${data.minDays}–${data.maxDays} days',
@@ -231,12 +233,12 @@ class ListingDetailView extends StatelessWidget {
               ),
               if (data.blocks.isNotEmpty)
                 _Fact(
-                  icon: Icons.event_busy_outlined,
+                  icon: LucideIcons.calendarX,
                   title: 'Not available',
                   subtitle: data.blocks.map(formatRange).join(', '),
                 ),
               _Fact(
-                icon: Icons.badge_outlined,
+                icon: LucideIcons.idCard,
                 title: data.requiredDocs.isEmpty
                     ? 'No documents needed'
                     : 'Documents to share',
@@ -281,7 +283,7 @@ class _GalleryState extends State<_Gallery> {
         aspectRatio: 4 / 3,
         child: ColoredBox(
           color: SajhaColors.ink100,
-          child: Center(child: Icon(Icons.image_outlined, size: 48)),
+          child: Center(child: Icon(LucideIcons.image, size: 48)),
         ),
       );
     }

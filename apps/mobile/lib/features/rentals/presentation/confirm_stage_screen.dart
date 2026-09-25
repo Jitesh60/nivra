@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -151,7 +152,7 @@ class _ConfirmStageScreenState extends ConsumerState<ConfirmStageScreen> {
                 key: const ValueKey('stage-scan'),
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
                 onPressed: _busy ? null : _scan,
-                icon: const Icon(Icons.qr_code_scanner),
+                icon: const Icon(LucideIcons.scanQrCode),
                 label: const Text('Scan'),
               ),
             ],

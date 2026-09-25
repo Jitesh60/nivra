@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -83,7 +84,7 @@ class _AreaSheetState extends ConsumerState<AreaSheet> {
                       dimension: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.my_location),
+                  : const Icon(LucideIcons.locateFixed),
               title: const Text('Use my current location'),
               enabled: !_locating,
               onTap: _useGps,
@@ -91,7 +92,7 @@ class _AreaSheetState extends ConsumerState<AreaSheet> {
             ListTile(
               key: const ValueKey('area-map'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.map_outlined),
+              leading: const Icon(LucideIcons.map),
               title: const Text('Pick on the map'),
               onTap: _pickOnMap,
             ),

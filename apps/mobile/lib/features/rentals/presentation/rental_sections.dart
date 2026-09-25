@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/tokens.g.dart';
 import '../../bookings/data/models.dart';
@@ -43,7 +44,7 @@ class LateBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SajhaSpacing.sm),
       child: ListTile(
         leading: Icon(
-          late ? Icons.warning_amber_rounded : Icons.schedule,
+          late ? LucideIcons.triangleAlert : LucideIcons.clock,
           color: color,
         ),
         title: Text(message),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +20,7 @@ import '../../discovery/data/models.dart';
 import '../../discovery/presentation/area_sheet.dart';
 import '../../discovery/presentation/listing_card.dart';
 import '../../listings/presentation/category_icon.dart';
+import '../../../shared/widgets/nivra_logo.dart';
 
 /// The borrower's front page: search, the area, categories and feeds.
 /// Guests see it too; signed-in users also get verification and lending.
@@ -43,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nivra'),
+        title: const NivraLogo(size: 30),
         actions: [
           if (user == null)
             TextButton(
@@ -57,13 +59,13 @@ class HomeScreen extends ConsumerWidget {
             IconButton(
               key: const ValueKey('open-bookings'),
               tooltip: 'My bookings',
-              icon: const Icon(Icons.event_note_outlined),
+              icon: const Icon(LucideIcons.calendarDays),
               onPressed: () => context.push(Routes.bookings),
             ),
             IconButton(
               key: const ValueKey('open-wishlist'),
               tooltip: 'Wishlist',
-              icon: const Icon(Icons.favorite_border),
+              icon: const Icon(LucideIcons.heart),
               onPressed: () => context.push(Routes.wishlist),
             ),
             IconButton(
@@ -74,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'Settings',
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(LucideIcons.settings),
               onPressed: () => context.push(Routes.settings),
             ),
           ],
@@ -107,7 +109,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: SajhaSpacing.sm),
                   ActionChip(
                     key: const ValueKey('area-chip'),
-                    avatar: const Icon(Icons.place_outlined, size: 18),
+                    avatar: const Icon(LucideIcons.mapPin, size: 18),
                     label: Text(area?.summary ?? 'Set your area'),
                     onPressed: () => showAreaSheet(context),
                   ),
@@ -213,7 +215,7 @@ class HomeScreen extends ConsumerWidget {
           child: Card(
             child: ListTile(
               key: const ValueKey('set-area'),
-              leading: const Icon(Icons.near_me_outlined),
+              leading: const Icon(LucideIcons.navigation),
               title: const Text('See what’s near you'),
               subtitle: const Text(
                 'Set your area to find things you can pick up nearby.',
@@ -286,7 +288,7 @@ class _SearchBox extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.search, color: scheme.onSurfaceVariant),
+              Icon(LucideIcons.search, color: scheme.onSurfaceVariant),
               const SizedBox(width: SajhaSpacing.sm),
               Expanded(
                 child: Text(
@@ -405,7 +407,7 @@ class _LendCard extends ConsumerWidget {
                 key: const ValueKey('guest-lend'),
                 style: rowButton,
                 onPressed: () => requireSignIn(context, ref, Routes.home),
-                icon: const Icon(Icons.login),
+                icon: const Icon(LucideIcons.logIn),
                 label: const Text('Sign in to lend'),
               )
             else
@@ -423,7 +425,7 @@ class _LendCard extends ConsumerWidget {
                             context,
                             why: 'Lenders need a verified phone and email, so borrowers can trust them.',
                           ),
-                    icon: const Icon(Icons.add),
+                    icon: const Icon(LucideIcons.plus),
                     label: const Text('List an item'),
                   ),
                   TextButton(
@@ -454,7 +456,7 @@ class _InboxButton extends ConsumerWidget {
       icon: Badge(
         isLabelVisible: unread > 0,
         label: Text('$unread', key: const ValueKey('inbox-badge')),
-        child: const Icon(Icons.chat_bubble_outline),
+        child: const Icon(LucideIcons.messageCircle),
       ),
     );
   }
@@ -474,7 +476,7 @@ class _BellButton extends ConsumerWidget {
       icon: Badge(
         isLabelVisible: unread > 0,
         label: Text('$unread', key: const ValueKey('bell-badge')),
-        child: const Icon(Icons.notifications_none),
+        child: const Icon(LucideIcons.bell),
       ),
     );
   }

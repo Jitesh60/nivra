@@ -6,6 +6,7 @@ import '../../../core/effects/motion.dart';
 import '../../../core/effects/shader_background.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../../shared/widgets/nivra_logo.dart';
 
 /// Shader background + animated wordmark while the stored session is checked.
 /// The router moves on as soon as the auth state is known.
@@ -42,13 +43,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           child: Column(
             children: [
               const Spacer(),
-              Text(
-                'Nivra',
-                style: text.displayMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -1,
-                ),
+              const NivraLogo(
+                size: 72,
+                inverse: true,
+                tagline: true,
               ).animateIfAllowed(
                 context,
                 (a) => a

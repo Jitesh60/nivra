@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -193,7 +194,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ? null
                 : IconButton(
                     tooltip: 'Clear',
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(LucideIcons.x),
                     onPressed: () {
                       _query.clear();
                       _update(_filters.copyWith(query: ''));
@@ -227,7 +228,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return _Message(
-        icon: Icons.cloud_off_outlined,
+        icon: LucideIcons.cloudOff,
         title: _error!,
         action: TextButton(
           key: const ValueKey('search-retry'),
@@ -246,7 +247,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             );
       return _Message(
         key: const ValueKey('search-empty'),
-        icon: Icons.search_off,
+        icon: LucideIcons.searchX,
         title: area != null
             ? 'Nothing found within ${area.radiusKm} km'
             : 'Nothing found',
@@ -338,7 +339,7 @@ class _Toolbar extends StatelessWidget {
         children: [
           ActionChip(
             key: const ValueKey('search-area-chip'),
-            avatar: const Icon(Icons.place_outlined, size: 18),
+            avatar: const Icon(LucideIcons.mapPin, size: 18),
             label: Text(area?.summary ?? 'Anywhere'),
             onPressed: onArea,
           ),
@@ -346,14 +347,14 @@ class _Toolbar extends StatelessWidget {
           if (filters.dates == null)
             ActionChip(
               key: const ValueKey('search-dates'),
-              avatar: const Icon(Icons.event_outlined, size: 18),
+              avatar: const Icon(LucideIcons.calendar, size: 18),
               label: const Text('Any dates'),
               onPressed: onDates,
             )
           else
             InputChip(
               key: const ValueKey('search-dates'),
-              avatar: const Icon(Icons.event_available, size: 18),
+              avatar: const Icon(LucideIcons.calendarCheck, size: 18),
               label: Text(formatRange(filters.dates!)),
               onPressed: onDates,
               onDeleted: onClearDates,
@@ -362,7 +363,7 @@ class _Toolbar extends StatelessWidget {
           const SizedBox(width: SajhaSpacing.sm),
           ActionChip(
             key: const ValueKey('open-filters'),
-            avatar: const Icon(Icons.tune, size: 18),
+            avatar: const Icon(LucideIcons.slidersHorizontal, size: 18),
             label: Text(count == 0 ? 'Filters' : 'Filters · $count'),
             onPressed: onFilters,
           ),
@@ -382,7 +383,7 @@ class _Toolbar extends StatelessWidget {
                 ),
             ],
             child: Chip(
-              avatar: const Icon(Icons.sort, size: 18),
+              avatar: const Icon(LucideIcons.arrowUpDown, size: 18),
               label: Text(current?.label ?? 'Sort'),
             ),
           ),

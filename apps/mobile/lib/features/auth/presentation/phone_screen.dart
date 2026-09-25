@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import '../../../core/theme/tokens.g.dart';
 import '../application/auth_controller.dart';
 import '../data/auth_repository.dart';
 import 'otp_screens.dart';
+import '../../../shared/widgets/nivra_logo.dart';
 
 /// Indian mobile numbers: 10 digits starting 6–9.
 bool isValidIndianMobile(String digits) =>
@@ -78,7 +80,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             ? IconButton(
                 key: const ValueKey('cancel-sign-in'),
                 tooltip: 'Not now',
-                icon: const Icon(Icons.close),
+                icon: const Icon(LucideIcons.x),
                 onPressed: () => cancelSignIn(context, ref),
               )
             : null,
@@ -101,10 +103,15 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 padding: const EdgeInsets.only(bottom: SajhaSpacing.md),
                 child: MaterialBanner(
                   content: Text(notice),
-                  leading: const Icon(Icons.info_outline),
+                  leading: const Icon(LucideIcons.info),
                   actions: const [SizedBox.shrink()],
                 ),
               ),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: NivraLogo(size: 44, tagline: true),
+            ),
+            const SizedBox(height: SajhaSpacing.xl),
             Text('Enter your mobile number', style: text.headlineSmall),
             const SizedBox(height: SajhaSpacing.sm),
             Text(

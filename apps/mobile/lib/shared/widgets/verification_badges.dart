@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/tokens.g.dart';
 import '../../features/auth/data/models.dart';
@@ -31,7 +32,7 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Chip(
       avatar: Icon(
-        verified ? Icons.verified : Icons.error_outline,
+        verified ? LucideIcons.badgeCheck : LucideIcons.circleAlert,
         size: 18,
         color: verified ? SajhaColors.success : SajhaColors.warning,
       ),

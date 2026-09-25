@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,10 +91,10 @@ class _EarningsList extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: Icon(
             account == null
-                ? Icons.account_balance_outlined
+                ? LucideIcons.landmark
                 : account.status == PayoutAccountStatus.activated
-                ? Icons.verified_outlined
-                : Icons.hourglass_top,
+                ? LucideIcons.badgeCheck
+                : LucideIcons.hourglass,
           ),
           title: Text(
             account == null
@@ -106,7 +107,7 @@ class _EarningsList extends StatelessWidget {
                 : account.status.label,
             key: const ValueKey('payout-status'),
           ),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const Icon(LucideIcons.chevronRight),
           onTap: () => context.push(Routes.payouts),
         ),
 

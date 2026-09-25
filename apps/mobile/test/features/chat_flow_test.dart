@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sajha/core/push/push_service.dart';
 import 'package:sajha/core/router/app_router.dart';
@@ -126,7 +127,10 @@ void main() {
     await say(tester, 'Hi! Is it free next weekend?');
     expect(find.text('Hi! Is it free next weekend?'), findsOneWidget);
     expect(c.messages.single.body, 'Hi! Is it free next weekend?');
-    expect(find.byIcon(Icons.done), findsOneWidget); // sent, not read yet
+    expect(
+      find.byIcon(LucideIcons.check),
+      findsOneWidget,
+    ); // sent, not read yet
 
     // Asha types, then replies with her number: Rahul sees it hidden.
     m.api.typingAs(m.lender, c.id);

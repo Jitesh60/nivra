@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -73,11 +74,11 @@ class SettingsScreen extends ConsumerWidget {
             leading: UserAvatar(user: user, radius: 20),
             title: Text(user.name ?? '—'),
             subtitle: Text(user.phone),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => context.push(Routes.profile),
           ),
           ListTile(
-            leading: const Icon(Icons.email_outlined),
+            leading: const Icon(LucideIcons.mail),
             title: Text(user.email ?? 'No email yet'),
             subtitle: Text(user.emailVerified ? 'Verified' : 'Not verified'),
             onTap: user.emailVerified
@@ -86,37 +87,37 @@ class SettingsScreen extends ConsumerWidget {
           ),
           ListTile(
             key: const ValueKey('settings-documents'),
-            leading: const Icon(Icons.badge_outlined),
+            leading: const Icon(LucideIcons.idCard),
             title: const Text('My documents'),
             subtitle: Text(user.idVerified ? 'ID verified' : 'No verified ID'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => context.push(Routes.documents),
           ),
           ListTile(
             key: const ValueKey('settings-notifications'),
-            leading: const Icon(Icons.notifications_outlined),
+            leading: const Icon(LucideIcons.bell),
             title: const Text('Notifications'),
             subtitle: const Text('Push, email and SMS'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => context.push(Routes.notificationSettings),
           ),
           const Divider(),
           ListTile(
             key: const ValueKey('devices'),
-            leading: const Icon(Icons.devices_outlined),
+            leading: const Icon(LucideIcons.monitorSmartphone),
             title: const Text('Your devices'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => context.push(Routes.devices),
           ),
           ListTile(
             key: const ValueKey('logout'),
-            leading: const Icon(Icons.logout),
+            leading: const Icon(LucideIcons.logOut),
             title: const Text('Log out'),
             onTap: () => _run(context, () => controller.logout()),
           ),
           ListTile(
             key: const ValueKey('logout-all'),
-            leading: const Icon(Icons.phonelink_erase_outlined),
+            leading: const Icon(LucideIcons.smartphoneNfc),
             title: const Text('Log out of all devices'),
             onTap: () async {
               final ok = await confirm(
@@ -135,19 +136,19 @@ class SettingsScreen extends ConsumerWidget {
           for (final (key, icon, label, uri) in [
             (
               'link-help',
-              Icons.help_outline,
+              LucideIcons.circleQuestionMark,
               'Help and contact',
               SajhaLinks.help,
             ),
             (
               'link-terms',
-              Icons.description_outlined,
+              LucideIcons.fileText,
               'Terms of use',
               SajhaLinks.terms,
             ),
             (
               'link-privacy',
-              Icons.privacy_tip_outlined,
+              LucideIcons.shieldAlert,
               'Privacy policy',
               SajhaLinks.privacy,
             ),
@@ -156,13 +157,13 @@ class SettingsScreen extends ConsumerWidget {
               key: ValueKey(key),
               leading: Icon(icon),
               title: Text(label),
-              trailing: const Icon(Icons.open_in_new, size: 18),
+              trailing: const Icon(LucideIcons.externalLink, size: 18),
               onTap: () => ref.read(linkOpenerProvider)(uri),
             ),
           const Divider(),
           ListTile(
             key: const ValueKey('delete-account'),
-            leading: Icon(Icons.delete_forever_outlined, color: error),
+            leading: Icon(LucideIcons.trash2, color: error),
             title: Text('Delete account', style: TextStyle(color: error)),
             onTap: () async {
               final ok = await confirm(
@@ -181,7 +182,7 @@ class SettingsScreen extends ConsumerWidget {
             key: const ValueKey('link-delete-info'),
             dense: true,
             title: const Text('What deleting your account removes'),
-            trailing: const Icon(Icons.open_in_new, size: 18),
+            trailing: const Icon(LucideIcons.externalLink, size: 18),
             onTap: () => ref.read(linkOpenerProvider)(SajhaLinks.deleteAccount),
           ),
           Padding(

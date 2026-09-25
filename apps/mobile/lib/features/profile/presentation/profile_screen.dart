@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -203,32 +204,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ListTile(
               key: const ValueKey('open-my-bookings'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_note_outlined),
+              leading: const Icon(LucideIcons.calendarDays),
               title: const Text('My bookings'),
               subtitle: const Text('Things you’re borrowing and lending'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.bookings),
             ),
             ListTile(
               key: const ValueKey('open-earnings'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_balance_wallet_outlined),
+              leading: const Icon(LucideIcons.wallet),
               title: const Text('Earnings & payouts'),
               subtitle: const Text('Money from lending, and your bank account'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.earnings),
             ),
             ListTile(
               key: const ValueKey('open-documents'),
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.badge_outlined),
+              leading: const Icon(LucideIcons.idCard),
               title: const Text('My documents'),
               subtitle: Text(
                 user.idVerified
                     ? 'ID verified'
                     : 'Add an ID to get the verified badge',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => context.push(Routes.documents),
             ),
             Text(
@@ -284,7 +285,7 @@ class _AvatarEditor extends StatelessWidget {
                 radius: 16,
                 backgroundColor: scheme.primary,
                 child: Icon(
-                  Icons.photo_camera,
+                  LucideIcons.camera,
                   size: 16,
                   color: scheme.onPrimary,
                 ),

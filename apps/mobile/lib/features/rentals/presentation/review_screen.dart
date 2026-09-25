@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -79,7 +80,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   iconSize: 40,
                   tooltip: '$i ${i == 1 ? 'star' : 'stars'}',
                   color: SajhaColors.warning,
-                  icon: Icon(i <= _rating ? Icons.star : Icons.star_border),
+                  icon: Icon(
+                    i <= _rating ? LucideIcons.star : LucideIcons.star,
+                  ),
                   onPressed: () => setState(() => _rating = i),
                 ),
             ],

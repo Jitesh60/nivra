@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -125,7 +126,7 @@ class _ShareDocumentsScreenState extends ConsumerState<ShareDocumentsScreen> {
                       await context.push(Routes.documentsAdd);
                       ref.invalidate(myDocumentsProvider);
                     },
-                    icon: const Icon(Icons.add),
+                    icon: const Icon(LucideIcons.plus),
                     label: const Text('Add a document'),
                   ),
                 ),

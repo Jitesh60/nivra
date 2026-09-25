@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/tokens.g.dart';
 import '../data/models.dart';
@@ -58,9 +59,7 @@ class _ReportSheetState extends State<ReportSheet> {
               key: ValueKey('reason-${r.apiValue}'),
               contentPadding: EdgeInsets.zero,
               leading: Icon(
-                _reason == r
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
+                _reason == r ? LucideIcons.circleDot : LucideIcons.circle,
                 color: _reason == r ? SajhaColors.brand600 : null,
               ),
               title: Text(r.label),

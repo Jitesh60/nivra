@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -122,7 +123,7 @@ class _TestCheckoutSheetState extends ConsumerState<_TestCheckoutSheet> {
           children: [
             Row(
               children: [
-                const Icon(Icons.science_outlined),
+                const Icon(LucideIcons.flaskConical),
                 const SizedBox(width: SajhaSpacing.sm),
                 Text('Test payment', style: text.titleMedium),
               ],
