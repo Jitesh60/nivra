@@ -12,6 +12,8 @@ import '../../listings/data/listings_repository.dart';
 import '../../listings/presentation/category_icon.dart';
 import '../application/requests_providers.dart';
 import 'request_tile.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/sajha_button.dart';
 
 /// What people nearby are looking for. Lenders offer one of their listings;
 /// anyone can ask for something.
@@ -173,36 +175,16 @@ class _NoArea extends StatelessWidget {
   const _NoArea();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(SajhaSpacing.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            LucideIcons.navigation,
-            size: 48,
-            color: SajhaColors.ink400,
-          ),
-          const SizedBox(height: SajhaSpacing.md),
-          Text(
-            'Where are you?',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: SajhaSpacing.xs),
-          const Text(
-            'Set your area to see what people nearby are looking for.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: SajhaSpacing.md),
-          FilledButton.tonal(
-            key: const ValueKey('requests-set-area'),
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-            onPressed: () => showAreaSheet(context),
-            child: const Text('Set your area'),
-          ),
-        ],
-      ),
+  Widget build(BuildContext context) => EmptyState(
+    icon: LucideIcons.navigation,
+    title: 'Where are you?',
+    message: 'Set your area to see what people nearby are looking for.',
+    action: SajhaButton(
+      key: const ValueKey('requests-set-area'),
+      label: 'Set your area',
+      variant: SajhaButtonVariant.secondary,
+      expand: false,
+      onPressed: () => showAreaSheet(context),
     ),
   );
 }
