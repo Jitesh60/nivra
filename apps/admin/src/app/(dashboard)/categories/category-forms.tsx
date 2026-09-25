@@ -11,6 +11,7 @@ import {
   updateCategoryAction,
   type CategoryFormState,
 } from './actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 function Message({ state }: { state: CategoryFormState }) {
   if (state.error)
@@ -19,12 +20,7 @@ function Message({ state }: { state: CategoryFormState }) {
         {state.error}
       </p>
     );
-  if (state.done)
-    return (
-      <p role="status" className="text-sm text-primary">
-        {state.done}
-      </p>
-    );
+  if (state.done) return <StatusMessage>{state.done}</StatusMessage>;
   return null;
 }
 

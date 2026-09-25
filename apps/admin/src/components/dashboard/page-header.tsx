@@ -1,8 +1,16 @@
-export function PageHeader({ title, description }: { title: string; description?: string }) {
+import { PageHeader as SajhaPageHeader } from '@sajha/ui';
+import type { ReactNode } from 'react';
+
+export function PageHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {description && <p className="mt-1 text-muted-foreground">{description}</p>}
-    </div>
+    <SajhaPageHeader className="mb-6" title={title} description={description} actions={actions} />
   );
 }

@@ -1,0 +1,109 @@
+/*
+ * Effects for @sajha/ui components (DESIGN.md §8). Import after
+ * tailwindcss and @sajha/design-tokens/theme.css, and add
+ * `@source '<path>/packages/ui/src'` so Tailwind sees the component classes.
+ */
+
+@property --sj-glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes sj-glow-spin {
+  to {
+    --sj-glow-angle: 360deg;
+  }
+}
+
+/* `glow` buttons: ink-950 fill with an always-on rotating brand→accent border
+   (uiverse-style gradient border, MIT). */
+.sj-glow-border {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--color-ink-950), var(--color-ink-950)) padding-box,
+    conic-gradient(
+        from var(--sj-glow-angle),
+        var(--color-brand-400),
+        var(--color-accent-400),
+        var(--color-brand-300),
+        var(--color-accent-500),
+        var(--color-brand-400)
+      )
+      border-box;
+  animation: sj-glow-spin 4s linear infinite;
+}
+
+/* `primary` buttons: the same ring, drawn just outside the pill, fades in on
+   hover and keyboard focus. The mask keeps only the 2 px ring. */
+.sj-glow-hover::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--sj-glow-angle),
+    var(--color-brand-400),
+    var(--color-accent-400),
+    var(--color-brand-600),
+    var(--color-brand-400)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--sj-duration-base) var(--ease-standard);
+  animation: sj-glow-spin 4s linear infinite;
+  pointer-events: none;
+}
+
+.sj-glow-hover:hover::before,
+.sj-glow-hover:focus-visible::before {
+  opacity: 1;
+}
+
+/* The logo wordmark: deep green, cream in dark mode (admin). */
+.sj-wordmark {
+  color: #1e4d3a;
+}
+
+.dark .sj-wordmark {
+  color: #fbf8f2;
+}
+
+/* Badge tints: the tone at 12%, text mixed toward the foreground for contrast. */
+.sj-tint {
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
+  color: color-mix(in oklab, var(--tone) 62%, var(--sj-foreground));
+}
+
+.sj-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--sj-surface) 60%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sj-shimmer 1.6s linear infinite;
+}
+
+@keyframes sj-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sj-glow-border,
+  .sj-glow-hover::before,
+  .sj-shimmer {
+    animation: none;
+  }
+}

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { COMMON_CANCEL_REASONS } from '@/lib/bookings';
 import { cancelBookingAction } from '../actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 /** Cancel with a reason, after a confirm step. Both people are told why. */
 export function CancelForm({ id }: { id: string }) {
@@ -65,11 +66,7 @@ export function CancelForm({ id }: { id: string }) {
             {state.error}
           </p>
         )}
-        {state.done && (
-          <p role="status" className="text-sm text-primary">
-            {state.done}
-          </p>
-        )}
+        {state.done && <StatusMessage>{state.done}</StatusMessage>}
       </CardContent>
     </Card>
   );

@@ -1,6 +1,2 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+/** tailwind-merge that knows the Sajha type scale (`text-button`, `text-h2`…). */
+export { cn } from '@sajha/ui';

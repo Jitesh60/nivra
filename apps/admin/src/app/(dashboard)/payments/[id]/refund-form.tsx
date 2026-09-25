@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { rupees } from '@/lib/listings';
 import { COMMON_REFUND_REASONS, rupeesInput } from '@/lib/payments';
 import { refundAction } from '../actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 /** A goodwill refund (Sajha pays for it), after a confirm step. */
 export function RefundForm({ id, refundablePaise }: { id: string; refundablePaise: number }) {
@@ -75,11 +76,7 @@ export function RefundForm({ id, refundablePaise }: { id: string; refundablePais
             {state.error}
           </p>
         )}
-        {state.done && (
-          <p role="status" data-testid="refund-done" className="text-sm text-primary">
-            {state.done}
-          </p>
-        )}
+        {state.done && <StatusMessage data-testid="refund-done">{state.done}</StatusMessage>}
       </CardContent>
     </Card>
   );

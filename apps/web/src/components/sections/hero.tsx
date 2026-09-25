@@ -21,11 +21,11 @@ export function Hero() {
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <Magnet>
-            <GlowLink href="#waitlist" className="px-7 py-3.5 text-base">
+            <GlowLink href="#waitlist" size="lg">
               Join the waitlist
             </GlowLink>
           </Magnet>
-          <GlowLink href="/how-it-works" variant="ghost">
+          <GlowLink href="/how-it-works" variant="ghost" size="lg">
             How it works
           </GlowLink>
         </div>

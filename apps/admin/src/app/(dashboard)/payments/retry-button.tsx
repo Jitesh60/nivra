@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { retryTransferAction } from './actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 /** Retry for a failed transfer to a lender. */
 export function RetryButton({ id }: { id: string }) {
@@ -16,11 +17,7 @@ export function RetryButton({ id }: { id: string }) {
           {state.error}
         </p>
       )}
-      {state.done && (
-        <p role="status" className="text-xs text-primary">
-          {state.done}
-        </p>
-      )}
+      {state.done && <StatusMessage className="text-caption">{state.done}</StatusMessage>}
     </form>
   );
 }

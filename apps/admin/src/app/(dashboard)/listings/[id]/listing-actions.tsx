@@ -14,6 +14,7 @@ import {
   unpublishListingAction,
   type ListingActionState,
 } from '../actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 const DESTRUCTIVE = 'w-full bg-destructive text-white hover:bg-destructive/90';
 
@@ -24,12 +25,7 @@ function Feedback({ state }: { state: ListingActionState }) {
         {state.error}
       </p>
     );
-  if (state.done)
-    return (
-      <p role="status" className="text-sm text-primary">
-        {state.done}
-      </p>
-    );
+  if (state.done) return <StatusMessage>{state.done}</StatusMessage>;
   return null;
 }
 

@@ -20,7 +20,22 @@ A component looks and measures the same on every platform. When you change one, 
 - **Effects are accents, not wallpaper.** Shaders and animated borders appear on first impressions: the website hero, admin sign-in and the dashboard header, and in the app the splash, onboarding, sign-in and empty states. Lists, forms and detail pages stay still and fast.
 - **Motion respects the user.** `prefers-reduced-motion` on the web and "Remove animations" on phones switch every shader to its static gradient and turn off animated borders.
 
-## 2. Colour
+## 2. Logo
+
+The Nivra mark: two people whose arms form a heart around a shared box. The artwork lives in **`packages/ui/brand/`**:
+
+| File | Use |
+|---|---|
+| `icon.svg` | the app-icon tile: cream mark on the green gradient (`#2A6E52` → `#153A2B`), radius 48/200. Favicons, the app launcher icon, the store icon, OG images |
+| `icon-cream.svg` | a cream tile with the green mark, for dark backgrounds |
+| `mark-light.svg` / `mark-dark.svg` | the mark alone (cream or green), e.g. on the splash screen |
+
+- **Web and admin:** `<Logo />` (tile + "nivra" wordmark; `inverse` on dark backgrounds, `suffix="Admin"`, `tagline` for "Borrow · Lend · Share") and `<LogoMark />` from `@sajha/ui`. `ICON_SVG` is the tile as a string, for generated images.
+- **Mobile:** launcher icon, splash and in-app logo are rendered from the same SVGs (`apps/mobile/assets/brand/render.mjs`).
+- **Wordmark:** "nivra" in lowercase, display type, bold, tracking −4%, deep green `#1E4D3A` (cream `#FBF8F2` on dark). The tagline is caption type, uppercase, tracking 0.3em, orange `#EC7A3A`.
+- Keep clear space of at least half the tile's width around the logo. Don't recolour, stretch or add effects to the mark.
+
+## 3. Colour
 
 **Scales:**
 
@@ -52,7 +67,7 @@ A component looks and measures the same on every platform. When you change one, 
 - **Mobile:** `SajhaLight.*` / `SajhaDark.*` feed the `ColorScheme`, and the app follows the system setting.
 - **Contrast:** text on `primary` and body text on `surface` meet WCAG AA. Muted text is for secondary information only, never for the only copy of something important.
 
-## 3. Typography
+## 4. Typography
 
 Three families, bundled everywhere (Google Fonts on the web; asset fonts in the app, each with its OFL licence):
 
@@ -80,7 +95,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 - **Web and admin:** `text-display`, `text-h1` … `text-caption` set size, line height, weight and tracking. Add `font-display` or `font-mono` where the table says so.
 - **Mobile:** use `SajhaType.*`. The Material `TextTheme` maps display/headline/title/body/label to these.
 
-## 4. Space, size and shape
+## 5. Space, size and shape
 
 - **Spacing:** a 4 px grid. Tokens: xs 4 · sm 8 · md 16 · lg 24 · xl 32 · 2xl 48. Screen gutter: 16 on phones, 24 on tablet and desktop.
 - **Control heights:** sm **36** · md **44** (the default for buttons and inputs) · lg **52** (the one main action on a screen, and full-width buttons on phones).
@@ -106,7 +121,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 | `shadow-lg` | dialogs, sheets |
 | `shadow-glow` | the primary and glow button on hover |
 
-## 5. Motion
+## 6. Motion
 
 | Token | Value | Use |
 |---|---|---|
@@ -120,7 +135,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 - Cards lift by 2 px (`shadow-sm` → `shadow-md`) on hover (web and admin only).
 - The glow border's conic gradient turns once every 4 s.
 
-## 6. Components
+## 7. Components
 
 ### Button
 - **Shape:** always a **pill** (radius full). Label in `button` type, icon 20 px with an 8 px gap.
@@ -152,7 +167,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 
 ### Badge
 - A pill, `caption` type, 4 × 10 px padding.
-- **Tones:** `neutral` (surface-muted), `brand` (primary-soft), `success`, `warning`, `danger`, `info`. Each tint is the colour at 12% with the text in the full colour.
+- **Tones:** `neutral` (surface-muted), `brand` (primary-soft), `success`, `warning`, `danger`, `info`. Each tint is the colour at 12%; the text is the colour mixed 38% toward `foreground`, so it passes contrast in light and dark.
 
 ### Other components
 - **Segmented toggle:** a pill track in `surface-muted`, the selected segment in `surface` with `shadow-sm`, and 200 ms sliding.
@@ -164,7 +179,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
   - Admin: a sidebar with Lucide icons. The active item is a `primary-soft` pill with `on-primary-soft` text.
   - App: a bottom NavigationBar with the same pill indicator.
 
-## 7. Effects (accents only)
+## 8. Effects (accents only)
 
 - **Mesh gradient shader:** Paper Shaders `MeshGradient` on the web and admin; the GLSL `aurora.frag` in the app, tuned to match.
   - Colours: brand-700, brand-500, brand-300 and accent-400 over brand-950.
@@ -175,7 +190,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 - **Text reveal (web only):** the hero headline blurs in word by word (pure CSS).
 - **Count-up:** KPI numbers count up once when first shown, on the web and the admin dashboard.
 
-## 8. Libraries
+## 9. Libraries
 
 | | Web | Admin | Mobile |
 |---|---|---|---|
@@ -187,7 +202,7 @@ Three families, bundled everywhere (Google Fonts on the web; asset fonts in the 
 
 The Uiverse and React Bits pieces (glow button, spotlight card, dots loader, blur text, count-up, magnet) are recreated in-repo rather than installed, so they follow these tokens.
 
-## 9. Checklist for a new screen
+## 10. Checklist for a new screen
 
 - [ ] Only semantic colours (`sj-*` / `SajhaLight`), no hex values.
 - [ ] Type from the scale (`text-h2`, `SajhaType.h2`), with the right family.

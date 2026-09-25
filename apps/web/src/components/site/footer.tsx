@@ -1,3 +1,4 @@
+import { Logo } from '@sajha/ui';
 import Link from 'next/link';
 import { RENT_PAGES } from '@/content/rent-pages';
 import { CONTACT_EMAIL, NAV } from '@/lib/site';
@@ -7,7 +8,7 @@ export function Footer() {
     <footer className="bg-ink-950 px-4 text-ink-300">
       <div className="mx-auto grid max-w-6xl gap-8 py-12 sm:grid-cols-4">
         <div>
-          <p className="font-display text-xl font-bold text-white">Sajha</p>
+          <Logo inverse tagline />
           <p className="mt-2 text-sm">Borrow what you need. Lend what you don’t use.</p>
         </div>
         <nav aria-label="Footer" className="grid gap-2 text-sm">

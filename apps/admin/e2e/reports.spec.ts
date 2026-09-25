@@ -109,7 +109,9 @@ test('Ops reviews a reported message, reads the logged transcript, and closes it
   await page.getByRole('button', { name: 'Close report' }).click();
   // The form goes once the report is closed; the badge and note show the outcome.
   await expect(page.getByTestId('report-status')).toHaveText('Actioned');
-  await expect(page.getByText('Warned the lender about off-platform payment.')).toBeVisible();
+  await expect(
+    page.getByRole('main').getByText('Warned the lender about off-platform payment.'),
+  ).toBeVisible();
 
   await page.goto('/reports?status=ACTIONED');
   await expect(reportRow(page, messageReportId)).toBeVisible();
