@@ -91,7 +91,7 @@ void main() {
     ]);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('app-version'))).data,
-      startsWith('Sajha '),
+      startsWith('Nivra '),
     );
   });
 }

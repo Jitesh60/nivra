@@ -1,4 +1,4 @@
-// Sajha database schema. Models are added phase by phase (see docs/ARCHITECTURE.md §3).
+// Nivra database schema. Models are added phase by phase (see docs/ARCHITECTURE.md §3).
 // Raw SQL (PostGIS columns, exclusion constraints) lives in the migration files.
 
 generator client {
@@ -83,7 +83,7 @@ enum AdminStatus {
   DISABLED
 }
 
-/// Sajha staff using the admin panel. Separate from app users.
+/// Nivra staff using the admin panel. Separate from app users.
 model AdminUser {
   id                 String      @id @default(uuid(7)) @db.Uuid
   email              String      @unique @db.Citext
@@ -242,7 +242,7 @@ enum WaitlistRole {
   BOTH
 }
 
-/// People who asked to hear when Sajha launches (marketing website).
+/// People who asked to hear when Nivra launches (marketing website).
 model WaitlistEntry {
   id        String        @id @default(uuid(7)) @db.Uuid
   email     String        @unique @db.Citext
@@ -750,7 +750,7 @@ model Booking {
   depositPaise     Int           @map("deposit_paise")
   /// What the borrower pays: rent + fee + deposit − credit.
   totalPaise       Int           @map("total_paise")
-  /// Referral credit taken off the rent (Phase 10); Sajha pays it (ledger PROMOTIONS).
+  /// Referral credit taken off the rent (Phase 10); Nivra pays it (ledger PROMOTIONS).
   creditPaise      Int           @default(0) @map("credit_paise")
   status           BookingStatus
   /// Deadline of the current step; the booking expires after it.
@@ -941,7 +941,7 @@ model BookingDocumentShare {
   userDocumentId  String?      @map("user_document_id") @db.Uuid
   docType         DocumentType @map("doc_type")
   label           String?
-  /// Whether Sajha had verified the vault document when it was shared.
+  /// Whether Nivra had verified the vault document when it was shared.
   verified        Boolean      @default(false)
   frontKey        String?      @map("front_key")
   backKey         String?      @map("back_key")
@@ -1011,7 +1011,7 @@ model NotificationPreferences {
   emailBookings    Boolean  @default(true) @map("email_bookings")
   /// SMS: overdue return reminders.
   smsReminders     Boolean  @default(true) @map("sms_reminders")
-  /// News and offers from Sajha (off until the user opts in).
+  /// News and offers from Nivra (off until the user opts in).
   marketing        Boolean  @default(false)
   /// Push: a new listing matches a saved search (Phase 10).
   pushSearchAlerts Boolean  @default(true) @map("push_search_alerts")
@@ -1181,9 +1181,9 @@ enum LedgerAccount {
   DEPOSIT_HELD
   LENDER_PAYABLE
   PLATFORM_REVENUE
-  /// Sajha's own money given back (manual refunds).
+  /// Nivra's own money given back (manual refunds).
   GOODWILL
-  /// Sajha's money spent on referral credit taken off rent (Phase 10).
+  /// Nivra's money spent on referral credit taken off rent (Phase 10).
   PROMOTIONS
 }
 

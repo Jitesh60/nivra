@@ -261,7 +261,7 @@ export class SharedDocumentDto {
   requiredDocId: string | null;
   @ApiProperty({ enum: DOC_TYPES }) docType: string;
   @ApiPropertyOptional({ type: String, nullable: true }) label: string | null;
-  @ApiProperty({ description: 'Sajha had verified it when it was shared' }) verified: boolean;
+  @ApiProperty({ description: 'Nivra had verified it when it was shared' }) verified: boolean;
   @ApiProperty({ enum: ['SUBMITTED', 'APPROVED', 'REJECTED'] }) status: string;
   @ApiProperty() hasBack: boolean;
   @ApiProperty({ description: 'The lender can open it now' }) viewable: boolean;
@@ -381,7 +381,7 @@ export class AdminBookingDetailDto extends AdminBookingDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty() feePaise: number;
   @ApiProperty() depositPaise: number;
-  @ApiProperty({ description: 'Referral credit taken off the rent (Sajha pays it)' })
+  @ApiProperty({ description: 'Referral credit taken off the rent (Nivra pays it)' })
   creditPaise: number;
   @ApiPropertyOptional({ type: String, nullable: true }) declineReason: string | null;
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['BORROWER', 'LENDER', 'ADMIN'] })

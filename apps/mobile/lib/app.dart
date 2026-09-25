@@ -25,7 +25,7 @@ class SajhaApp extends ConsumerWidget {
             identifyForCrashes(next is Authenticated ? next.user.id : null),
       );
     return MaterialApp.router(
-      title: 'Sajha',
+      title: 'Nivra',
       debugShowCheckedModeBanner: !config.isProd,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

@@ -15,16 +15,16 @@ const bricolage = Bricolage_Grotesque({
 });
 
 const description =
-  'Sajha is a peer-to-peer rental marketplace in India. Rent trekking gear, cameras, tools and more from people near you, or earn from things you rarely use.';
+  'Nivra is a peer-to-peer rental marketplace in India. Rent trekking gear, cameras, tools and more from people near you, or earn from things you rarely use.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Sajha: borrow what you need, lend what you don’t use',
-    template: '%s · Sajha',
+    default: 'Nivra: borrow what you need, lend what you don’t use',
+    template: '%s · Nivra',
   },
   description,
-  applicationName: 'Sajha',
+  applicationName: 'Nivra',
   keywords: [
     'rent',
     'rental marketplace',
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: 'website',
-    siteName: 'Sajha',
+    siteName: 'Nivra',
     locale: 'en_IN',
-    title: 'Sajha: borrow what you need, lend what you don’t use',
+    title: 'Nivra: borrow what you need, lend what you don’t use',
     description,
   },
   twitter: { card: 'summary_large_image' },

@@ -9,7 +9,7 @@ export class NotificationPreferencesDto {
   @ApiProperty({ description: 'Email: receipts, refunds and dispute outcomes' })
   emailBookings: boolean;
   @ApiProperty({ description: 'SMS: overdue return reminders' }) smsReminders: boolean;
-  @ApiProperty({ description: 'News and offers from Sajha' }) marketing: boolean;
+  @ApiProperty({ description: 'News and offers from Nivra' }) marketing: boolean;
   @ApiProperty({ description: 'Push: new listings matching a saved search' })
   pushSearchAlerts: boolean;
   @ApiProperty({ description: 'Push: requests near you and answers to your requests' })

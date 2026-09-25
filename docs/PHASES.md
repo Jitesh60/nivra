@@ -1,6 +1,6 @@
-# Sajha — Delivery Phases
+# Nivra — Delivery Phases
 
-We build Sajha in small, reviewable phases. Each phase is delivered in the order **Backend → Mobile → Admin (→ Web)**, and each (sub-)phase lives on its **own branch** and ends with a **commit, a push and a PR into `main`**. See [PLAN §5](./PLAN.md#5-git-workflow).
+We build Nivra in small, reviewable phases. Each phase is delivered in the order **Backend → Mobile → Admin (→ Web)**, and each (sub-)phase lives on its **own branch** and ends with a **commit, a push and a PR into `main`**. See [PLAN §5](./PLAN.md#5-git-workflow).
 
 Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.md)
 
@@ -184,7 +184,7 @@ flowchart LR
 **Branch:** `phase/1d-marketing-web` (can run in parallel with 1b/1c after Phase 0)
 
 **Scope**
-- Landing page sections from [PRD §9](./PRD.md#9-marketing-website): Hero, How it works (Borrower/Lender tabs), Categories, Why Sajha, Trust & safety, Become a lender (earnings calculator), FAQ, Waitlist/Download, Footer
+- Landing page sections from [PRD §9](./PRD.md#9-marketing-website): Hero, How it works (Borrower/Lender tabs), Categories, Why Nivra, Trust & safety, Become a lender (earnings calculator), FAQ, Waitlist/Download, Footer
 - **Effects:**
   - **Paper Shaders** (`@paper-design/shaders-react`, Apache-2.0): animated hero background, with a static gradient poster fallback. shaders.com was the original choice, but it needs a paid Pro/Team license for any public commercial site
   - **React Bits**: split/blur text headline, spotlight or tilted category cards, animated counters, magnet CTA button
@@ -315,7 +315,7 @@ Delivered as two sub-phases, each with its own branch and PR. **Done when:** a b
   - Saving (and later chatting and booking) opens sign-in, then returns to the same item and finishes the save.
   - "Not now" goes back without saving.
 - **Search area:** GPS or a spot on the map, with a 1–25 km radius. It's saved on the device.
-- **Home:** search box, area, categories, Near you, Popular this week, Recently viewed (last 20 on the device), and New on Sajha. Signed-in users also get a verification prompt (only while something's missing) and the lending card.
+- **Home:** search box, area, categories, Near you, Popular this week, Recently viewed (last 20 on the device), and New on Nivra. Signed-in users also get a verification prompt (only while something's missing) and the lending card.
 - **Search:**
   - keywords, area chip, dates, a filters sheet (distance, category, price, condition, ID-verified lenders) and sort
   - results load as you scroll
@@ -435,7 +435,7 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
 
   The PRD refund tiers are a tested `refundFor()` ready for Phase 7.
 - **Documents:**
-  - The borrower picks one vault document per required document (pending or approved by Sajha; not rejected or expired). Matching: a government ID is Aadhaar, PAN, driving licence, passport or voter ID; an address proof is also accepted from those that carry an address.
+  - The borrower picks one vault document per required document (pending or approved by Nivra; not rejected or expired). Matching: a government ID is Aadhaar, PAN, driving licence, passport or voter ID; an address proof is also accepted from those that carry an address.
   - The files are **copied** to `bookings/{id}/` in the private bucket, so the share doesn't depend on the vault.
   - The lender approves (→ AWAITING_PAYMENT) or rejects with a reason (→ DECLINED).
   - The lender views them through 5-minute links while the booking is in progress. Every view is logged, and the borrower sees who opened what and when.
@@ -485,7 +485,7 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
   - price, documents and the timeline
   - a chat link
   - actions from the API's `can` flags: accept, decline (optional reason), share documents, approve, don't accept (reason), cancel (reason)
-- **Sharing documents:** pick a matching vault document per requirement (Sajha-verified ones first), or add one, then agree to share for this booking only. The borrower sees each time the lender opened it.
+- **Sharing documents:** pick a matching vault document per requirement (Nivra-verified ones first), or add one, then agree to share for this booking only. The borrower sees each time the lender opened it.
 - **Lender's viewer:** a 5-minute link, a watermark with the lender's name, the booking and the time, `FLAG_SECURE` on Android, and a blur while recording on iOS.
 - **Notifications:** a bell with a live unread badge. The list marks items read and opens the booking.
 - **Links in:** push taps and the chat's **Open booking** open the booking.
@@ -512,7 +512,7 @@ Delivered in three parts, each with its own PR and green CI: **6a API → 6b Mob
   - the people, with links to their user pages, their phones, and the lender's count of cancellations after accepting
   - links to the listing and the logged conversation
   - the timeline, with who did each step and any note
-  - the documents asked for and shared, with status, Sajha verification, access end or purge, and every view (who, when, IP); no images
+  - the documents asked for and shared, with status, Nivra verification, access end or purge, and every view (who, when, IP); no images
   - the money breakdown
 - **Cancel with a reason** (Super Admin and Ops): common reasons plus free text, after a confirm step. Both people are notified. Support reads only.
 - **Done when:** Playwright covers:
@@ -542,7 +542,7 @@ Delivered in three parts, each with its own PR and green CI: **7a API → 7b Mob
     - 24–48 h: half the rent and the deposit.
     - Under 24 h: the deposit only.
     - The lender is paid their share of any rent kept.
-  - **Lender or Sajha:** everything back, and a lender cancellation counts against them.
+  - **Lender or Nivra:** everything back, and a lender cancellation counts against them.
   - `GET /v1/bookings/:id/cancel-preview` shows the refund first.
 - **Payouts (Route):**
   - Lenders set up a linked account (bank account, IFSC, PAN; only the last 4 digits are kept).
@@ -707,7 +707,7 @@ Delivered in three parts, each with its own PR and green CI: **8a API → 8b Mob
   - A countdown while the lender can still report a problem.
   - **Condition photos** by stage and person, opening a full-screen viewer.
   - The late fee line and the deposit refund.
-  - **Report a problem** (lender): reason, amount capped at what's left, description, photos. Then **Give your side** (borrower), and Sajha's decision once it's made.
+  - **Report a problem** (lender): reason, amount capped at what's left, description, photos. Then **Give your side** (borrower), and Nivra's decision once it's made.
   - **Borrower didn't show up** (lender, from the first day).
   - **Rate {name}** after completion, with a double-blind note.
   - **Report {name}**, using the existing report sheet.
@@ -769,9 +769,9 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
 - **Notification preferences:** `GET/PUT /v1/me/notification-preferences` with push (bookings, chat, reminders), email (booking updates), SMS (return reminders) and marketing switches, stored in `notification_preferences` (no row = the defaults, everything on but marketing). In-app notifications, codes and security or legal messages always go out. `NotificationsService.notifyIfAway` checks the switch for the push's type; the overdue reminder skips the SMS when it's off. Account deletion removes the row.
 - **Emails:**
   - One layout for all emails (HTML and text, brand colours, a "why you got this" footer and how to opt out).
-  - Sent on payment (the borrower's receipt with the charge breakdown and pickup area; the lender's confirmation with their earnings), on a refund, when a dispute is decided (the split and Sajha's note, to both), and when an account is deleted (always).
+  - Sent on payment (the borrower's receipt with the charge breakdown and pickup area; the lender's confirmation with their earnings), on a refund, when a dispute is decided (the split and Nivra's note, to both), and when an account is deleted (always).
   - Queued on BullMQ `email` (5 tries with backoff; the job id makes each email once-only) and sent by the worker, only to verified addresses and only with booking emails on.
-- **Admin analytics:** `GET /v1/admin/analytics?days=7|30|90` (every admin role): totals and a daily series by IST day (signups, listings published, bookings requested / paid / completed / cancelled, GMV, Sajha's revenue from the ledger, refunds, disputes opened and settled), the previous period for comparison, a snapshot (active users, live listings, items out, open disputes) and the requested → paid → completed funnel. Cached for 5 minutes.
+- **Admin analytics:** `GET /v1/admin/analytics?days=7|30|90` (every admin role): totals and a daily series by IST day (signups, listings published, bookings requested / paid / completed / cancelled, GMV, Nivra's revenue from the ledger, refunds, disputes opened and settled), the previous period for comparison, a snapshot (active users, live listings, items out, open disputes) and the requested → paid → completed funnel. Cached for 5 minutes.
 - **Sentry:** `@sentry/nestjs`, initialised before anything else (`src/instrument.ts`) only with `SENTRY_DSN`. 5xx errors and failed jobs on every queue are reported; `scrubEvent` removes bodies, cookies, auth headers and user details but the id, and masks phones, emails and codes. Release = `GIT_SHA`, which `/v1/health` also reports as `version`.
 - **Hardening** ([SECURITY.md](SECURITY.md) has the ASVS L1 review):
   - Staging and production now also refuse console push, SMTP email, empty or `*` CORS, and Swagger (production).
@@ -784,7 +784,7 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
 ### 9b — Mobile
 **Branch:** `phase/9b-launch-mobile`
 
-- **Notifications screen** (Settings → Notifications): push (bookings, messages, reminders), email (receipts and updates), SMS (overdue returns) and news from Sajha, backed by the 9a endpoints; flips save at once and roll back with a message if the API refuses.
+- **Notifications screen** (Settings → Notifications): push (bookings, messages, reminders), email (receipts and updates), SMS (overdue returns) and news from Nivra, backed by the 9a endpoints; flips save at once and roll back with a message if the API refuses.
 - **Help and legal:** Help, Terms and Privacy open the website; "What deleting your account removes" opens `/delete-account` (the page comes with 9c); the version shows at the bottom of Settings.
 - **Sentry** (`sentry_flutter`), off unless the build has `SENTRY_DSN`: PII scrubbed on the phone, the user identified by id only (cleared on sign-out), screen breadcrumbs, no screenshots.
 - **Brand:** an app icon (adaptive on Android, all iOS sizes) and a native splash, generated from SVGs in `assets/brand/`.
@@ -796,7 +796,7 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
 **Branch:** `phase/9c-launch-admin-web`
 
 - **Admin dashboard** (`/`, every role): a 7 / 30 / 90-day switch (`?days=`) over the 9a analytics endpoint. It shows:
-  - six KPI cards (people verified, listings published, bookings paid, GMV, Sajha's revenue, disputes opened), each with its change against the previous period
+  - six KPI cards (people verified, listings published, bookings paid, GMV, Nivra's revenue, disputes opened), each with its change against the previous period
   - daily bar charts of bookings paid and GMV: server-rendered SVG with no chart library, a tooltip per day and a table for screen readers; the colour is the `--chart-1` token, validated for light and dark
   - the requested → paid → completed funnel, and a "right now" card (active people, live listings, items out, open disputes) linking to the lists
   - the API status card
@@ -862,7 +862,7 @@ Three "Later" features from the PRD that help most after launch, delivered as **
   - Codes are 8 characters with no look-alike characters, created on first read; the link is `PUBLIC_SITE_URL/r/<code>`. Redeem rules are in PRD §7, and redeeming is rate-limited.
   - `credit_entries` is an append-only ledger per person, with holds and releases per booking under an advisory lock.
   - Bookings store `creditPaise`, and the check constraint is now `total = rent + fee + deposit − credit`.
-  - The ledger's new `PROMOTIONS` account carries Sajha's cost. Paid cancellations give credit back first, then cash. The cancel preview, the quote and the receipt email show it (ARCHITECTURE §6).
+  - The ledger's new `PROMOTIONS` account carries Nivra's cost. Paid cancellations give credit back first, then cash. The cancel preview, the quote and the receipt email show it (ARCHITECTURE §6).
   - The inviter's reward is a transition listener on completion.
   - Admin: `GET /v1/admin/users/:id/referral` and `POST …/credits/revoke` (OPS, audited).
 - **Also:**

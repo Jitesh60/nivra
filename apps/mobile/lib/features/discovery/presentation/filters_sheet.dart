@@ -208,7 +208,7 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
                   onChanged: (v) => setState(() => _verifiedOnly = v),
                   title: const Text('ID-verified lenders only'),
                   subtitle: const Text(
-                    'Lenders whose government ID Sajha has checked',
+                    'Lenders whose government ID Nivra has checked',
                   ),
                 ),
                 const SizedBox(height: SajhaSpacing.lg),

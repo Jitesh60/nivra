@@ -411,12 +411,12 @@ describe('Growth: saved searches, requests board, referrals (e2e)', () => {
         await http(app)
           .post(`/v1/admin/requests/${ids[0]}/remove`)
           .set(bearer(ops.accessToken))
-          .send({ reason: 'Asks for something not allowed on Sajha' })
+          .send({ reason: 'Asks for something not allowed on Nivra' })
           .expect(200)
       ).body;
       expect(removed).toMatchObject({
         status: 'REMOVED',
-        removedReason: 'Asks for something not allowed on Sajha',
+        removedReason: 'Asks for something not allowed on Nivra',
       });
       expect(await notices(borrower.userId, 'request.removed')).toHaveLength(1);
       expect(

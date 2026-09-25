@@ -50,7 +50,7 @@ extension FakeRentalsApi on FakeSajhaApi {
       r.dispute!
         ..['status'] = 'RESOLVED'
         ..['keptPaise'] = kept
-        ..['resolutionNote'] = 'Decided by Sajha'
+        ..['resolutionNote'] = 'Decided by Nivra'
         ..['resolvedAt'] = r.completedAt!.toIso8601String();
     }
     final p = orderFor(bookingId);

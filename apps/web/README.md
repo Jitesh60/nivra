@@ -1,6 +1,6 @@
 # @sajha/web
 
-Sajha marketing website (Next.js 16, Tailwind v4, fully static). Design notes: [docs/ARCHITECTURE.md §11](../../docs/ARCHITECTURE.md#11-marketing-site-architecture-appsweb).
+Nivra marketing website (Next.js 16, Tailwind v4, fully static). Design notes: [docs/ARCHITECTURE.md §11](../../docs/ARCHITECTURE.md#11-marketing-site-architecture-appsweb).
 
 ```bash
 cp .env.example .env.local
@@ -20,7 +20,7 @@ pnpm dev        # http://localhost:3002 (the waitlist form needs the API on :300
 | Hero background | Animated mesh gradient, static gradient fallback | Paper Shaders (Apache-2.0) |
 | Headline | Words fade in from a blur (pure CSS) | React Bits "BlurText", recreated |
 | Categories | Card light follows the pointer | React Bits "SpotlightCard", recreated |
-| Why Sajha | Numbers count up on scroll | React Bits "CountUp", recreated |
+| Why Nivra | Numbers count up on scroll | React Bits "CountUp", recreated |
 | Hero button | Drifts toward the pointer | React Bits "Magnet", recreated |
 | Buttons, tabs, loader | Glow border, sliding toggle, bouncing dots | uiverse.io-style |
 

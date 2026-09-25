@@ -46,7 +46,7 @@ export default async function RentPage({ params }: PageProps<'/rent/[category]'>
             {page.emoji} What people pay
           </h2>
           <p className="mt-2 text-ink-600">
-            Typical daily prices on Sajha in Pune. Lenders set their own, plus a refundable deposit.
+            Typical daily prices on Nivra in Pune. Lenders set their own, plus a refundable deposit.
           </p>
           <table className="mt-6 w-full text-left" data-testid="price-table">
             <tbody>

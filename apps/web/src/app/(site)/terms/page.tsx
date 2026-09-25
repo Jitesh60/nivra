@@ -5,7 +5,7 @@ import { CONTACT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'The rules for renting and lending on Sajha.',
+  description: 'The rules for renting and lending on Nivra.',
   alternates: { canonical: '/terms' },
 };
 
@@ -14,10 +14,10 @@ export default function TermsPage() {
     <PageShell title="Terms of Service">
       <Prose>
         <LegalDraftNotice updated="24 September 2026" />
-        <h2>1. What Sajha is</h2>
+        <h2>1. What Nivra is</h2>
         <p>
-          Sajha is an online marketplace that connects people who want to rent items (“borrowers”)
-          with people who own them (“lenders”). Sajha is an intermediary: rentals are agreements
+          Nivra is an online marketplace that connects people who want to rent items (“borrowers”)
+          with people who own them (“lenders”). Nivra is an intermediary: rentals are agreements
           between the borrower and the lender.
         </p>
         <h2>2. Your account</h2>
@@ -50,7 +50,7 @@ export default function TermsPage() {
         </ul>
         <h2>5. Payments, fees and deposits</h2>
         <p>
-          Payments are processed by our payment partner. Sajha keeps a platform fee from the
+          Payments are processed by our payment partner. Nivra keeps a platform fee from the
           lender’s earnings. Deposits are refunded after the return, minus any amount agreed or
           decided for late return or damage.
         </p>
@@ -62,12 +62,12 @@ export default function TermsPage() {
         </p>
         <h2>7. Conduct</h2>
         <p>
-          Be respectful, keep deals and payments on Sajha, and don’t misuse other people’s data. We
+          Be respectful, keep deals and payments on Nivra, and don’t misuse other people’s data. We
           may suspend accounts that break these terms.
         </p>
         <h2>8. Liability</h2>
         <p>
-          To the extent the law allows, Sajha isn’t liable for the condition of items or for how
+          To the extent the law allows, Nivra isn’t liable for the condition of items or for how
           they’re used. Nothing here limits rights you have under Indian consumer law.
         </p>
         <h2>9. Governing law</h2>

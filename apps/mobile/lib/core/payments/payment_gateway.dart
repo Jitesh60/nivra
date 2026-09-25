@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-/// What the checkout needs: the order Sajha created with Razorpay.
+/// What the checkout needs: the order Nivra created with Razorpay.
 class CheckoutRequest {
   const CheckoutRequest({
     required this.provider,
@@ -124,7 +124,7 @@ class RazorpayGateway implements PaymentGateway {
         'amount': r.amountPaise,
         'currency': r.currency,
         'order_id': r.orderId,
-        'name': 'Sajha',
+        'name': 'Nivra',
         'description': r.description,
         'prefill': {
           'contact': r.contact,

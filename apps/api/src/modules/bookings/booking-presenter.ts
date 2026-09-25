@@ -169,7 +169,7 @@ export class BookingPresenter {
         // The borrower sees every time their document was opened.
         views: isBorrower
           ? s.accessLogs.map((l) => ({
-              viewerName: l.viewerType === 'USER' ? lenderName : 'Sajha',
+              viewerName: l.viewerType === 'USER' ? lenderName : 'Nivra',
               at: l.createdAt,
             }))
           : [],

@@ -4,13 +4,13 @@ export const post: Post = {
   slug: 'how-deposits-and-handover-codes-keep-you-safe',
   title: 'How deposits and handover codes keep both sides safe',
   description:
-    'Renting from a stranger works when both people are protected. Here’s what happens to your money and the item at every step of a Sajha rental.',
+    'Renting from a stranger works when both people are protected. Here’s what happens to your money and the item at every step of a Nivra rental.',
   date: '2026-09-23',
-  author: 'Team Sajha',
+  author: 'Team Nivra',
   minutes: 5,
   body: [
     {
-      p: 'The two worries we hear most are simple. Borrowers ask: “what if I pay and nothing happens?” Lenders ask: “what if my camera comes back broken, or doesn’t come back at all?” Every part of a Sajha rental is built around those two questions.',
+      p: 'The two worries we hear most are simple. Borrowers ask: “what if I pay and nothing happens?” Lenders ask: “what if my camera comes back broken, or doesn’t come back at all?” Every part of a Nivra rental is built around those two questions.',
     },
     { h2: 'Your money waits until the item is back' },
     {
@@ -21,7 +21,7 @@ export const post: Post = {
       p: 'At pickup, the borrower opens their handover code in the app: a QR code and six digits. The lender scans it or types it in, then takes at least two photos of the item. The rental starts only then. At return it’s the other way round: the lender shows a code, the borrower scans it and photographs the item.',
     },
     {
-      tip: 'Only share a code in person, when the item is actually in front of you. Sajha will never ask you for it by phone or chat.',
+      tip: 'Only share a code in person, when the item is actually in front of you. Nivra will never ask you for it by phone or chat.',
     },
     { h2: 'Photos settle most arguments before they start' },
     {
@@ -36,11 +36,11 @@ export const post: Post = {
       ul: [
         'The lender reports a problem within 24 hours of the return, with photos and the amount they’re asking for.',
         'The borrower gives their side once, with their own photos.',
-        'Someone at Sajha looks at both sides, the condition photos and the chat, and decides how much of the deposit goes to the lender. The rest goes back to the borrower.',
+        'Someone at Nivra looks at both sides, the condition photos and the chat, and decides how much of the deposit goes to the lender. The rest goes back to the borrower.',
       ],
     },
     {
-      p: 'Chats stay on Sajha, and phone numbers are hidden until a booking is paid, so the whole record is in one place if anyone needs it.',
+      p: 'Chats stay on Nivra, and phone numbers are hidden until a booking is paid, so the whole record is in one place if anyone needs it.',
     },
   ],
 };

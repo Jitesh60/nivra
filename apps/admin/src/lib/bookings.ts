@@ -48,7 +48,7 @@ export const BOOKING_EVENT_LABEL: Record<string, string> = {
 export const PARTY_LABEL: Record<string, string> = {
   BORROWER: 'Borrower',
   LENDER: 'Lender',
-  ADMIN: 'Sajha',
+  ADMIN: 'Nivra',
   SYSTEM: 'System',
 };
 
@@ -61,7 +61,7 @@ export const REQUIRED_DOC_LABEL: Record<string, string> = {
 
 export const COMMON_CANCEL_REASONS = [
   'Reported as a scam',
-  'Asked to pay outside Sajha',
+  'Asked to pay outside Nivra',
   'Requested by the borrower (support ticket)',
   'Requested by the lender (support ticket)',
 ];

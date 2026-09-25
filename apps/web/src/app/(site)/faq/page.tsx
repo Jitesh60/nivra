@@ -6,7 +6,7 @@ import { faqs } from '@/content/site-content';
 export const metadata: Metadata = {
   title: 'FAQ',
   description:
-    'Answers about renting and lending on Sajha: prices, deposits, damage, IDs and more.',
+    'Answers about renting and lending on Nivra: prices, deposits, damage, IDs and more.',
   alternates: { canonical: '/faq' },
 };
 

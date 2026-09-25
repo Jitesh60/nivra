@@ -31,8 +31,8 @@ export function configureApp(app: INestApplication): INestApplication {
 
   if (config.get('SWAGGER_ENABLED', { infer: true })) {
     const doc = new DocumentBuilder()
-      .setTitle('Sajha API')
-      .setDescription('REST API for the Sajha mobile app, admin panel and website.')
+      .setTitle('Nivra API')
+      .setDescription('REST API for the Nivra mobile app, admin panel and website.')
       .setVersion('1')
       .addBearerAuth()
       .build();

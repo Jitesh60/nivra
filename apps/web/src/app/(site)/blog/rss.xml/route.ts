@@ -19,9 +19,9 @@ export function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Sajha blog</title>
+    <title>Nivra blog</title>
     <link>${SITE_URL}/blog</link>
-    <description>Guides to renting and lending on Sajha.</description>
+    <description>Guides to renting and lending on Nivra.</description>
     <language>en-IN</language>
 ${items}
   </channel>

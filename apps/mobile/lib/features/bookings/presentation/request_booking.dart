@@ -16,7 +16,7 @@ import '../data/bookings_repository.dart';
 import 'booking_format.dart' show dayCount;
 
 const _whyVerify =
-    'To keep bookings safe, everyone booking on Sajha has a verified phone and email.';
+    'To keep bookings safe, everyone booking on Nivra has a verified phone and email.';
 
 /// Dates carried through sign-in by `/item/:id?book=1&from=…&to=…`.
 BlockedRange? bookDates(Map<String, String> query) {

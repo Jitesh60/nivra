@@ -127,7 +127,7 @@ String locationProblemMessage(LocationProblem problem) => switch (problem) {
   LocationProblem.denied =>
     'Location permission is off. You can pick your area on the map.',
   LocationProblem.deniedForever =>
-    'Location is blocked for Sajha in settings. Pick your area on the map.',
+    'Location is blocked for Nivra in settings. Pick your area on the map.',
   LocationProblem.unavailable =>
     'Couldn’t find your location. Try again or pick on the map.',
 };

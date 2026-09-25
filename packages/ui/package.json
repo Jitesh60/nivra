@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared React components for the Sajha admin panel and website, built to DESIGN.md. Ships TypeScript source; the Next apps transpile it.",
+  "description": "Shared React components for the Nivra admin panel and website, built to DESIGN.md. Ships TypeScript source; the Next apps transpile it.",
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",

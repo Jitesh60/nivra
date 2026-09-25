@@ -59,7 +59,7 @@ export default async function PostPage({ params }: PageProps<'/blog/[slug]'>) {
     description: post.description,
     datePublished: post.date,
     author: { '@type': 'Organization', name: post.author },
-    publisher: { '@type': 'Organization', name: 'Sajha', url: SITE_URL },
+    publisher: { '@type': 'Organization', name: 'Nivra', url: SITE_URL },
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
   };
   return (

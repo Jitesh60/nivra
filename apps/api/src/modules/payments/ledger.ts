@@ -17,7 +17,7 @@ export interface Amounts {
   depositPaise: number;
 }
 
-/** Sajha's commission on [rentPaise] (basis points), rounded to the paisa. */
+/** Nivra's commission on [rentPaise] (basis points), rounded to the paisa. */
 export function commissionOn(rentPaise: number, bps: number): number {
   return Math.round((rentPaise * bps) / 10_000);
 }
@@ -27,12 +27,12 @@ export function lenderShare(rentPaise: number, bps: number): number {
   return rentPaise - commissionOn(rentPaise, bps);
 }
 
-/** A booking's payment arrives: deposit held, the lender's share owed, the rest is Sajha's. */
+/** A booking's payment arrives: deposit held, the lender's share owed, the rest is Nivra's. */
 export function capturePostings(a: Amounts & { creditPaise?: number }, bps: number): Line[] {
   const commission = commissionOn(a.rentPaise, bps);
   const credit = a.creditPaise ?? 0;
   return drop([
-    // Referral credit (Phase 10): Sajha pays that part of the rent, the card the rest.
+    // Referral credit (Phase 10): Nivra pays that part of the rent, the card the rest.
     { account: 'GATEWAY', debitPaise: a.rentPaise + a.feePaise + a.depositPaise - credit },
     { account: 'PROMOTIONS', debitPaise: credit },
     { account: 'DEPOSIT_HELD', creditPaise: a.depositPaise },
@@ -72,7 +72,7 @@ export function cashOf(refund: Amounts & { creditBackPaise?: number }): number {
   return refund.rentPaise + refund.feePaise + refund.depositPaise - (refund.creditBackPaise ?? 0);
 }
 
-/** An admin gives money back as goodwill: Sajha bears it. */
+/** An admin gives money back as goodwill: Nivra bears it. */
 export function goodwillPostings(amountPaise: number): Line[] {
   return [
     { account: 'GOODWILL', debitPaise: amountPaise },
@@ -80,7 +80,7 @@ export function goodwillPostings(amountPaise: number): Line[] {
   ];
 }
 
-/** The lender's share leaves Sajha's Razorpay balance for their linked account. */
+/** The lender's share leaves Nivra's Razorpay balance for their linked account. */
 export function transferPostings(amountPaise: number): Line[] {
   return [
     { account: 'LENDER_PAYABLE', debitPaise: amountPaise },

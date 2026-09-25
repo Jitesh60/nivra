@@ -31,7 +31,7 @@ class ChatParticipant {
   final bool idVerified;
 
   String get displayName =>
-      (name == null || name!.trim().isEmpty) ? 'Sajha user' : name!;
+      (name == null || name!.trim().isEmpty) ? 'Nivra user' : name!;
   String get firstName => displayName.split(' ').first;
 }
 
@@ -297,7 +297,7 @@ enum ReportReason {
   scam('SCAM', 'Scam or fraud'),
   offPlatformPayment(
     'OFF_PLATFORM_PAYMENT',
-    'Asked to pay or talk outside Sajha',
+    'Asked to pay or talk outside Nivra',
   ),
   inappropriate('INAPPROPRIATE', 'Rude or inappropriate'),
   other('OTHER', 'Something else');

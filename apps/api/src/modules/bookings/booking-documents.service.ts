@@ -78,7 +78,7 @@ export class BookingDocumentsService {
       const doc = docs.find((d) => d.id === byRequired.get(r.id));
       if (!doc) throw mismatch('That document isn’t in your vault', { requiredDocId: r.id });
       if (doc.status === 'REJECTED') {
-        throw mismatch('Sajha couldn’t verify that document. Pick or add another one.', {
+        throw mismatch('Nivra couldn’t verify that document. Pick or add another one.', {
           requiredDocId: r.id,
         });
       }

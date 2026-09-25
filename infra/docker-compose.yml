@@ -1,4 +1,4 @@
-# Local development infrastructure for Sajha.
+# Local development infrastructure for Nivra.
 #   pnpm infra:up    -> start
 #   pnpm infra:down  -> stop (add -v to wipe volumes)
 name: sajha

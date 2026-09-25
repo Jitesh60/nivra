@@ -1,8 +1,8 @@
-# Sajha (साझा)
+# Nivra
 
 **Borrow what you need. Lend what you don't use.**
 
-Sajha is a peer-to-peer rental marketplace for India. People list things they rarely use, such as trekking shoes, tents, cameras or tools, and others rent them for a few days at a small price instead of buying. It includes verified users (phone and email OTP), in-app chat to negotiate price and dates, lender-requested documents, security deposits, and safe payments.
+Nivra is a peer-to-peer rental marketplace for India. People list things they rarely use, such as trekking shoes, tents, cameras or tools, and others rent them for a few days at a small price instead of buying. It includes verified users (phone and email OTP), in-app chat to negotiate price and dates, lender-requested documents, security deposits, and safe payments.
 
 ## Documentation
 

@@ -1,7 +1,7 @@
 # Store listing
 
 ## Name
-**Sajha: Rent from neighbours** (29 characters; Play allows 30, the App Store 30)
+**Nivra: Rent from neighbours** (29 characters; Play allows 30, the App Store 30)
 
 ## Short description (Play, max 80)
 Borrow tents, cameras and tools from people near you in Pune. Lend yours and earn.
@@ -14,7 +14,7 @@ Going on a trek or shooting a wedding? Borrow what you need from verified people
 
 ## Full description (Play max 4000; App Store max 4000)
 
-Why buy a tent for one trek? Sajha lets you rent things from people near you in Pune, and earn from the things you rarely use.
+Why buy a tent for one trek? Nivra lets you rent things from people near you in Pune, and earn from the things you rarely use.
 
 **Borrow**
 • Search what's near you: trekking gear, cameras, tools, party gear and more
@@ -30,7 +30,7 @@ Why buy a tent for one trek? Sajha lets you rent things from people near you in 
 **Safe handovers**
 • At pickup and return, you scan each other's code and take photos of the item's condition
 • Late returns are charged from the deposit automatically
-• If something's damaged, report it within 24 hours with photos; Sajha looks at both sides and decides what happens to the deposit
+• If something's damaged, report it within 24 hours with photos; Nivra looks at both sides and decides what happens to the deposit
 • Reviews from both sides after every rental
 
 **Your privacy**
@@ -38,7 +38,7 @@ Why buy a tent for one trek? Sajha lets you rent things from people near you in 
 • ID documents are encrypted and stay private; a lender sees one only for a booking, and that copy is deleted 30 days after it ends
 • Choose which notifications you get, and delete your account from the app at any time
 
-Sajha is available in Pune. More cities soon.
+Nivra is available in Pune. More cities soon.
 
 ## Keywords (App Store, max 100 characters, comma-separated)
 rent,rental,borrow,lend,share,tent,camera,tools,trek,pune,deposit,neighbours

@@ -109,7 +109,7 @@ test('Ops finds a held booking, reads its timeline and document log, and cancels
   await page.getByRole('button', { name: 'Confirm cancel' }).click();
   // The form goes once the booking is closed; the status shows the outcome.
   await expect(page.getByTestId('booking-status')).toHaveText('Cancelled');
-  await expect(page.getByText('Cancelled by Sajha: “Reported as a scam”')).toBeVisible();
+  await expect(page.getByText('Cancelled by Nivra: “Reported as a scam”')).toBeVisible();
   await expect(events).toHaveCount(5);
   await expect(events.nth(4)).toContainText('E2E Ops Reviewer');
 

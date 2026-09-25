@@ -308,7 +308,7 @@ class SharedDocument {
   final DocumentType type;
   final String? label;
 
-  /// Sajha had verified it when it was shared.
+  /// Nivra had verified it when it was shared.
   final bool verified;
   final ShareStatus status;
   final bool hasBack;
@@ -347,7 +347,7 @@ enum BookingEventType {
       values.firstWhere((t) => t.apiValue == v, orElse: () => requested);
 }
 
-/// Who did something: BORROWER, LENDER, ADMIN (Sajha) or SYSTEM.
+/// Who did something: BORROWER, LENDER, ADMIN (Nivra) or SYSTEM.
 class BookingEvent {
   const BookingEvent({
     required this.type,
@@ -559,7 +559,7 @@ enum DisputeReason {
       values.firstWhere((r) => r.apiValue == v, orElse: () => other);
 }
 
-/// The lender's claim on the deposit, the borrower's reply and Sajha's decision.
+/// The lender's claim on the deposit, the borrower's reply and Nivra's decision.
 class BookingDispute {
   const BookingDispute({
     required this.reason,
@@ -600,7 +600,7 @@ class BookingDispute {
   final DateTime? respondedAt;
   final bool resolved;
 
-  /// What Sajha let the lender keep.
+  /// What Nivra let the lender keep.
   final int? keptPaise;
   final String? resolutionNote;
   final DateTime? resolvedAt;

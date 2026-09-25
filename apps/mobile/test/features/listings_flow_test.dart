@@ -55,7 +55,7 @@ void main() {
     // 3. Price, with the earnings preview from /config.
     await enterText(tester, 'listing-price', '150');
     expect(
-      find.text('You earn ₹135/day after Sajha’s 10% fee.'),
+      find.text('You earn ₹135/day after Nivra’s 10% fee.'),
       findsOneWidget,
     );
     await enterText(tester, 'listing-deposit', '1000');

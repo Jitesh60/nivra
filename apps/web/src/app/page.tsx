@@ -32,7 +32,7 @@ export default function Home() {
         >
           <CategoryGrid />
         </Section>
-        <Section eyebrow="Why Sajha" title="Owning is expensive. Sharing isn’t.">
+        <Section eyebrow="Why Nivra" title="Owning is expensive. Sharing isn’t.">
           <WhySajha />
         </Section>
         <Section

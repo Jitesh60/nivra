@@ -30,7 +30,7 @@ export function DownloadOrWaitlist() {
       <div className="mx-auto max-w-6xl text-center">
         <p className="text-sm font-semibold tracking-wide text-brand-300 uppercase">Now in Pune</p>
         <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Get the Sajha app
+          Get the Nivra app
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-ink-200">
           Borrow what you need from people nearby, or start earning from the things you rarely use.

@@ -42,7 +42,7 @@ test('earnings calculator updates as the sliders move', async ({ page }) => {
 
 test('inner pages, legal pages, SEO files and 404', async ({ page, request }) => {
   for (const [path, heading] of [
-    ['/how-it-works', 'How Sajha works'],
+    ['/how-it-works', 'How Nivra works'],
     ['/lend', 'Earn from things you rarely use'],
     ['/faq', 'Frequently asked questions'],
     ['/privacy', 'Privacy Policy'],

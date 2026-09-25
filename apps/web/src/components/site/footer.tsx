@@ -44,7 +44,7 @@ export function Footer() {
         </div>
       </div>
       <p className="border-t border-white/10 py-4 text-center text-xs text-ink-400">
-        © {new Date().getFullYear()} Sajha. Made in India.
+        © {new Date().getFullYear()} Nivra. Made in India.
       </p>
     </footer>
   );

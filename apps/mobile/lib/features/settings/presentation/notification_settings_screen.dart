@@ -59,7 +59,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
           ],
         ),
         (
-          'From Sajha',
+          'From Nivra',
           [
             (
               NotificationSwitch.marketing,

@@ -7138,8 +7138,8 @@
     }
   },
   "info": {
-    "title": "Sajha API",
-    "description": "REST API for the Sajha mobile app, admin panel and website.",
+    "title": "Nivra API",
+    "description": "REST API for the Nivra mobile app, admin panel and website.",
     "version": "1",
     "contact": {}
   },
@@ -8782,7 +8782,7 @@
         "properties": {
           "otpauthUrl": {
             "type": "string",
-            "example": "otpauth://totp/Sajha%20Admin:ops%40sajha.app?secret=…"
+            "example": "otpauth://totp/Nivra%20Admin:ops%40sajha.app?secret=…"
           },
           "qrDataUrl": {
             "type": "string",
@@ -9975,7 +9975,7 @@
           },
           "marketing": {
             "type": "boolean",
-            "description": "News and offers from Sajha"
+            "description": "News and offers from Nivra"
           },
           "pushSearchAlerts": {
             "type": "boolean",
@@ -11006,7 +11006,7 @@
           },
           "verified": {
             "type": "boolean",
-            "description": "Sajha had verified it when it was shared"
+            "description": "Nivra had verified it when it was shared"
           },
           "status": {
             "type": "string",
@@ -12249,7 +12249,7 @@
           },
           "creditPaise": {
             "type": "number",
-            "description": "Referral credit taken off the rent (Sajha pays it)"
+            "description": "Referral credit taken off the rent (Nivra pays it)"
           },
           "declineReason": {
             "type": "string",
@@ -13162,7 +13162,7 @@
           },
           "PROMOTIONS": {
             "type": "number",
-            "description": "Referral credit Sajha paid for (debit balance, so negative)"
+            "description": "Referral credit Nivra paid for (debit balance, so negative)"
           }
         },
         "required": [
@@ -13731,7 +13731,7 @@
           },
           "revenuePaise": {
             "type": "number",
-            "description": "Sajha’s commission and fees, net of refunds"
+            "description": "Nivra’s commission and fees, net of refunds"
           },
           "refundsPaise": {
             "type": "number",
@@ -13801,7 +13801,7 @@
           },
           "revenuePaise": {
             "type": "number",
-            "description": "Sajha’s commission and fees, net of refunds"
+            "description": "Nivra’s commission and fees, net of refunds"
           },
           "refundsPaise": {
             "type": "number",
@@ -14495,7 +14495,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Asks for something not allowed on Sajha"
+            "example": "Asks for something not allowed on Nivra"
           }
         },
         "required": [

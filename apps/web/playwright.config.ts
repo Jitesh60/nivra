@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Smoke tests for the marketing site. The waitlist tests need the Sajha API
+ * Smoke tests for the marketing site. The waitlist tests need the Nivra API
  * (NEXT_PUBLIC_SAJHA_API_URL, default http://localhost:3000) running.
  *
  *   pnpm --filter @sajha/web build && pnpm --filter @sajha/web test:e2e

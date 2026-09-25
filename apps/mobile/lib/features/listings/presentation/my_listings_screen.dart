@@ -202,7 +202,7 @@ class _ListingTile extends StatelessWidget {
     };
     final reason = switch (l.status) {
       ListingStatus.rejected => 'Edit it to fix: ${l.rejectionReason}',
-      ListingStatus.removed => 'Removed by Sajha: ${l.rejectionReason}',
+      ListingStatus.removed => 'Removed by Nivra: ${l.rejectionReason}',
       ListingStatus.pending => 'We’re checking your first listing.',
       _ => null,
     };

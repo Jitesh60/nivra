@@ -11,7 +11,7 @@ import '../data/rentals_repository.dart';
 import 'photo_grid.dart';
 
 /// Lender: report a problem and claim part of the deposit. Borrower
-/// ([respond]): give your side, once. Sajha decides.
+/// ([respond]): give your side, once. Nivra decides.
 class DisputeScreen extends ConsumerStatefulWidget {
   const DisputeScreen({
     required this.bookingId,
@@ -84,7 +84,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
             content: Text(
               widget.respond
                   ? 'Your side was sent'
-                  : 'Problem reported to Sajha',
+                  : 'Problem reported to Nivra',
             ),
           ),
         );
@@ -153,7 +153,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
             const Divider(height: SajhaSpacing.xl),
           ] else ...[
             Text(
-              'Sajha looks at both sides, the photos from the handover and '
+              'Nivra looks at both sides, the photos from the handover and '
               'the return, and the chat, then decides what happens to the '
               '${formatRupees(b.depositPaise)} deposit.',
               style: text.bodySmall?.copyWith(color: muted),
@@ -223,7 +223,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
           FilledButton(
             key: const ValueKey('dispute-submit'),
             onPressed: !ready || _busy ? null : () => _submit(detail),
-            child: Text(widget.respond ? 'Send' : 'Report to Sajha'),
+            child: Text(widget.respond ? 'Send' : 'Report to Nivra'),
           ),
         ],
       ),

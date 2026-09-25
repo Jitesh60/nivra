@@ -64,7 +64,7 @@ describe('API foundation (e2e)', () => {
 
   it('serves the OpenAPI document', async () => {
     const res = await request(app.getHttpServer()).get('/docs/openapi.json').expect(200);
-    expect(res.body.info.title).toBe('Sajha API');
+    expect(res.body.info.title).toBe('Nivra API');
     expect(Object.keys(res.body.paths)).toContain('/v1/health');
   });
 });

@@ -252,7 +252,7 @@ describe('Payments, refunds & payouts (e2e)', () => {
       expect(earnings.body.totals).toMatchObject({ paidPaise: 13_500, onHoldPaise: 0 });
     });
 
-    it('under 24 h: only the deposit back; the lender or Sajha cancelling refunds everything', async () => {
+    it('under 24 h: only the deposit back; the lender or Nivra cancelling refunds everything', async () => {
       const late = await paid();
       await startIn(late.bookingId, 0);
       await http(app)

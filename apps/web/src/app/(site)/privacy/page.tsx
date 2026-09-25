@@ -5,7 +5,7 @@ import { CONTACT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How Sajha collects, uses and protects your personal data.',
+  description: 'How Nivra collects, uses and protects your personal data.',
   alternates: { canonical: '/privacy' },
 };
 
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <Prose>
         <LegalDraftNotice updated="24 September 2026" />
         <p>
-          Sajha (“we”) runs a marketplace where people rent items to and from each other in India.
+          Nivra (“we”) runs a marketplace where people rent items to and from each other in India.
           This policy explains what personal data we collect, why, and the choices you have, in line
           with the Digital Personal Data Protection Act, 2023.
         </p>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
           <li>To create and secure your account and verify your phone and email.</li>
           <li>To run rentals: listings, chat, bookings, payments, deposits and support.</li>
           <li>To keep the community safe: preventing fraud and resolving disputes.</li>
-          <li>To tell you about Sajha’s launch if you joined the waitlist.</li>
+          <li>To tell you about Nivra’s launch if you joined the waitlist.</li>
         </ul>
         <h2>Documents you share</h2>
         <p>
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
         <h2>Who we share it with</h2>
         <p>
           The other person in a rental (only what they need), and service providers that help us run
-          Sajha: hosting, SMS, email and payments. We don’t sell your personal data.
+          Nivra: hosting, SMS, email and payments. We don’t sell your personal data.
         </p>
         <h2>How long we keep it</h2>
         <p>

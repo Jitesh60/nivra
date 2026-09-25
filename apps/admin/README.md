@@ -1,6 +1,6 @@
 # @sajha/admin
 
-Next.js admin panel for Sajha (App Router, Tailwind v4, shadcn/ui). Design: [docs/ARCHITECTURE.md §10](../../docs/ARCHITECTURE.md#10-admin-architecture-appsadmin).
+Next.js admin panel for Nivra (App Router, Tailwind v4, shadcn/ui). Design: [docs/ARCHITECTURE.md §10](../../docs/ARCHITECTURE.md#10-admin-architecture-appsadmin).
 
 ## Run
 

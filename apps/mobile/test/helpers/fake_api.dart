@@ -10,7 +10,7 @@ part 'fake_growth.dart';
 part 'fake_payments.dart';
 part 'fake_rentals.dart';
 
-/// In-memory stand-in for the Sajha API, plugged into Dio as its HTTP adapter.
+/// In-memory stand-in for the Nivra API, plugged into Dio as its HTTP adapter.
 /// Mirrors the real endpoints and error shapes closely enough to drive
 /// full sign-in flows in widget tests.
 class FakeSajhaApi implements HttpClientAdapter {

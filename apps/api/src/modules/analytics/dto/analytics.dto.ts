@@ -22,7 +22,7 @@ export class AnalyticsMetricsDto {
   completed: number;
   @ApiProperty({ description: 'Bookings cancelled, including no-shows' }) cancelled: number;
   @ApiProperty({ description: 'Captured payments (rent, fee and deposit)' }) gmvPaise: number;
-  @ApiProperty({ description: 'Sajha’s commission and fees, net of refunds' })
+  @ApiProperty({ description: 'Nivra’s commission and fees, net of refunds' })
   revenuePaise: number;
   @ApiProperty({ description: 'Refunds sent (not failed)' }) refundsPaise: number;
   @ApiProperty() disputesOpened: number;

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Sajha API image. Build from the repository root:
+# Nivra API image. Build from the repository root:
 #   docker build -f apps/api/Dockerfile --build-arg GIT_SHA=$(git rev-parse HEAD) -t sajha-api .
 # The same image runs two services (docs/DEPLOY.md):
 #   api    — JOBS_WORKER=false, public, pre-deploy `node_modules/.bin/prisma migrate deploy`

@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 
 /**
  * The shadcn Button API, drawn by @sajha/ui (DESIGN.md §7). shadcn names map
- * onto Sajha ones: default → primary, destructive → danger, size default → md.
+ * onto Nivra ones: default → primary, destructive → danger, size default → md.
  */
 const VARIANT = {
   default: 'primary',

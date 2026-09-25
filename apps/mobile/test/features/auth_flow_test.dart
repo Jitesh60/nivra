@@ -205,7 +205,7 @@ void main() {
     await h.start(tester);
     expect(location(h), Routes.splash);
     expect(
-      find.text('Can’t reach Sajha. Check your internet connection.'),
+      find.text('Can’t reach Nivra. Check your internet connection.'),
       findsOneWidget,
     );
 

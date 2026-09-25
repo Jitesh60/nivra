@@ -289,7 +289,7 @@ describe('Rentals: handover, return, disputes, reviews (e2e)', () => {
         expect.objectContaining({ kind: 'DEPOSIT_RETURN', amountPaise: 100_000 - fee }),
       ]);
       const { net } = await ledgerFor(m.bookingId);
-      // Only Sajha's commission stays.
+      // Only Nivra's commission stays.
       expect(net).toMatchObject({ DEPOSIT_HELD: 0, LENDER_PAYABLE: 0, PLATFORM_REVENUE: 3_000 });
       expect(net.GATEWAY).toBe(-3_000);
 

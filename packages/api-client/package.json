@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Typed client for the Sajha API, generated from apps/api's OpenAPI document.",
+  "description": "Typed client for the Nivra API, generated from apps/api's OpenAPI document.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

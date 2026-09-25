@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { cn } from './cn';
 import { DotsLoader } from './dots-loader';
 
-/** The Sajha button (DESIGN.md §7): a pill in three heights, 36/44/52. */
+/** The Nivra button (DESIGN.md §7): a pill in three heights, 36/44/52. */
 export const buttonVariants = cva(
   [
     'relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full font-sans text-button',

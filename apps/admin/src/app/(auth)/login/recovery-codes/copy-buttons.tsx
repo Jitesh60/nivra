@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export function CopyButtons({ codes }: { codes: string[] }) {
   const [copied, setCopied] = useState(false);
-  const text = `Sajha Admin recovery codes\nEach code works once.\n\n${codes.join('\n')}\n`;
+  const text = `Nivra Admin recovery codes\nEach code works once.\n\n${codes.join('\n')}\n`;
 
   return (
     <div className="flex gap-2">

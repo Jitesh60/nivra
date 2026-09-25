@@ -10,7 +10,7 @@ import '../../auth/application/auth_controller.dart';
 import '../data/chat_repository.dart';
 
 const _whyVerify =
-    'To keep chats safe, everyone chatting on Sajha has a verified phone and email.';
+    'To keep chats safe, everyone chatting on Nivra has a verified phone and email.';
 
 /// "Chat" on a listing. Guests sign in first and come back here; people
 /// without a verified email are asked to verify it; everyone else lands in

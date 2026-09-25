@@ -76,15 +76,15 @@ export const trustPoints = [
 
 export const faqs = [
   {
-    q: 'What is Sajha?',
-    a: 'Sajha (साझा, “shared”) is a marketplace where people rent out things they rarely use, and others rent them for a few days instead of buying.',
+    q: 'What is Nivra?',
+    a: 'Nivra is a marketplace where people rent out things they rarely use, and others rent them for a few days instead of buying.',
   },
   {
     q: 'How much does it cost to borrow?',
     a: 'The lender sets a price per day. You pay the rent plus a refundable security deposit. The deposit comes back when you return the item in the same condition.',
   },
   {
-    q: 'How much does Sajha charge lenders?',
+    q: 'How much does Nivra charge lenders?',
     a: 'We plan to keep 10% of the rent as a platform fee. Listing is free, and you only pay when you earn.',
   },
   {
@@ -100,7 +100,7 @@ export const faqs = [
     a: 'You meet the lender at an agreed place. A code in the app confirms the handover and the return, so both sides have a record.',
   },
   {
-    q: 'Where is Sajha available?',
+    q: 'Where is Nivra available?',
     a: 'We’re launching in India, one city at a time. Join the waitlist and tell us your city, and we’ll let you know when we arrive.',
   },
   {

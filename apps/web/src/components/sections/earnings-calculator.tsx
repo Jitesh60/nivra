@@ -64,7 +64,7 @@ export function EarningsCalculator() {
           {formatInr(perMonth * 12)} a year, from something you already own.
         </p>
         <p className="mt-6 text-xs text-brand-300">
-          After Sajha’s {PLATFORM_FEE * 100}% fee. Actual earnings depend on demand in your area.
+          After Nivra’s {PLATFORM_FEE * 100}% fee. Actual earnings depend on demand in your area.
         </p>
       </div>
     </div>
