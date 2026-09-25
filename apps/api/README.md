@@ -1,6 +1,6 @@
 # @sajha/api
 
-NestJS backend for Sajha. Design: [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md).
+NestJS backend for Nivra. Design: [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md).
 
 ## Run locally
 
@@ -146,7 +146,7 @@ pnpm dev                          # http://localhost:3000 (watch mode)
 | `GET /v1/admin/users/:id/referral`, `POST …/credits/revoke` | Referrals and credit per person (revoke: SUPER_ADMIN/OPS) |
 
 - The `discovery` BullMQ queue (job worker) runs saved-search alerts, request notices and hourly request expiry.
-- Credit comes off rent when booking (`bookings.creditPaise`), and Sajha pays it (ledger `PROMOTIONS`). See docs/ARCHITECTURE.md §6.
+- Credit comes off rent when booking (`bookings.creditPaise`), and Nivra pays it (ledger `PROMOTIONS`). See docs/ARCHITECTURE.md §6.
 - `PUBLIC_SITE_URL` builds invite links.
 
 ## Deployment (Phase 9d)

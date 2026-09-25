@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { friendlyMessage, toApiError, type ApiError } from './errors';
 import { getAccessToken } from './session';
 
-/** Base URL of the Sajha API, read on the server only. */
+/** Base URL of the Nivra API, read on the server only. */
 export const API_URL = process.env.SAJHA_API_URL ?? 'http://localhost:3000';
 
 export type Admin = Schemas['AdminDto'];

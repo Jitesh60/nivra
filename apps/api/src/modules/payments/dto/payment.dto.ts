@@ -259,7 +259,7 @@ export class LedgerBalancesDto {
   @ApiProperty() LENDER_PAYABLE: number;
   @ApiProperty() PLATFORM_REVENUE: number;
   @ApiProperty() GOODWILL: number;
-  @ApiProperty({ description: 'Referral credit Sajha paid for (debit balance, so negative)' })
+  @ApiProperty({ description: 'Referral credit Nivra paid for (debit balance, so negative)' })
   PROMOTIONS: number;
 }
 

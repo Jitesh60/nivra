@@ -30,7 +30,7 @@ class _ShareDocumentsScreenState extends ConsumerState<ShareDocumentsScreen> {
   bool _sending = false;
 
   /// Vault documents that can be shared for [r]: the right type, not
-  /// rejected by Sajha, and not expired.
+  /// rejected by Nivra, and not expired.
   List<UserDocument> _options(BookingRequiredDoc r, List<UserDocument> docs) =>
       [
         for (final d in docs)
@@ -145,8 +145,8 @@ class _ShareDocumentsScreenState extends ConsumerState<ShareDocumentsScreen> {
                         title: Text(doc.title),
                         subtitle: Text(
                           doc.status == DocumentStatus.approved
-                              ? 'Verified by Sajha'
-                              : 'Waiting for Sajha to verify',
+                              ? 'Verified by Nivra'
+                              : 'Waiting for Nivra to verify',
                         ),
                       ),
                   ],

@@ -19,7 +19,7 @@ const KPIS: { key: keyof Metrics; label: string; money?: boolean }[] = [
   { key: 'listings', label: 'Listings published' },
   { key: 'confirmed', label: 'Bookings paid' },
   { key: 'gmvPaise', label: 'Money taken (GMV)', money: true },
-  { key: 'revenuePaise', label: 'Sajha revenue', money: true },
+  { key: 'revenuePaise', label: 'Nivra revenue', money: true },
   { key: 'disputesOpened', label: 'Disputes opened' },
 ];
 

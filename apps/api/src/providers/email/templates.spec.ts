@@ -13,7 +13,7 @@ const end = new Date('2026-10-14T00:00:00Z');
 describe('email templates', () => {
   it('puts the code in the subject and both parts', () => {
     const m = emailOtpMessage('a@b.in', '482913', 10);
-    expect(m.subject).toBe('482913 is your Sajha verification code');
+    expect(m.subject).toBe('482913 is your Nivra verification code');
     expect(m.text).toContain('482913');
     expect(m.html).toContain('482913');
     expect(m.text).toContain('10 minutes');

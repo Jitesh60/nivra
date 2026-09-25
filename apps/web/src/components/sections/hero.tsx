@@ -9,7 +9,7 @@ export function Hero() {
       <ShaderHeroBackground />
       <div className="mx-auto w-full max-w-6xl">
         <p className="text-sm font-semibold tracking-widest text-brand-200 uppercase">
-          साझा · Sajha
+          Borrow · Lend · Share
         </p>
         <h1 className="mt-4 max-w-3xl font-display text-5xl leading-[1.05] font-bold tracking-tight sm:text-7xl">
           <BlurText text="Borrow what you need." className="block" />

@@ -1,4 +1,4 @@
-# Sajha mobile (Flutter)
+# Nivra mobile (Flutter)
 
 ## Run
 
@@ -14,9 +14,9 @@ flutter run --dart-define-from-file=config/dev.json
 
 | Android flavor | App ID | Name |
 |---|---|---|
-| dev | `com.sajha.app.dev` | Sajha Dev |
-| staging | `com.sajha.app.staging` | Sajha Staging |
-| prod | `com.sajha.app` | Sajha |
+| dev | `com.sajha.app.dev` | Nivra Dev |
+| staging | `com.sajha.app.staging` | Nivra Staging |
+| prod | `com.sajha.app` | Nivra |
 
 ## Checks
 
@@ -112,14 +112,14 @@ The `dev` Android flavor may use plain HTTP to `10.0.2.2` / `localhost` (`androi
 - **At pickup,** the borrower taps **Show handover code**. The lender taps **Hand over**, scans the QR (or types the 6 digits) and takes 2–6 photos of the item.
 - **At the return,** it's the other way round (**Show return code** / **Return it**).
 - **Late:** the booking shows the late fee so far (1× the daily rate per day, from the deposit).
-- **After the return,** the lender has 24 hours to **Report a problem**. The borrower can **Give your side**, and Sajha decides what happens to the deposit.
+- **After the return,** the lender has 24 hours to **Report a problem**. The borrower can **Give your side**, and Nivra decides what happens to the deposit.
 - **Reviews:** both rate each other after completion. A review is hidden until both have written one, or for a week. Ratings show on listing cards and the item page.
 - **Camera:** scanning uses `mobile_scanner`. Android asks for the camera permission, and on iOS `NSCameraUsageDescription` covers scanning.
 - **Live test** of handover and return: the same defines as the payment test. It books the next free day, so the listing's next two days must be free.
 
 ## Launch (Phase 9b)
 
-- **Settings → Notifications:** switches for push (bookings, messages, reminders), email (receipts and updates), SMS (overdue returns) and news from Sajha, saved through `GET/PUT /v1/me/notification-preferences`. A flip shows at once and flips back with a message if the save fails.
+- **Settings → Notifications:** switches for push (bookings, messages, reminders), email (receipts and updates), SMS (overdue returns) and news from Nivra, saved through `GET/PUT /v1/me/notification-preferences`. A flip shows at once and flips back with a message if the save fails.
 - **Settings → Help, Terms, Privacy** and "What deleting your account removes" open the website (`core/links/links.dart`, `url_launcher`); the app version is at the bottom.
 - **Crash reporting (Sentry):** on only when `SENTRY_DSN` is set in `config/<env>.json`. `core/observability/sentry_scrub.dart` removes request bodies and headers, everything about the user but the id, and phone numbers, emails and codes before anything leaves the phone; no screenshots or view hierarchy. Screen names are breadcrumbs (`SentryNavigatorObserver`).
 - **Icon and splash:** generated from `assets/brand/*.svg` (two linked rings: one thing, two people). After editing an SVG: `node apps/mobile/assets/brand/render.mjs`, then `dart run flutter_launcher_icons` and `dart run flutter_native_splash:create` (revert the unrelated `project.pbxproj` and `Info.plist` reformatting those tools make).

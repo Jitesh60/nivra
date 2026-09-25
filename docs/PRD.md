@@ -1,6 +1,6 @@
-# Sajha — Product Requirements Document (PRD)
+# Nivra — Product Requirements Document (PRD)
 
-> **Sajha** (साझा) means *shared*. Sajha is a peer-to-peer rental marketplace where people lend the things they rarely use and borrow the things they need only for a short time.
+> **Nivra** is a peer-to-peer rental marketplace where people lend the things they rarely use and borrow the things they need only for a short time.
 
 | | |
 |---|---|
@@ -18,9 +18,9 @@
 - **can't afford** to buy the item, or
 - **need it only once or for a short time** (one trek, one wedding, one weekend project).
 
-**Vision.** Sajha lets an owner earn from idle things and lets someone who needs them rent them cheaply, safely and nearby.
+**Vision.** Nivra lets an owner earn from idle things and lets someone who needs them rent them cheaply, safely and nearby.
 
-**Example.** Aman bought trekking shoes and treks once a year. Rahul is going on his first trek and doesn't want to spend ₹6,000 on shoes. Aman lists the shoes on Sajha at ₹150/day with a ₹1,000 refundable deposit. Rahul books them for 5 days, pays ₹750 rent plus the deposit, picks them up, treks, and returns them. Aman earns ₹675 after the platform fee, and Rahul gets his deposit back.
+**Example.** Aman bought trekking shoes and treks once a year. Rahul is going on his first trek and doesn't want to spend ₹6,000 on shoes. Aman lists the shoes on Nivra at ₹150/day with a ₹1,000 refundable deposit. Rahul books them for 5 days, pays ₹750 rent plus the deposit, picks them up, treks, and returns them. Aman earns ₹675 after the platform fee, and Rahul gets his deposit back.
 
 ## 2. Goals & non-goals
 
@@ -46,7 +46,7 @@
 | **Lender — Aman (29, working professional)** | Owns trekking shoes, a tent and a DSLR that he rarely uses | Earn something, trust the borrower, get items back in good condition, simple listing |
 | **Borrower — Rahul (21, student)** | Going on one trek, tight budget | Cheap, nearby, available on his dates, a clear total cost, deposit returned |
 | **Borrower — Priya (34, occasional DIY)** | Needs a drill for a weekend | Quick availability, easy pickup |
-| **Admin / Ops — Sajha team** | Runs the marketplace | Moderate content, review documents, resolve disputes, manage payouts, keep the platform safe |
+| **Admin / Ops — Nivra team** | Runs the marketplace | Moderate content, review documents, resolve disputes, manage payouts, keep the platform safe |
 
 ## 4. Launch categories
 
@@ -226,7 +226,7 @@ flowchart LR
 | Rental length | Minimum 1 day; the maximum is set by the lender (default 30 days) |
 | Saved searches (Phase 10) | Up to 10 per person; a new matching listing gives an in-app notice, and a push at most once per search every 6 hours and 5 a day per person |
 | Requests board (Phase 10) | Verified people only; 5 open and 5 new a day per person; expires the day after its end date or after 30 days; lenders within 10 km with something similar are told (at most 3 such notices a day); a lender answers by offering one of their live listings, which opens the chat (20 answers a day) |
-| Invite credit (Phase 10) | ₹100 to a new person who enters a code within 7 days of joining and before their first booking; ₹100 to the inviter when that person's first rental completes (up to 20 rewards). Credit comes off the rent, at most half of it, and Sajha pays for it (the lender's share is unchanged). It's held when booking, given back if the booking doesn't go ahead, and on a paid cancellation comes back before any cash. No expiry for now |
+| Invite credit (Phase 10) | ₹100 to a new person who enters a code within 7 days of joining and before their first booking; ₹100 to the inviter when that person's first rental completes (up to 20 rewards). Credit comes off the rent, at most half of it, and Nivra pays for it (the lender's share is unchanged). It's held when booking, given back if the booking doesn't go ahead, and on a paid cancellation comes back before any cash. No expiry for now |
 | Prohibited items | Weapons, drugs, alcohol, medicines, vehicles requiring registration (MVP), live animals, counterfeit or stolen goods, adult content, hazardous materials |
 
 ## 8. Admin panel capabilities
@@ -248,13 +248,13 @@ flowchart LR
 
 ## 9. Marketing website
 
-**Purpose:** explain Sajha, build trust, collect a waitlist before launch, and drive app installs.
+**Purpose:** explain Nivra, build trust, collect a waitlist before launch, and drive app installs.
 
 Sections:
 1. **Hero** with an animated shader background (Paper Shaders; shaders.com needs a paid commercial license), animated headline (React Bits text effects), and CTA buttons (uiverse)
 2. **How it works**, with borrower and lender tabs
 3. **Categories** grid, with hover effects
-4. **Why Sajha**: save money, earn from idle things, sustainability
+4. **Why Nivra**: save money, earn from idle things, sustainability
 5. **Trust & safety**: verification, deposits, documents, reviews
 6. **Become a lender**: an earnings calculator
 7. **Testimonials** or early-user quotes
@@ -278,9 +278,9 @@ Sections:
 
 - **DPDP Act 2023 (India):** explicit consent for collecting documents, purpose limitation (only for the booking), right to deletion (account deletion flow), a named grievance officer, and a privacy policy.
 - **Aadhaar:** we never store full Aadhaar numbers as data. Uploaded Aadhaar images are prompted to be **masked Aadhaar** (last 4 digits only).
-- **Payments:** handled by Razorpay (PCI-DSS). Sajha never stores card or UPI credentials.
+- **Payments:** handled by Razorpay (PCI-DSS). Nivra never stores card or UPI credentials.
 - **Documents:** encrypted at rest, private storage, short-lived view links, access logs, and automatic purge.
-- **Terms of use:** users are responsible for items; Sajha is an intermediary.
+- **Terms of use:** users are responsible for items; Nivra is an intermediary.
 - **Account deletion:** in-app, as required by the Play Store and App Store.
 
 ## 12. Success metrics

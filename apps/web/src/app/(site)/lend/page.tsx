@@ -6,7 +6,7 @@ import { WaitlistSection } from '@/components/sections/waitlist-section';
 import { PageShell, Section } from '@/components/site/section';
 
 export const metadata: Metadata = {
-  title: 'Lend on Sajha',
+  title: 'Lend on Nivra',
   description: 'Earn from things you rarely use. You set the price, the dates and the deposit.',
   alternates: { canonical: '/lend' },
 };

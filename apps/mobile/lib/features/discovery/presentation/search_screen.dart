@@ -186,7 +186,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               widget.initialQuery.isEmpty && widget.initialCategoryId == null,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search Sajha',
+            hintText: 'Search Nivra',
             border: InputBorder.none,
             filled: false,
             suffixIcon: _query.text.isEmpty

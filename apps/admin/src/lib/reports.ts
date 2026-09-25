@@ -14,7 +14,7 @@ export const REPORT_STATUS_LABEL: Record<ReportStatus, string> = {
 export const REPORT_REASON_LABEL: Record<string, string> = {
   SPAM: 'Spam',
   SCAM: 'Scam or fraud',
-  OFF_PLATFORM_PAYMENT: 'Paying or talking outside Sajha',
+  OFF_PLATFORM_PAYMENT: 'Paying or talking outside Nivra',
   INAPPROPRIATE: 'Rude or inappropriate',
   OTHER: 'Something else',
 };

@@ -4,7 +4,7 @@ export function LegalDraftNotice({ updated }: { updated: string }) {
   return (
     <p className="rounded-lg border border-accent-300 bg-accent-50 p-4 text-sm text-accent-900">
       <strong>Draft for review.</strong> This page is a working draft (last updated {updated}) and
-      will be reviewed by legal counsel before Sajha launches.
+      will be reviewed by legal counsel before Nivra launches.
     </p>
   );
 }

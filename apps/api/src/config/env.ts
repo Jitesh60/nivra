@@ -49,7 +49,7 @@ export const envSchema = z.object({
   TOTP_ENC_KEY: z
     .string()
     .refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64-encoded'),
-  TOTP_ISSUER: z.string().default('Sajha Admin'),
+  TOTP_ISSUER: z.string().default('Nivra Admin'),
 
   // ── Listings ──
   /** 32-byte key (base64) that encrypts lenders' exact pickup addresses at rest. */
@@ -73,7 +73,7 @@ export const envSchema = z.object({
 
   // ── Email ──
   EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
-  EMAIL_FROM: z.string().default('Sajha <no-reply@sajha.app>'),
+  EMAIL_FROM: z.string().default('Nivra <no-reply@sajha.app>'),
   /** The marketing site, for links the API hands out (invite links). */
   PUBLIC_SITE_URL: z.url().default('https://sajha.app'),
   SMTP_HOST: z.string().default('localhost'),

@@ -6,7 +6,7 @@ import { CONTACT_EMAIL } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Delete your account',
   description:
-    'How to delete your Sajha account and data, what is removed, and what we keep and for how long.',
+    'How to delete your Nivra account and data, what is removed, and what we keep and for how long.',
   alternates: { canonical: '/delete-account' },
 };
 
@@ -15,13 +15,13 @@ export default function DeleteAccountPage() {
   return (
     <PageShell
       title="Delete your account"
-      intro="You can delete your Sajha account and your data at any time, from the app or by email."
+      intro="You can delete your Nivra account and your data at any time, from the app or by email."
     >
       <Prose>
         <LegalDraftNotice updated="25 September 2026" />
         <h2>In the app</h2>
         <ol className="mt-4 list-decimal pl-6 [&_li]:mt-1">
-          <li>Open Sajha and sign in.</li>
+          <li>Open Nivra and sign in.</li>
           <li>Tap your profile picture, then Settings.</li>
           <li>Tap Delete account and confirm.</li>
         </ol>

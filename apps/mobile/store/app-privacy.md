@@ -1,7 +1,7 @@
 # App Store Connect: App Privacy ("nutrition label")
 
 **Do you or your third-party partners collect data from this app?** Yes.
-**Tracking:** No. Sajha doesn't track people across other companies' apps or websites, and has no advertising SDKs. (No App Tracking Transparency prompt is needed.)
+**Tracking:** No. Nivra doesn't track people across other companies' apps or websites, and has no advertising SDKs. (No App Tracking Transparency prompt is needed.)
 
 ## Data linked to the user
 
@@ -28,4 +28,4 @@
 |---|---|
 | Diagnostics · Crash data | App functionality (Sentry, only with crash reporting on; scrubbed of phone numbers, emails and codes) |
 
-Payment card and UPI details are entered in Razorpay's checkout and never reach Sajha, so they're not declared.
+Payment card and UPI details are entered in Razorpay's checkout and never reach Nivra, so they're not declared.

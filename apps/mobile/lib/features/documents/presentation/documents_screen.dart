@@ -104,7 +104,7 @@ class DocumentsScreen extends ConsumerWidget {
           body: doc.status == DocumentStatus.approved
               ? 'The photos are deleted. If this is your only approved ID, '
                     'you’ll lose the ID verified badge.'
-              : 'The photos are deleted from Sajha.',
+              : 'The photos are deleted from Nivra.',
           action: 'Delete',
           destructive: true,
         );
@@ -209,7 +209,7 @@ class _PrivacyNote extends StatelessWidget {
           const SizedBox(width: SajhaSpacing.sm),
           const Expanded(
             child: Text(
-              'Documents are stored encrypted and only Sajha’s review team '
+              'Documents are stored encrypted and only Nivra’s review team '
               'can see them. Later, you’ll choose when to share one with a '
               'lender for a booking.',
             ),

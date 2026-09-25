@@ -120,10 +120,10 @@ String nextStep(BookingDetail d) {
       final dispute = d.dispute;
       if (b.isBorrower) {
         return dispute?.respondedAt == null
-            ? '$other reported a problem. Give your side; Sajha decides what happens to the deposit.'
-            : 'Sajha is looking at the claim and your reply. We’ll let you both know.';
+            ? '$other reported a problem. Give your side; Nivra decides what happens to the deposit.'
+            : 'Nivra is looking at the claim and your reply. We’ll let you both know.';
       }
-      return 'Sajha is looking at your claim and will decide what happens to the deposit.';
+      return 'Nivra is looking at your claim and will decide what happens to the deposit.';
     case BookingStatus.completed:
       final kept = d.rental?.keptPaise ?? 0;
       final back = b.depositPaise - kept;
@@ -138,7 +138,7 @@ String nextStep(BookingDetail d) {
       final by = switch (b.cancelledBy) {
         'BORROWER' => b.isBorrower ? 'You' : other,
         'LENDER' => b.isBorrower ? other : 'You',
-        _ => 'Sajha',
+        _ => 'Nivra',
       };
       return b.cancelReason == null
           ? '$by cancelled this booking.'
@@ -149,8 +149,8 @@ String nextStep(BookingDetail d) {
 /// A line for each timeline event.
 String eventText(BookingEvent e, Booking b) {
   final who = switch (e.by) {
-    'SYSTEM' => 'Sajha',
-    'ADMIN' => 'Sajha support',
+    'SYSTEM' => 'Nivra',
+    'ADMIN' => 'Nivra support',
     'BORROWER' => b.isBorrower ? 'You' : b.other.firstName,
     _ => b.isBorrower ? b.other.firstName : 'You',
   };
@@ -172,15 +172,15 @@ String eventText(BookingEvent e, Booking b) {
     BookingEventType.noShow => '$who: borrower didn’t come',
     BookingEventType.disputed => '$who reported a problem',
     BookingEventType.completed => 'Rental complete',
-    BookingEventType.disputeResolved => 'Sajha decided the claim',
+    BookingEventType.disputeResolved => 'Nivra decided the claim',
   };
 }
 
-/// "Cancellation refund", "Late payment refund", "Refund from Sajha".
+/// "Cancellation refund", "Late payment refund", "Refund from Nivra".
 String refundText(BookingRefund r) => switch (r.kind) {
   RefundKind.cancellation => 'Cancellation refund',
   RefundKind.latePayment => 'Late payment refund',
-  RefundKind.manual => 'Refund from Sajha',
+  RefundKind.manual => 'Refund from Nivra',
   RefundKind.depositReturn => 'Deposit back',
 };
 

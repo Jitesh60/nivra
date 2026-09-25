@@ -1,4 +1,4 @@
-# Sajha — Engineering Plan
+# Nivra — Engineering Plan
 
 This doc explains **how** we'll build what the [PRD](./PRD.md) describes: stack choices, repo layout, conventions, the Git workflow, testing, risks and open decisions. The system design lives in [ARCHITECTURE](./ARCHITECTURE.md), and the delivery order lives in [PHASES](./PHASES.md).
 
@@ -158,7 +158,7 @@ Hosting is an open decision (AWS ECS/Fargate, Render or Railway for the API; Ver
 | Document privacy leak | Private encrypted bucket, 5-min signed view URLs, booking-scoped access, view audit log, automatic purge, masked Aadhaar |
 | Fake accounts / fraud | Phone + email OTP, OTP rate limits, device-bound sessions, report/ban, ID verification later |
 | OTP/SMS cost abuse | Per-phone, per-IP and per-device rate limits; resend cooldown; CAPTCHA/Play Integrity later |
-| Holding customer money (RBI rules) | Sajha doesn't hold funds itself; Razorpay Route **on-hold transfers** release money to the lender only after return |
+| Holding customer money (RBI rules) | Nivra doesn't hold funds itself; Razorpay Route **on-hold transfers** release money to the lender only after return |
 | Double-booking | Postgres exclusion constraint on booked date ranges plus transactional checks |
 | Deals taken off-platform | Contact masking in chat until confirmation; value of deposit protection and reviews |
 | DLT registration delay for SMS in India | Start MSG91 DLT/template registration in Phase 0; use a fake provider until then |

@@ -1,4 +1,4 @@
-# Releasing Sajha
+# Releasing Nivra
 
 The mobile part was written in Phase 9b, and production infrastructure in 9d. Deploying the servers is in [DEPLOY.md](DEPLOY.md), and running them in [OPERATIONS.md](OPERATIONS.md).
 

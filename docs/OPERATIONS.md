@@ -1,4 +1,4 @@
-# Operating Sajha
+# Operating Nivra
 
 What to watch in production and what to do when something breaks. Deployment is covered in [DEPLOY.md](DEPLOY.md), and store releases in [RELEASE.md](RELEASE.md).
 

@@ -145,7 +145,7 @@ describe('Launch: preferences, emails, analytics, limits (e2e)', () => {
       await http(app).delete('/v1/me').set(bearer(user.accessToken)).expect(202);
       await sendQueuedEmails(app);
       const [deleted] = await emailsTo(email);
-      expect(deleted?.subject).toBe('Your Sajha account has been deleted');
+      expect(deleted?.subject).toBe('Your Nivra account has been deleted');
       expect(deleted?.text).toContain('Hi Meera');
       expect(await prisma.notificationPreferences.count({ where: { userId: user.userId } })).toBe(
         0,

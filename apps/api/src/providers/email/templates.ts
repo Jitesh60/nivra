@@ -21,21 +21,21 @@ export const emailDates = (start: Date, end: Date) => {
   return s === e ? s : `${s} – ${e}`;
 };
 
-const bookingReason = 'You’re getting this because you have a booking on Sajha.';
+const bookingReason = 'You’re getting this because you have a booking on Nivra.';
 
 /** Email-verification code. Keep it short: most people read it in a notification. */
 export function emailOtpMessage(to: string, code: string, ttlMinutes: number): EmailMessage {
   return {
     to,
-    subject: `${code} is your Sajha verification code`,
+    subject: `${code} is your Nivra verification code`,
     ...renderEmail({
       preheader: `It expires in ${ttlMinutes} minutes.`,
       heading: `Your code is ${code}`,
       paragraphs: [
-        `Enter it in the Sajha app to verify this email. It expires in ${ttlMinutes} minutes.`,
+        `Enter it in the Nivra app to verify this email. It expires in ${ttlMinutes} minutes.`,
         'If you didn’t ask for it, you can ignore this email: nothing changes without the code.',
       ],
-      reason: 'You’re getting this because someone entered this address in the Sajha app.',
+      reason: 'You’re getting this because someone entered this address in the Nivra app.',
     }),
   };
 }
@@ -161,7 +161,7 @@ export function disputeSettledMessage(r: {
       preheader: r.borrower
         ? `${rupees(back)} of your deposit comes back to you.`
         : `You receive ${rupees(r.lenderGetsPaise)} from the deposit.`,
-      heading: 'Sajha has decided the claim',
+      heading: 'Nivra has decided the claim',
       paragraphs: [
         `Hi ${r.name ?? 'there'}, we looked at the photos from both of you, the chat and what you each said.`,
         ...(r.note ? [`Our note: “${r.note}”`] : []),
@@ -182,16 +182,16 @@ export function disputeSettledMessage(r: {
 export function accountDeletedMessage(to: string, name: string | null): EmailMessage {
   return {
     to,
-    subject: 'Your Sajha account has been deleted',
+    subject: 'Your Nivra account has been deleted',
     ...renderEmail({
       preheader: 'Your profile, listings and documents are gone.',
       heading: 'Your account is deleted',
       paragraphs: [
-        `Hi ${name ?? 'there'}, as you asked, we’ve deleted your Sajha account. Your profile, listings, ID documents and devices are gone, and you’ve been signed out everywhere.`,
+        `Hi ${name ?? 'there'}, as you asked, we’ve deleted your Nivra account. Your profile, listings, ID documents and devices are gone, and you’ve been signed out everywhere.`,
         'We keep payment and booking records for as long as Indian tax and payment rules require, without your name or contact details.',
         'If you didn’t do this, reply to this email straight away.',
       ],
-      reason: 'You’re getting this because this address was verified on a Sajha account.',
+      reason: 'You’re getting this because this address was verified on a Nivra account.',
     }),
   };
 }

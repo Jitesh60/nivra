@@ -61,7 +61,7 @@ test.beforeAll(async ({ browser }) => {
       targetType: 'MESSAGE',
       targetId: ask.id,
       reason: 'OFF_PLATFORM_PAYMENT',
-      note: 'Wants to be paid outside Sajha',
+      note: 'Wants to be paid outside Nivra',
     })
   ).id;
   listingReportId = (
@@ -83,14 +83,14 @@ test('Ops reviews a reported message, reads the logged transcript, and closes it
   const row = reportRow(page, messageReportId);
   await expect(row).toContainText('Pay me on ••• instead');
   await expect(row).toContainText('Chat message');
-  await expect(row).toContainText('Paying or talking outside Sajha');
+  await expect(row).toContainText('Paying or talking outside Nivra');
   await row.getByRole('link', { name: 'Review' }).click();
   await expect(page).toHaveURL(`/reports/${messageReportId}`);
 
   // Admins see what was typed, and what the other person saw.
   await expect(page.getByTestId('original-text')).toHaveText(UPI_ASK);
   await expect(page.getByText('Pay me on ••• instead, or call •••')).toBeVisible();
-  await expect(page.getByText('“Wants to be paid outside Sajha”')).toBeVisible();
+  await expect(page.getByText('“Wants to be paid outside Nivra”')).toBeVisible();
 
   await page.getByRole('link', { name: 'View conversation (logged) →' }).click();
   await expect(page).toHaveURL(`/conversations/${conversationId}?report=${messageReportId}`);

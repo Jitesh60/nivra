@@ -15,6 +15,6 @@ async function bootstrap() {
 
   const port = app.get<ConfigService<Env, true>>(ConfigService).get('PORT', { infer: true });
   await app.listen(port);
-  app.get(Logger).log(`Sajha API listening on http://localhost:${port}`);
+  app.get(Logger).log(`Nivra API listening on http://localhost:${port}`);
 }
 await bootstrap();

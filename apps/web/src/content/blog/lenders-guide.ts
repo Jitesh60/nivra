@@ -4,13 +4,13 @@ export const post: Post = {
   slug: 'lenders-guide-earn-from-things-you-rarely-use',
   title: 'A lender’s guide: earning from things you rarely use',
   description:
-    'Pricing, photos, deposits and the handover: everything that makes a Sajha listing rent out more often, from lenders who do it every week.',
+    'Pricing, photos, deposits and the handover: everything that makes a Nivra listing rent out more often, from lenders who do it every week.',
   date: '2026-09-24',
-  author: 'Team Sajha',
+  author: 'Team Nivra',
   minutes: 5,
   body: [
     {
-      p: 'Look around: a DSLR from a trip two years ago, a drill used for one shelf, a projector from the lockdown. On Sajha, those can earn a few thousand rupees a month for people who need them for a weekend.',
+      p: 'Look around: a DSLR from a trip two years ago, a drill used for one shelf, a projector from the lockdown. On Nivra, those can earn a few thousand rupees a month for people who need them for a weekend.',
     },
     { h2: 'Price it by the day, not by what you paid' },
     {

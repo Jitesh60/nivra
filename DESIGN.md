@@ -1,4 +1,4 @@
-# Sajha design system
+# Nivra design system
 
 One look for the website, the admin panel and the app. Every value here comes from **`packages/design-tokens/src/tokens.json`**. Change it there, run `pnpm tokens`, and all three apps pick it up:
 - Web and admin get Tailwind utilities and CSS variables (`@sajha/design-tokens/theme.css`).

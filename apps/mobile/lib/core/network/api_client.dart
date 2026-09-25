@@ -35,7 +35,7 @@ final tokenManagerProvider = Provider<TokenManager>((ref) {
   );
 });
 
-/// Shared HTTP client for the Sajha API (`/v1`), with auth and token refresh.
+/// Shared HTTP client for the Nivra API (`/v1`), with auth and token refresh.
 final dioProvider = Provider<Dio>((ref) {
   final dio = _baseDio(ref);
   dio.interceptors.add(AuthInterceptor(ref.watch(tokenManagerProvider), dio));

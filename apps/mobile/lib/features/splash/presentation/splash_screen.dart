@@ -43,7 +43,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             children: [
               const Spacer(),
               Text(
-                'Sajha',
+                'Nivra',
                 style: text.displayMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,

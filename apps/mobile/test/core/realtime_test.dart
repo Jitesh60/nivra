@@ -76,7 +76,7 @@ void main() {
     expect(OfferStatus.fromApi('SUPERSEDED'), OfferStatus.superseded);
     expect(
       const ChatParticipant(id: 'x', idVerified: false).displayName,
-      'Sajha user',
+      'Nivra user',
     );
     expect(
       const ChatParticipant(

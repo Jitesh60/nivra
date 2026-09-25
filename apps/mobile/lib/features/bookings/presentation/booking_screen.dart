@@ -415,7 +415,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             ),
           if (!b.isBorrower && b.status != BookingStatus.completed)
             Text(
-              'Your share (rent less Sajha’s 10% commission) is held until '
+              'Your share (rent less Nivra’s 10% commission) is held until '
               'the item is back. See Earnings in your profile.',
               style: text.bodySmall?.copyWith(color: muted),
             ),
@@ -543,7 +543,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             note: draft.note,
             conversationId: b.conversationId,
           ),
-      'Thanks. Sajha will look into it.',
+      'Thanks. Nivra will look into it.',
     );
   }
 
@@ -565,7 +565,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       ),
       title: Text(s.title),
       subtitle: Text(
-        [status, if (s.verified) 'Verified by Sajha', ?views].join(' · '),
+        [status, if (s.verified) 'Verified by Nivra', ?views].join(' · '),
       ),
       trailing: s.viewable ? const Icon(Icons.chevron_right) : null,
       onTap: s.viewable

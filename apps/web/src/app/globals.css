@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-/* Sajha brand scales (brand-*, accent-*, ink-*), radii and fonts. Generated from packages/design-tokens. */
+/* Nivra brand scales (brand-*, accent-*, ink-*), radii and fonts. Generated from packages/design-tokens. */
 @import '@sajha/design-tokens/theme.css';
 /* Glow border, badge tints and shimmer for @sajha/ui. */
 @import '@sajha/ui/styles.css';

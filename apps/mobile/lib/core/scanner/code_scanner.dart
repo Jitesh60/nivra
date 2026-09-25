@@ -65,7 +65,7 @@ class _ScannerScreenState extends State<_ScannerScreen> {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   error.errorCode == MobileScannerErrorCode.permissionDenied
-                      ? 'Sajha needs the camera to scan the code. You can type '
+                      ? 'Nivra needs the camera to scan the code. You can type '
                             'the 6 digits instead.'
                       : 'The camera isn’t available. Type the 6 digits instead.',
                   style: const TextStyle(color: Colors.white),

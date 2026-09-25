@@ -560,7 +560,7 @@ class _LenderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = lender.name ?? 'Sajha lender';
+    final name = lender.name ?? 'Nivra lender';
     final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
     final since = lender.memberSince;
     Widget badge(bool on, IconData icon, String label) => on
@@ -597,7 +597,7 @@ class _LenderTile extends StatelessWidget {
             [
               ?ratingLine(lender.ratingAvg, lender.ratingCount),
               if (lender.city != null) lender.city!,
-              'On Sajha since ${_monthYear(since)}',
+              'On Nivra since ${_monthYear(since)}',
             ].join(' · '),
           ),
         ),

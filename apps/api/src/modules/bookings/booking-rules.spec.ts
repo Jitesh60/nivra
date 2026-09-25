@@ -165,7 +165,7 @@ describe('cancellation refunds (PRD policy)', () => {
     });
   });
 
-  it('a lender or Sajha cancelling refunds everything, even at the last minute', () => {
+  it('a lender or Nivra cancelling refunds everything, even at the last minute', () => {
     const late = new Date('2026-10-09T18:00:00Z');
     expect(refundFor(b, 'LENDER', late).tier).toBe('FULL');
     expect(refundFor(b, 'ADMIN', late).totalPaise).toBe(160_000);

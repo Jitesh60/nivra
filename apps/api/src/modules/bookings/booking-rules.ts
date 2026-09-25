@@ -311,7 +311,7 @@ export interface Refund {
  * The PRD cancellation policy, for a paid booking (applied in Phase 7):
  * a borrower gets everything back more than 48 h before the start, half the
  * rent 24–48 h before, and no rent under 24 h. The deposit always comes back.
- * If the lender (or Sajha) cancels, the borrower gets everything back.
+ * If the lender (or Nivra) cancels, the borrower gets everything back.
  */
 export function refundFor(
   b: { rentPaise: number; feePaise: number; depositPaise: number; startsOn: Date },

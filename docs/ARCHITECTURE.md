@@ -1,6 +1,6 @@
-# Sajha — Architecture
+# Nivra — Architecture
 
-System design for Sajha. For **what** we build, see the [PRD](./PRD.md). For the stack and conventions, see the [PLAN](./PLAN.md). For the build order, see [PHASES](./PHASES.md).
+System design for Nivra. For **what** we build, see the [PRD](./PRD.md). For the stack and conventions, see the [PLAN](./PLAN.md). For the build order, see [PHASES](./PHASES.md).
 
 ---
 
@@ -15,7 +15,7 @@ flowchart LR
   end
 
   subgraph Backend
-    API[Sajha API<br/>NestJS REST /v1 + Socket.IO]
+    API[Nivra API<br/>NestJS REST /v1 + Socket.IO]
     WK[Workers<br/>BullMQ jobs]
   end
 
@@ -140,7 +140,7 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | Table | Purpose | Key fields |
 |---|---|---|
 | `users` | App users (borrowers and lenders) | `phone` (E.164, unique), `phone_verified_at`, `email` (citext, unique), `email_verified_at`, `name`, `status` (ACTIVE/SUSPENDED/BANNED/DELETED), `deleted_at` |
-| `admin_users` | Sajha staff | `email` (citext, unique), `password_hash` (argon2id), `role` (SUPER_ADMIN/OPS/SUPPORT), `status` (ACTIVE/DISABLED), `must_change_password`, `failed_login_count`, `locked_until`, `totp_secret_enc` (AES-256-GCM), `totp_enabled_at`, `totp_last_time_step` (replay guard) |
+| `admin_users` | Nivra staff | `email` (citext, unique), `password_hash` (argon2id), `role` (SUPER_ADMIN/OPS/SUPPORT), `status` (ACTIVE/DISABLED), `must_change_password`, `failed_login_count`, `locked_until`, `totp_secret_enc` (AES-256-GCM), `totp_enabled_at`, `totp_last_time_step` (replay guard) |
 | `admin_recovery_codes` | One-time 2FA recovery codes | `code_hash` (SHA-256), `used_at` |
 | `sessions` | **One login on one device, for either realm** | `realm` (USER/ADMIN), `user_id` *or* `admin_user_id` (CHECK constraint: exactly one, matching the realm), `device_id`, `device_name`, `platform`, `ip`, `user_agent`, `expires_at`, `revoked_at`, `revoke_reason`, `last_used_at` |
 | `refresh_tokens` | Rotating refresh tokens inside a session | `session_id`, `token_hash` (SHA-256, unique), `expires_at`, `used_at` |
@@ -200,7 +200,7 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `offers` | messageId, startDate, endDate, pricePerDayPaise, status (PENDING/ACCEPTED/COUNTERED/DECLINED/EXPIRED), parentOfferId |
 | `bookings` (6a) | listingId, borrowerId, lenderId, conversationId, offerId (unique, when made from an offer), source (REQUEST/OFFER), `startsOn`/`endsOn` (dates, inclusive), days, pricePerDayPaise, rentPaise, feePaise, depositPaise, totalPaise, status, expiresAt (deadline of the current step), declineReason, cancelledBy (BORROWER/LENDER/ADMIN), cancelledById, cancelReason, closedAt; handover code hashes come in Phase 8 |
 | `booking_events` (6a) | bookingId, type (REQUESTED/ACCEPTED/DECLINED/EXPIRED/CANCELLED/DOCS_SUBMITTED/DOCS_APPROVED/DOCS_REJECTED), fromStatus, toStatus, actorType (USER/ADMIN/SYSTEM), actorId, note, createdAt; append-only |
-| `booking_document_shares` (6a) | bookingId, requiredDocId, userDocumentId (set null if the vault copy is deleted), docType, label, verified (Sajha had approved it), frontKey/backKey (the booking's own copies), status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
+| `booking_document_shares` (6a) | bookingId, requiredDocId, userDocumentId (set null if the vault copy is deleted), docType, label, verified (Nivra had approved it), frontKey/backKey (the booking's own copies), status (SUBMITTED/APPROVED/REJECTED), accessExpiresAt, purgedAt |
 | `document_access_logs` (6a) | shareId, viewerId, viewerType, ip, createdAt |
 | `payments` (7a) | bookingId, provider (razorpay/fake), orderId (unique), paymentId (unique), amountPaise, currency, method, status (CREATED/CAPTURED/FAILED/PARTIALLY_REFUNDED/REFUNDED), failureReason, capturedAt |
 | `refunds` (7a) | paymentId, bookingId, providerRefundId (unique), amountPaise, breakdown (rent/fee/deposit), kind (CANCELLATION/LATE_PAYMENT/MANUAL), status (PENDING/PROCESSED/FAILED), attempts, adminId |
@@ -565,7 +565,7 @@ Locally and in e2e tests, storage is SeaweedFS's S3 API (`infra/docker-compose.y
 **Sharing documents for a booking (Phase 6a):** `POST /v1/bookings/:id/documents {shares: [{requiredDocId, userDocumentId}]}`.
 - The borrower picks one vault document per document the listing asks for. It must match the type, be live (not rejected, expired or deleted), and belong to them.
 - The files are **copied** to `bookings/{bookingId}/` in the private bucket, so deleting from the vault doesn't affect the booking and purging is clean.
-- The share records whether Sajha had verified the document, and writes `user.booking.documents.share` to the audit log.
+- The share records whether Nivra had verified the document, and writes `user.booking.documents.share` to the audit log.
 
 **Viewing a shared document:** a lender calls `GET /v1/bookings/:id/documents/:shareId/view?side=`.
 - The API checks that the viewer is the booking's lender, that the booking state is between `AWAITING_DOCS` and `RETURNED`, and that `accessExpiresAt` hasn't passed (otherwise 410 `DOCUMENT_ACCESS_ENDED`).
@@ -688,7 +688,7 @@ shaders/                          # GLSL fragment shaders (declared in pubspec `
 - **Payments** (Phase 7c). A layout adds Payments · Payouts · Ledger tabs. Every role can read; the actions are SUPER_ADMIN/OPS, as the API enforces.
   - `/payments` has status tabs and a search by listing, borrower name or phone, order, payment or booking id. `/bookings` gains a Paid tab, and each booking links to its payment.
   - `/payments/[id]` shows the charge breakdown, what's left to refund, the refunds, the payouts to the lender and the booking's ledger lines.
-    - **Refund** is a goodwill refund with an amount (up to what's left) and a reason. Sajha pays for it, and the API audits it as `admin.payment.refund`.
+    - **Refund** is a goodwill refund with an amount (up to what's left) and a reason. Nivra pays for it, and the API audits it as `admin.payment.refund`.
   - `/payments/payouts` lists transfers by status, with **Retry** on failed ones (`admin.transfer.retry`).
   - `/payments/ledger` shows the balance per account, a Balanced badge and reconciliation checks: unbalanced transactions, captured payments with no ledger entry, and failed refunds and payouts.
 - **Disputes** (Phase 8c). Every role can read; SUPER_ADMIN/OPS settle.

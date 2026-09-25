@@ -149,7 +149,7 @@ export class AdminPaymentsService {
     };
   }
 
-  /** A goodwill refund (Sajha bears it), up to what's still refundable. */
+  /** A goodwill refund (Nivra bears it), up to what's still refundable. */
   async refund(
     id: string,
     adminId: string,

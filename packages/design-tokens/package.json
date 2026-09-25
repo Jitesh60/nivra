@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Single source of truth for Sajha colours, typography, radii and spacing. Generates a Tailwind v4 theme (web/admin) and a Dart theme file (mobile).",
+  "description": "Single source of truth for Nivra colours, typography, radii and spacing. Generates a Tailwind v4 theme (web/admin) and a Dart theme file (mobile).",
   "exports": {
     ".": "./dist/tokens.js",
     "./theme.css": "./dist/theme.css",

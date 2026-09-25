@@ -125,7 +125,7 @@ export class DisputesService {
       {
         type: 'booking.dispute_response',
         title: 'The borrower replied',
-        body: `The borrower gave their side about ${b.listing.title}. Sajha will decide soon.`,
+        body: `The borrower gave their side about ${b.listing.title}. Nivra will decide soon.`,
         bookingId,
       },
       { push: false },

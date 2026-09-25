@@ -1,4 +1,4 @@
-// Contract test against a running Sajha API (skipped by default).
+// Contract test against a running Nivra API (skipped by default).
 //
 //   # API started with OTP_DEV_BYPASS_CODE=000000
 //   flutter test test/live_api_test.dart --dart-define=LIVE_API_URL=http://localhost:3000

@@ -91,7 +91,7 @@ class ConditionPhotosSection extends StatelessWidget {
   }
 }
 
-/// The lender's claim, the borrower's reply and Sajha's decision.
+/// The lender's claim, the borrower's reply and Nivra's decision.
 class DisputeSection extends StatelessWidget {
   const DisputeSection(this.d, {super.key});
 
@@ -145,7 +145,7 @@ class DisputeSection extends StatelessWidget {
         const SizedBox(height: SajhaSpacing.sm),
         if (dispute.resolved)
           Text(
-            'Sajha decided: ${formatRupees(dispute.keptPaise ?? 0)} to the '
+            'Nivra decided: ${formatRupees(dispute.keptPaise ?? 0)} to the '
             'lender, the rest of the deposit back to the borrower.'
             '${dispute.resolutionNote == null ? '' : ' “${dispute.resolutionNote}”'}',
             key: const ValueKey('dispute-outcome'),
@@ -153,7 +153,7 @@ class DisputeSection extends StatelessWidget {
           )
         else
           Text(
-            'Sajha is reviewing this.',
+            'Nivra is reviewing this.',
             style: text.bodySmall?.copyWith(color: muted),
           ),
       ],

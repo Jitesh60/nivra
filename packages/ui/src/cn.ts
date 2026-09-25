@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
 
 /**
- * tailwind-merge that knows the Sajha type scale, so `text-button` is merged as
+ * tailwind-merge that knows the Nivra type scale, so `text-button` is merged as
  * a font size and not mistaken for a colour (which would drop `text-white`).
  */
 const twMerge = extendTailwindMerge({

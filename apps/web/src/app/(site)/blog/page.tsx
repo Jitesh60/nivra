@@ -5,13 +5,13 @@ import { POSTS, postDate } from '@/content/blog';
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Guides to renting and lending on Sajha: pricing, safety, deposits and more.',
+  description: 'Guides to renting and lending on Nivra: pricing, safety, deposits and more.',
   alternates: { canonical: '/blog', types: { 'application/rss+xml': '/blog/rss.xml' } },
 };
 
 export default function BlogPage() {
   return (
-    <PageShell title="Blog" intro="Guides to borrowing and lending well, from the Sajha team.">
+    <PageShell title="Blog" intro="Guides to borrowing and lending well, from the Nivra team.">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-12 md:grid-cols-3">
         {POSTS.map((p) => (
           <article

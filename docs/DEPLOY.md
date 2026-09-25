@@ -1,4 +1,4 @@
-# Deploying Sajha
+# Deploying Nivra
 
 Phase 9d. **Railway** runs the API, the job worker, Postgres (PostGIS) and Redis. **Vercel** runs the admin panel and the website. **AWS S3** (ap-south-1) holds photos and documents, plus the nightly database backups. GitHub Actions builds one API image per commit and promotes that exact image from staging to production.
 

@@ -352,7 +352,7 @@ class _PricingStepState extends ConsumerState<PricingStep> {
           price == null || price == 0
               ? 'Tip: 5–10% of the item’s price per day is a good start.'
               : 'You earn ${formatRupees(r.lenderEarnings(price * 100))}/day '
-                    'after Sajha’s ${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}% fee.',
+                    'after Nivra’s ${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}% fee.',
           key: const ValueKey('earnings'),
           style: TextStyle(color: muted),
         ),

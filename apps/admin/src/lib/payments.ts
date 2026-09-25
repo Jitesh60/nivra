@@ -69,7 +69,7 @@ export const LEDGER_ACCOUNT_LABEL: Record<LedgerAccount, string> = {
   GATEWAY: 'Gateway (Razorpay)',
   DEPOSIT_HELD: 'Deposits held',
   LENDER_PAYABLE: 'Owed to lenders',
-  PLATFORM_REVENUE: 'Sajha revenue',
+  PLATFORM_REVENUE: 'Nivra revenue',
   GOODWILL: 'Goodwill refunds',
   PROMOTIONS: 'Invite credit',
 };
@@ -79,8 +79,8 @@ export const LEDGER_ACCOUNT_HINT: Record<LedgerAccount, string> = {
   DEPOSIT_HELD: 'Deposits to return after each rental.',
   LENDER_PAYABLE: 'Rent less commission, not yet transferred.',
   PLATFORM_REVENUE: 'Commission and fees kept.',
-  GOODWILL: 'Refunds Sajha paid for (a cost, shown as a debit).',
-  PROMOTIONS: 'Rent paid with invite credit, which Sajha covers (a cost, shown as a debit).',
+  GOODWILL: 'Refunds Nivra paid for (a cost, shown as a debit).',
+  PROMOTIONS: 'Rent paid with invite credit, which Nivra covers (a cost, shown as a debit).',
 };
 
 export const COMMON_REFUND_REASONS = [

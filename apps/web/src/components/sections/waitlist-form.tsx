@@ -60,7 +60,7 @@ export function WaitlistForm() {
     } catch {
       setStatus({
         kind: 'error',
-        message: 'Couldn’t reach Sajha. Check your connection and try again.',
+        message: 'Couldn’t reach Nivra. Check your connection and try again.',
       });
     }
   }
@@ -75,7 +75,7 @@ export function WaitlistForm() {
         <p className="font-display text-2xl font-bold text-white">
           {status.already ? 'You’re already on the list 🎉' : 'You’re on the list 🎉'}
         </p>
-        <p className="mt-2 text-brand-100">We’ll email you when Sajha launches in your city.</p>
+        <p className="mt-2 text-brand-100">We’ll email you when Nivra launches in your city.</p>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export function WaitlistForm() {
         {sending ? <DotsLoader label="Joining" /> : 'Join the waitlist'}
       </GlowButton>
       <p className="text-xs text-ink-300">
-        We’ll only email you about Sajha’s launch. See our{' '}
+        We’ll only email you about Nivra’s launch. See our{' '}
         <a href="/privacy" className="underline">
           Privacy Policy
         </a>

@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-/* Sajha scales, type, radii, shadows and the semantic --sj-* roles (light and
+/* Nivra scales, type, radii, shadows and the semantic --sj-* roles (light and
    .dark). Generated from packages/design-tokens; see DESIGN.md. */
 @import '@sajha/design-tokens/theme.css';
 /* Glow border, badge tints and shimmer for @sajha/ui. */
@@ -10,7 +10,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* shadcn/ui variables, mapped onto the Sajha semantic roles. */
+/* shadcn/ui variables, mapped onto the Nivra semantic roles. */
 :root {
   --background: var(--sj-background);
   --foreground: var(--sj-foreground);

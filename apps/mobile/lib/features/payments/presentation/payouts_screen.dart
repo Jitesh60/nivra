@@ -9,7 +9,7 @@ import '../application/payments_providers.dart';
 import '../data/models.dart';
 import '../data/payments_repository.dart';
 
-/// Lender: the bank account Sajha pays out to (a Razorpay Route linked
+/// Lender: the bank account Nivra pays out to (a Razorpay Route linked
 /// account). Set up once; Razorpay verifies it.
 class PayoutsScreen extends ConsumerWidget {
   const PayoutsScreen({super.key});
@@ -60,12 +60,12 @@ class _AccountView extends StatelessWidget {
       PayoutAccountStatus.needsClarification => (
         SajhaColors.warning,
         a.statusReason ??
-            'Razorpay needs more details. Contact Sajha support to finish.',
+            'Razorpay needs more details. Contact Nivra support to finish.',
       ),
       PayoutAccountStatus.rejected => (
         SajhaColors.danger,
         a.statusReason ??
-            'Razorpay couldn’t verify these details. Contact Sajha support.',
+            'Razorpay couldn’t verify these details. Contact Nivra support.',
       ),
     };
     return ListView(
@@ -91,7 +91,7 @@ class _AccountView extends StatelessWidget {
         _row('PAN', '•••••${a.panLast4}'),
         const SizedBox(height: SajhaSpacing.md),
         Text(
-          'Sajha keeps only the last 4 digits. To change the account, '
+          'Nivra keeps only the last 4 digits. To change the account, '
           'contact support.',
           style: text.bodySmall?.copyWith(color: muted),
         ),
@@ -238,7 +238,7 @@ class _PayoutFormState extends ConsumerState<_PayoutForm> {
           const SizedBox(height: SajhaSpacing.xs),
           Text(
             'Razorpay, our payment partner, verifies the account in your '
-            'name. Sajha keeps only the last 4 digits.',
+            'name. Nivra keeps only the last 4 digits.',
             style: text.bodySmall?.copyWith(color: muted),
           ),
           const SizedBox(height: SajhaSpacing.md),

@@ -25,7 +25,7 @@ function balances(...txns: Line[][]) {
 }
 
 describe('ledger postings', () => {
-  it('a payment: deposit held, lender owed rent less 10%, Sajha keeps the commission', () => {
+  it('a payment: deposit held, lender owed rent less 10%, Nivra keeps the commission', () => {
     const lines = capturePostings(booking, BPS);
     expect(isBalanced(lines)).toBe(true);
     expect(balances(lines)).toEqual({
@@ -95,7 +95,7 @@ describe('ledger postings', () => {
     );
     for (const t of [keep, keptOut, back]) expect(isBalanced(t)).toBe(true);
     const net = balances(paid, rent, keep, keptOut, back);
-    // Everything owed has left: only Sajha's commission stays in the gateway.
+    // Everything owed has left: only Nivra's commission stays in the gateway.
     expect(net).toMatchObject({ DEPOSIT_HELD: 0, LENDER_PAYABLE: 0, PLATFORM_REVENUE: 4_500 });
     expect(net.GATEWAY).toBe(-4_500);
   });
@@ -112,7 +112,7 @@ describe('ledger postings', () => {
   describe('with referral credit (Phase 10)', () => {
     const credited = { ...booking, creditPaise: 10_000 };
 
-    it('the card pays less; Sajha pays the credit; the lender still gets their share', () => {
+    it('the card pays less; Nivra pays the credit; the lender still gets their share', () => {
       const lines = capturePostings(credited, BPS);
       expect(isBalanced(lines)).toBe(true);
       expect(balances(lines)).toEqual({

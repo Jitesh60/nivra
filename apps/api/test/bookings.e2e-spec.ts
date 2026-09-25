@@ -674,7 +674,7 @@ describe('Bookings & document sharing (e2e)', () => {
         note: 'Reported as a scam',
       });
       for (const u of [borrower, lender]) {
-        expect((await notifications(u)).items[0].body).toContain('Sajha cancelled');
+        expect((await notifications(u)).items[0].body).toContain('Nivra cancelled');
       }
       const audit = await prisma.auditLog.findFirst({
         where: { action: 'admin.booking.cancel', targetId: b.id },

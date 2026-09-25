@@ -12,7 +12,7 @@ import { COMMON_REFUND_REASONS, rupeesInput } from '@/lib/payments';
 import { refundAction } from '../actions';
 import { StatusMessage } from '@/components/ui/status-message';
 
-/** A goodwill refund (Sajha pays for it), after a confirm step. */
+/** A goodwill refund (Nivra pays for it), after a confirm step. */
 export function RefundForm({ id, refundablePaise }: { id: string; refundablePaise: number }) {
   const [state, action] = useActionState(refundAction, {});
   const [open, setOpen] = useState(false);
@@ -32,7 +32,7 @@ export function RefundForm({ id, refundablePaise }: { id: string; refundablePais
           <form action={action} className="grid gap-2">
             <input type="hidden" name="id" value={id} />
             <p className="text-sm text-muted-foreground">
-              Up to {rupees(refundablePaise)} is left to refund. This is a goodwill refund: Sajha
+              Up to {rupees(refundablePaise)} is left to refund. This is a goodwill refund: Nivra
               pays for it, the lender’s payout doesn’t change, and the borrower is told. It’s in the
               audit log.
             </p>

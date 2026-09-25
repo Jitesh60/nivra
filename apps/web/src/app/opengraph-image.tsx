@@ -1,7 +1,7 @@
 import { ICON_SVG } from '@sajha/ui';
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Sajha: borrow what you need, lend what you don’t use';
+export const alt = 'Nivra: borrow what you need, lend what you don’t use';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

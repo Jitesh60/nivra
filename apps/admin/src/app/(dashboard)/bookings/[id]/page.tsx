@@ -176,7 +176,7 @@ export default async function BookingPage({ params }: PageProps<'/bookings/[id]'
                         {s.label ??
                           DOCUMENT_TYPE_LABEL[s.docType as keyof typeof DOCUMENT_TYPE_LABEL]}
                         <Badge variant="secondary">{s.status}</Badge>
-                        {s.verified && <Badge variant="outline">Verified by Sajha</Badge>}
+                        {s.verified && <Badge variant="outline">Verified by Nivra</Badge>}
                         {s.purgedAt && <Badge variant="outline">Deleted</Badge>}
                       </p>
                       {s.views.length === 0 ? (

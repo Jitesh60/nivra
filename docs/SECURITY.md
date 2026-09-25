@@ -1,6 +1,6 @@
 # Security review: OWASP ASVS 4.0 Level 1
 
-Reviewed in Phase 9a against the ASVS L1 requirements that apply to Sajha: a JSON API used by a mobile app, an admin panel on server-rendered pages, and a static website. For each area, the table says how it's met and where. **Gap** rows are open items with an owner phase; **Accepted** rows are risks we've decided to live with, with the reason.
+Reviewed in Phase 9a against the ASVS L1 requirements that apply to Nivra: a JSON API used by a mobile app, an admin panel on server-rendered pages, and a static website. For each area, the table says how it's met and where. **Gap** rows are open items with an owner phase; **Accepted** rows are risks we've decided to live with, with the reason.
 
 ## V1 Architecture, V14 Configuration
 

@@ -7,7 +7,7 @@ import '../../discovery/application/discovery_providers.dart';
 import '../data/bookings_repository.dart';
 import '../data/models.dart';
 
-/// One booking's page. Reloads when the other person (or Sajha) changes it;
+/// One booking's page. Reloads when the other person (or Nivra) changes it;
 /// actions update it straight from the API's answer and throw `ApiException`
 /// for the screen to show.
 class BookingController extends AsyncNotifier<BookingDetail> {

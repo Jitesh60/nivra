@@ -25,8 +25,8 @@ describe('TOTP helpers', () => {
   });
 
   it('builds an otpauth URL and QR image', async () => {
-    const p = await totpProvisioning(newTotpSecret(), 'Sajha Admin', 'ops@sajha.app');
-    expect(p.otpauthUrl).toMatch(/^otpauth:\/\/totp\/Sajha%20Admin:ops%40sajha\.app\?secret=/);
+    const p = await totpProvisioning(newTotpSecret(), 'Nivra Admin', 'ops@sajha.app');
+    expect(p.otpauthUrl).toMatch(/^otpauth:\/\/totp\/Nivra%20Admin:ops%40sajha\.app\?secret=/);
     expect(p.qrDataUrl).toMatch(/^data:image\/png;base64,/);
   });
 

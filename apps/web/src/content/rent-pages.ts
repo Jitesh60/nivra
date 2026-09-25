@@ -102,7 +102,7 @@ export const RENT_PAGES: RentPage[] = [
       },
       {
         q: 'Can I pay in cash?',
-        a: 'No. Payments go through Sajha so your deposit is protected and the lender is paid after the item is back.',
+        a: 'No. Payments go through Nivra so your deposit is protected and the lender is paid after the item is back.',
       },
     ],
   },

@@ -43,7 +43,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sajha'),
+        title: const Text('Nivra'),
         actions: [
           if (user == null)
             TextButton(
@@ -244,7 +244,7 @@ class HomeScreen extends ConsumerWidget {
       if (feed.newest.isNotEmpty)
         CardRow(
           key: const ValueKey('section-newest'),
-          title: 'New on Sajha',
+          title: 'New on Nivra',
           cards: feed.newest,
         ),
       if (!anything)

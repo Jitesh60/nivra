@@ -7,14 +7,14 @@ import { PageShell, Section } from '@/components/site/section';
 export const metadata: Metadata = {
   title: 'How it works',
   description:
-    'How renting and lending on Sajha works: find, chat, pay safely, hand over and return.',
+    'How renting and lending on Nivra works: find, chat, pay safely, hand over and return.',
   alternates: { canonical: '/how-it-works' },
 };
 
 export default function HowItWorksPage() {
   return (
     <PageShell
-      title="How Sajha works"
+      title="How Nivra works"
       intro="Borrow for a few days, or lend something you rarely use. Here’s the whole journey."
     >
       <Section title="Step by step">

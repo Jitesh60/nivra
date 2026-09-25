@@ -9,7 +9,7 @@ export type SajhaClient = Client<paths>;
 export type ApiErrorBody = Schemas['ErrorResponse'];
 
 /**
- * Typed client for the Sajha API. Paths, bodies and responses are checked
+ * Typed client for the Nivra API. Paths, bodies and responses are checked
  * against the OpenAPI document exported from apps/api.
  *
  *   const api = createSajhaClient('http://localhost:3000', { token });

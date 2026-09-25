@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-/// An error from the Sajha API (`{ error: { code, message, details } }`)
+/// An error from the Nivra API (`{ error: { code, message, details } }`)
 /// or from the network. [code] is stable; switch on it, not on [message].
 class ApiException implements Exception {
   const ApiException({
@@ -92,8 +92,8 @@ class ApiException implements Exception {
         'You already have this document. Delete it first to add a new one.',
     'NOT_FOUND': 'This was removed or isn’t available any more.',
     'FAVORITE_OWN_LISTING': 'This is your own listing, so you can’t save it.',
-    networkError: 'Can’t reach Sajha. Check your internet connection.',
-    networkTimeout: 'Sajha is taking too long to respond. Please try again.',
+    networkError: 'Can’t reach Nivra. Check your internet connection.',
+    networkTimeout: 'Nivra is taking too long to respond. Please try again.',
   };
 
   @override

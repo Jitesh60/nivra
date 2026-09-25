@@ -63,7 +63,7 @@ export class MfaTokenDto {
 }
 
 export class TwoFactorSetupDto {
-  @ApiProperty({ example: 'otpauth://totp/Sajha%20Admin:ops%40sajha.app?secret=…' })
+  @ApiProperty({ example: 'otpauth://totp/Nivra%20Admin:ops%40sajha.app?secret=…' })
   otpauthUrl: string;
 
   @ApiProperty({ description: 'PNG data URL of the QR code to scan' })

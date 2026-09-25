@@ -74,7 +74,7 @@ test('a paid booking shows up in Payments with its payout and ledger lines', asy
   await expect(transfer).toContainText('Meera Lender');
   await expect(transfer).toContainText('₹270');
   await expect(transfer).toContainText('Waiting for bank account');
-  // Captured: gateway debit, then deposit, lender and Sajha credits.
+  // Captured: gateway debit, then deposit, lender and Nivra credits.
   await expect(page.getByTestId('ledger-line')).toHaveCount(4);
   await expect(page.getByTestId('refund-row')).toHaveCount(0);
 
@@ -125,7 +125,7 @@ test('Ops refunds part of a payment as goodwill', async () => {
   await expect(refund).toContainText('Goodwill (manual)');
   await expect(refund).toContainText('₹150');
   await expect(refund).toContainText('E2E Ops Reviewer');
-  // Sajha pays for it: goodwill debit, gateway credit.
+  // Nivra pays for it: goodwill debit, gateway credit.
   await expect(page.getByTestId('ledger-line')).toHaveCount(6);
 
   await page.goto('/payments/ledger');

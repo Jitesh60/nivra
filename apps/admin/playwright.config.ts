@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * End-to-end tests for the admin panel. They need a running Sajha API
+ * End-to-end tests for the admin panel. They need a running Nivra API
  * (SAJHA_API_URL, default http://localhost:3000) with its database migrated;
  * global-setup seeds a fresh Super Admin through the API's seed script.
  *

@@ -129,7 +129,7 @@ class _TestCheckoutSheetState extends ConsumerState<_TestCheckoutSheet> {
             ),
             const SizedBox(height: SajhaSpacing.xs),
             Text(
-              'This build uses Sajha’s test checkout. No real money moves.',
+              'This build uses Nivra’s test checkout. No real money moves.',
               style: text.bodySmall?.copyWith(color: muted),
             ),
             const SizedBox(height: SajhaSpacing.md),

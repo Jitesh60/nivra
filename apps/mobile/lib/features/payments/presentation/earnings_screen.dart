@@ -78,7 +78,7 @@ class _EarningsList extends StatelessWidget {
           ),
         const SizedBox(height: SajhaSpacing.sm),
         Text(
-          'Rent less Sajha’s 10% commission. It’s held from the moment a '
+          'Rent less Nivra’s 10% commission. It’s held from the moment a '
           'booking is paid and sent to your bank once the item is back.',
           style: text.bodySmall?.copyWith(color: muted),
         ),

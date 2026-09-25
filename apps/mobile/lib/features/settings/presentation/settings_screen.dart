@@ -187,7 +187,7 @@ class SettingsScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Sajha ${appVersion()}',
+              'Nivra ${appVersion()}',
               key: const ValueKey('app-version'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,

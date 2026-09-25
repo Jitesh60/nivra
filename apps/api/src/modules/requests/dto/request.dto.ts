@@ -194,7 +194,7 @@ export class AdminItemRequestPageDto {
 }
 
 export class RemoveRequestDto {
-  @ApiProperty({ example: 'Asks for something not allowed on Sajha' })
+  @ApiProperty({ example: 'Asks for something not allowed on Nivra' })
   @Transform(trim)
   @IsString()
   @MinLength(3)

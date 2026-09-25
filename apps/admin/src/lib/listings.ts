@@ -35,7 +35,7 @@ export const REQUIRED_DOC_LABEL: Record<AdminListing['requiredDocs'][number]['do
 export const COMMON_LISTING_REASONS = [
   'The photos are blurry or don’t show the item clearly. Please add clearer photos.',
   'The photos don’t match the title or description.',
-  'This item isn’t allowed on Sajha (see prohibited items).',
+  'This item isn’t allowed on Nivra (see prohibited items).',
   'The price or deposit looks wrong. Please check the amounts.',
   'Please add more detail: what’s included and the item’s condition.',
   'Contact details aren’t allowed in the title, description or photos.',

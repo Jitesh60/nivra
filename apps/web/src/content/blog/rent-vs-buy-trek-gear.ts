@@ -6,7 +6,7 @@ export const post: Post = {
   description:
     'A tent, a sleeping bag and poles cost more than most people trek in a year. Here’s the maths on renting from someone nearby instead.',
   date: '2026-09-22',
-  author: 'Team Sajha',
+  author: 'Team Nivra',
   minutes: 4,
   body: [
     {
@@ -26,7 +26,7 @@ export const post: Post = {
     },
     { h2: 'What renting from a neighbour costs' },
     {
-      p: 'On Sajha, lenders in Kothrud, Baner and Aundh list tents for ₹120–200 a day and sleeping bags for ₹80–120. A two-day trek with a tent, a bag and poles comes to about ₹600–800 in rent. You pay a refundable deposit too, which comes back once you’ve returned the gear.',
+      p: 'On Nivra, lenders in Kothrud, Baner and Aundh list tents for ₹120–200 a day and sleeping bags for ₹80–120. A two-day trek with a tent, a bag and poles comes to about ₹600–800 in rent. You pay a refundable deposit too, which comes back once you’ve returned the gear.',
     },
     {
       tip: 'Book for the day before you leave. Lenders can hand things over the evening before, so you’re not rushing on the morning of the trek.',
@@ -42,7 +42,7 @@ export const post: Post = {
     {
       p: 'For everything else, especially the bulky things you use a few nights a year, renting from someone who already owns one is cheaper, and the gear gets used instead of gathering dust.',
     },
-    { h2: 'How it works on Sajha' },
+    { h2: 'How it works on Nivra' },
     {
       p: 'Search what’s near you, chat with the lender, and request the dates. Once you pay, you see the pickup address. At pickup you show a handover code and the lender photographs the item, so both of you have a record of its condition. You return it the same way.',
     },

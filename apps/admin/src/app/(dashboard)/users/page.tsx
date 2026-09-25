@@ -40,7 +40,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
     <>
       <PageHeader
         title="Users"
-        description="People using the Sajha app. Open a user for their documents, activity and account actions."
+        description="People using the Nivra app. Open a user for their documents, activity and account actions."
       />
       <form className="mb-4 flex max-w-md gap-2" role="search">
         <Input

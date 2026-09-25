@@ -8,8 +8,8 @@ const bricolage = Bricolage_Grotesque({ variable: '--font-bricolage', subsets: [
 const jetbrains = JetBrains_Mono({ variable: '--font-jetbrains', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: { default: 'Sajha Admin', template: '%s · Sajha Admin' },
-  description: 'Operations console for the Sajha rental marketplace.',
+  title: { default: 'Nivra Admin', template: '%s · Nivra Admin' },
+  description: 'Operations console for the Nivra rental marketplace.',
   robots: { index: false, follow: false },
 };
 

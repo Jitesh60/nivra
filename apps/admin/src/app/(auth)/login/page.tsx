@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Sign in</CardTitle>
-        <CardDescription>Use your Sajha staff account.</CardDescription>
+        <CardDescription>Use your Nivra staff account.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         {notice && (

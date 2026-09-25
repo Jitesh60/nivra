@@ -257,7 +257,7 @@ export class BookingStateMachine {
       borrowerId: b.borrowerId,
       lenderId: b.lenderId,
     };
-    // SYSTEM messages need a sender; use whoever acted, or the borrower for Sajha's own.
+    // SYSTEM messages need a sender; use whoever acted, or the borrower for Nivra's own.
     const senderId =
       t.actor.party === 'BORROWER' || t.actor.party === 'LENDER' ? t.actor.id! : b.borrowerId;
     const message = await this.messages.post(c, senderId, { type: 'SYSTEM', body });
@@ -437,7 +437,7 @@ export class BookingStateMachine {
       }
       case 'CANCELLED': {
         const by =
-          b.cancelledBy === 'BORROWER' ? borrower : b.cancelledBy === 'LENDER' ? lender : 'Sajha';
+          b.cancelledBy === 'BORROWER' ? borrower : b.cancelledBy === 'LENDER' ? lender : 'Nivra';
         const recipients =
           b.cancelledBy === 'BORROWER'
             ? [b.lenderId]
@@ -503,20 +503,20 @@ export class BookingStateMachine {
           b.borrowerId,
           'booking.dispute_opened',
           'The lender reported a problem',
-          `${lender} reported a problem with ${title}. Reply with your side; Sajha will decide what happens to the deposit.`,
+          `${lender} reported a problem with ${title}. Reply with your side; Nivra will decide what happens to the deposit.`,
           true,
         );
         return send(
           b.lenderId,
           'booking.dispute_opened',
           'Problem reported',
-          `Sajha will look at your claim for ${title} and decide what happens to the deposit.`,
+          `Nivra will look at your claim for ${title} and decide what happens to the deposit.`,
           false,
         );
       case 'COMPLETED':
       case 'DISPUTE_RESOLVED': {
         const back = b.depositPaise - b.keptPaise;
-        const decided = t.event === 'DISPUTE_RESOLVED' ? 'Sajha has decided the claim. ' : '';
+        const decided = t.event === 'DISPUTE_RESOLVED' ? 'Nivra has decided the claim. ' : '';
         await send(
           b.borrowerId,
           'booking.completed',
@@ -562,7 +562,7 @@ function chatText(t: Transition): string {
       const by: Record<BookingParty, string> = {
         BORROWER: 'the borrower',
         LENDER: 'the lender',
-        ADMIN: 'Sajha',
+        ADMIN: 'Nivra',
       };
       return `Booking cancelled by ${by[b.cancelledBy ?? 'ADMIN']}${reason}`;
     }
@@ -575,11 +575,11 @@ function chatText(t: Transition): string {
     case 'NO_SHOW':
       return `Cancelled: the borrower didn’t come for the pickup${reason}`;
     case 'DISPUTED':
-      return 'The lender reported a problem. Sajha will decide what happens to the deposit.';
+      return 'The lender reported a problem. Nivra will decide what happens to the deposit.';
     case 'COMPLETED':
       return 'Rental complete. The deposit is being settled.';
     case 'DISPUTE_RESOLVED':
-      return `Sajha decided the claim${reason}`;
+      return `Nivra decided the claim${reason}`;
   }
 }
 

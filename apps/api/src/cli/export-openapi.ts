@@ -37,8 +37,8 @@ app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 const doc = SwaggerModule.createDocument(
   app,
   new DocumentBuilder()
-    .setTitle('Sajha API')
-    .setDescription('REST API for the Sajha mobile app, admin panel and website.')
+    .setTitle('Nivra API')
+    .setDescription('REST API for the Nivra mobile app, admin panel and website.')
     .setVersion('1')
     .addBearerAuth()
     .build(),

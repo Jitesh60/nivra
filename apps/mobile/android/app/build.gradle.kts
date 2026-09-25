@@ -51,17 +51,17 @@ android {
             dimension = "env"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "Sajha Dev")
+            resValue("string", "app_name", "Nivra Dev")
         }
         create("staging") {
             dimension = "env"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            resValue("string", "app_name", "Sajha Staging")
+            resValue("string", "app_name", "Nivra Staging")
         }
         create("prod") {
             dimension = "env"
-            resValue("string", "app_name", "Sajha")
+            resValue("string", "app_name", "Nivra")
         }
     }
 

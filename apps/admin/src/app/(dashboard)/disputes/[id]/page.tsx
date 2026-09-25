@@ -258,7 +258,7 @@ export default async function DisputePage({ params }: PageProps<'/disputes/[id]'
                   <p className="mt-2 whitespace-pre-line">“{d.resolutionNote}”</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {d.resolvedByName ?? 'Sajha'}
+                  {d.resolvedByName ?? 'Nivra'}
                   {d.resolvedAt ? ` · ${dateTime.format(new Date(d.resolvedAt))}` : ''}
                 </p>
                 <Link

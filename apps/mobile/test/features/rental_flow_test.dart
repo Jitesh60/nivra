@@ -218,7 +218,7 @@ void main() {
     await tapKey(tester, 'dispute-submit');
 
     expect(t.booking.status, 'DISPUTED');
-    expect(find.text('Problem reported to Sajha'), findsOneWidget);
+    expect(find.text('Problem reported to Nivra'), findsOneWidget);
     await scrollTo(tester, find.byKey(const ValueKey('dispute-claim')));
     expect(find.text('You: Damaged, asking to keep ₹600'), findsOneWidget);
     expect(find.byKey(const ValueKey('evidence-0')), findsOneWidget);
@@ -244,7 +244,7 @@ void main() {
     await scrollTo(tester, find.byKey(const ValueKey('dispute-response')));
     expect(find.text('“It was already torn at pickup.”'), findsOneWidget);
 
-    // Sajha decides: ₹600 to Asha, ₹400 back.
+    // Nivra decides: ₹600 to Asha, ₹400 back.
     t.api.completeRental(t.booking.id, kept: 60000);
     await settle(tester);
     expect(await statusText(tester), 'Completed');
@@ -253,7 +253,7 @@ void main() {
       findsOneWidget,
     );
     await scrollTo(tester, find.byKey(const ValueKey('dispute-outcome')));
-    expect(find.textContaining('Sajha decided: ₹600'), findsOneWidget);
+    expect(find.textContaining('Nivra decided: ₹600'), findsOneWidget);
   });
 
   testWidgets('lender marks a no-show from the first day', (tester) async {
@@ -319,7 +319,7 @@ void main() {
     await tapKey(tester, 'booking-report');
     await tapText(tester, 'Scam or fraud');
     await tapKey(tester, 'report-submit');
-    expect(find.text('Thanks. Sajha will look into it.'), findsOneWidget);
+    expect(find.text('Thanks. Nivra will look into it.'), findsOneWidget);
     expect(t.api.chat.reports.single, containsPair('targetType', 'USER'));
   });
 }

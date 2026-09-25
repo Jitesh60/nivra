@@ -8,7 +8,7 @@ import '../../../core/network/token_manager.dart';
 import '../../../core/storage/session_storage.dart';
 import 'models.dart';
 
-/// All auth and account calls to the Sajha API. Throws [ApiException].
+/// All auth and account calls to the Nivra API. Throws [ApiException].
 class AuthRepository {
   AuthRepository({
     required this._dio,
