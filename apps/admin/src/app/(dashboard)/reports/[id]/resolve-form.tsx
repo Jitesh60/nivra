@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { resolveReportAction } from '../actions';
+import { StatusMessage } from '@/components/ui/status-message';
 
 export function ResolveForm({ id }: { id: string }) {
   const [state, action] = useActionState(resolveReportAction, {});
@@ -42,11 +43,7 @@ export function ResolveForm({ id }: { id: string }) {
               {state.error}
             </p>
           )}
-          {state.done && (
-            <p role="status" className="text-sm text-primary">
-              {state.done}
-            </p>
-          )}
+          {state.done && <StatusMessage>{state.done}</StatusMessage>}
         </form>
       </CardContent>
     </Card>

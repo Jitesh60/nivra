@@ -135,11 +135,7 @@ export function WaitlistForm() {
           {status.message}
         </p>
       )}
-      <GlowButton
-        type="submit"
-        disabled={sending}
-        className="justify-self-start px-8 py-3.5 text-base"
-      >
+      <GlowButton type="submit" disabled={sending} size="lg" className="justify-self-start px-8">
         {sending ? <DotsLoader label="Joining" /> : 'Join the waitlist'}
       </GlowButton>
       <p className="text-xs text-ink-300">

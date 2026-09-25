@@ -1,3 +1,4 @@
+import { Logo } from '@sajha/ui';
 import Link from 'next/link';
 import { GlowLink } from '@/components/ui/glow-button';
 import { NAV } from '@/lib/site';
@@ -15,8 +16,8 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-4">
-        <Link href="/" className="font-display text-xl font-bold tracking-tight">
-          Sajha
+        <Link href="/" aria-label="Home" className="rounded-md">
+          <Logo inverse={overlay} />
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-6 text-sm font-medium sm:flex">
           {NAV.map((item) => (
@@ -29,7 +30,7 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             </Link>
           ))}
         </nav>
-        <GlowLink href="/#waitlist" variant={overlay ? 'primary' : 'brand'} className="px-4 py-2">
+        <GlowLink href="/#waitlist" variant={overlay ? 'primary' : 'brand'} size="sm">
           Join the waitlist
         </GlowLink>
       </div>

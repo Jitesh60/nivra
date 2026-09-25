@@ -11,6 +11,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // @sajha/ui ships TypeScript source.
+  transpilePackages: ['@sajha/ui'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

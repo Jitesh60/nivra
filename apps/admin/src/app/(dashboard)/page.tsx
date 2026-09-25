@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CountUp, ShaderBackground, SpotlightCard } from '@sajha/ui';
 import { BarChart } from '@/components/charts/bar-chart';
-import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { change, dayLabel, type Metrics, PERIODS, periodFrom } from '@/lib/analytics';
@@ -38,51 +38,63 @@ export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
 
   return (
     <>
-      <PageHeader
-        title={`Welcome, ${me.name.split(' ')[0]}`}
-        description={`${dayLabel(a.from)} – ${dayLabel(a.to)} (India time), against the ${days} days before.`}
-      />
-      <nav aria-label="Period" className="mb-4 flex gap-2">
-        {PERIODS.map((p) => (
-          <Link
-            key={p}
-            href={`/?days=${p}`}
-            aria-current={p === days ? 'page' : undefined}
-            className={cn(
-              'rounded-md border px-3 py-1.5 text-sm',
-              p === days ? 'border-primary bg-primary text-primary-foreground' : 'bg-card',
-            )}
+      <section className="relative isolate mb-6 overflow-hidden rounded-xl p-6 text-white shadow-md md:p-8">
+        <ShaderBackground testId="dashboard" />
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-caption tracking-wide text-brand-200 uppercase">Overview</p>
+            <h1 className="font-display text-h1">{`Welcome, ${me.name.split(' ')[0]}`}</h1>
+            <p className="text-body text-white/80">
+              {`${dayLabel(a.from)} – ${dayLabel(a.to)} (India time), against the ${days} days before.`}
+            </p>
+          </div>
+          <nav
+            aria-label="Period"
+            className="flex gap-1 rounded-full bg-white/10 p-1 ring-1 ring-white/20 backdrop-blur"
           >
-            {p} days
-          </Link>
-        ))}
-      </nav>
+            {PERIODS.map((p) => (
+              <Link
+                key={p}
+                href={`/?days=${p}`}
+                aria-current={p === days ? 'page' : undefined}
+                className={cn(
+                  'rounded-full px-4 py-1.5 text-small font-semibold transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-white',
+                  p === days ? 'bg-white text-ink-950 shadow-sm' : 'text-white hover:bg-white/15',
+                )}
+              >
+                {p} days
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {KPIS.map(({ key, label, money: isMoney }) => {
           const delta = change(a.totals[key], a.previous[key]);
           return (
-            <Card key={key} data-testid={`kpi-${key}`}>
-              <CardHeader className="pb-2">
-                <CardDescription>{label}</CardDescription>
-                <CardTitle className="text-2xl tabular-nums" data-testid="kpi-value">
-                  {isMoney ? money(a.totals[key]) : a.totals[key].toLocaleString('en-IN')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
+            <SpotlightCard key={key} data-testid={`kpi-${key}`} className="p-5">
+              <p className="text-small text-muted-foreground">{label}</p>
+              <p className="mt-1 font-display text-h2 tabular-nums" data-testid="kpi-value">
+                <CountUp
+                  to={isMoney ? Math.round(a.totals[key] / 100) : a.totals[key]}
+                  currency={isMoney}
+                />
+              </p>
+              <p className="mt-2 text-caption text-muted-foreground">
                 <span
                   className={cn(
-                    'font-medium',
-                    delta.up === true && 'text-primary',
-                    delta.up === false && 'text-destructive',
+                    'font-semibold',
+                    delta.up === true && 'text-sj-success',
+                    delta.up === false && 'text-sj-danger',
                   )}
                 >
                   {delta.up === true ? '▲ ' : delta.up === false ? '▼ ' : ''}
                   {delta.text}
                 </span>{' '}
                 vs previous
-              </CardContent>
-            </Card>
+              </p>
+            </SpotlightCard>
           );
         })}
       </div>
@@ -112,7 +124,7 @@ export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card data-testid="funnel">
           <CardHeader>
-            <CardTitle className="text-base">Bookings requested in the period</CardTitle>
+            <CardTitle className="text-title">Bookings requested in the period</CardTitle>
             <CardDescription>How far they got.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
@@ -145,7 +157,7 @@ export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
         </Card>
         <Card data-testid="right-now">
           <CardHeader>
-            <CardTitle className="text-base">Right now</CardTitle>
+            <CardTitle className="text-title">Right now</CardTitle>
             <CardDescription>
               Also in the period: {a.totals.cancelled.toLocaleString('en-IN')} cancelled,{' '}
               {money(a.totals.refundsPaise)} refunded, {a.totals.disputesSettled} disputes settled.

@@ -106,7 +106,7 @@ test('Ops sends a listing back with a reason and can move its category', async (
   await page.goto(`/listings/${id}`);
   await page.getByLabel('Category').selectOption({ label: 'Tools & DIY' });
   await page.getByRole('button', { name: 'Move' }).click();
-  await expect(page.getByText('Category updated.')).toBeVisible();
+  await expect(page.getByRole('main').getByText('Category updated.')).toBeVisible();
   expect((await myListing(newLender, id)).category.slug).toBe('tools-diy');
 
   await page
@@ -147,7 +147,7 @@ test('Ops manages categories; the apps see the changes', async () => {
   await expect(page.getByLabel('Slug').last()).toHaveValue(slug);
   await page.getByLabel('Icon').last().fill('music_note');
   await page.getByRole('button', { name: 'Add category' }).click();
-  await expect(page.getByText(`Added “${name}”.`)).toBeVisible();
+  await expect(page.getByRole('main').getByText(`Added “${name}”.`)).toBeVisible();
   expect((await publicCategories()).map((c) => c.slug)).toContain(slug);
 
   // A duplicate slug is refused with a clear message.
