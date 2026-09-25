@@ -170,7 +170,14 @@ export class AdminLedgerLineDto {
   @ApiProperty({ format: 'uuid' }) txnId: string;
   @ApiProperty() type: string;
   @ApiProperty({
-    enum: ['GATEWAY', 'DEPOSIT_HELD', 'LENDER_PAYABLE', 'PLATFORM_REVENUE', 'GOODWILL'],
+    enum: [
+      'GATEWAY',
+      'DEPOSIT_HELD',
+      'LENDER_PAYABLE',
+      'PLATFORM_REVENUE',
+      'GOODWILL',
+      'PROMOTIONS',
+    ],
   })
   account: string;
   @ApiProperty() debitPaise: number;
@@ -185,6 +192,8 @@ export class AdminPaymentDetailDto extends AdminPaymentDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty() feePaise: number;
   @ApiProperty() depositPaise: number;
+  @ApiProperty({ description: 'Referral credit taken off the rent (not charged to the card)' })
+  creditPaise: number;
   @ApiProperty({ type: [AdminRefundDto] }) refunds: AdminRefundDto[];
   @ApiProperty({ type: [AdminTransferDto] }) transfers: AdminTransferDto[];
   @ApiProperty({
@@ -250,6 +259,8 @@ export class LedgerBalancesDto {
   @ApiProperty() LENDER_PAYABLE: number;
   @ApiProperty() PLATFORM_REVENUE: number;
   @ApiProperty() GOODWILL: number;
+  @ApiProperty({ description: 'Referral credit Sajha paid for (debit balance, so negative)' })
+  PROMOTIONS: number;
 }
 
 export class LedgerSummaryDto {

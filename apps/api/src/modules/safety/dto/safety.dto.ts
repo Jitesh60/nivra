@@ -12,7 +12,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export const REPORT_TARGETS = ['USER', 'LISTING', 'MESSAGE'] as const;
+export const REPORT_TARGETS = ['USER', 'LISTING', 'MESSAGE', 'REQUEST'] as const;
 export const REPORT_REASONS = [
   'SPAM',
   'SCAM',
@@ -90,9 +90,15 @@ export class ListReportsQueryDto {
 export class ReportTargetDto {
   @ApiProperty({ enum: REPORT_TARGETS }) type: string;
   @ApiProperty({ format: 'uuid' }) id: string;
-  @ApiProperty({ description: 'A short description: a name, a listing title or the message text' })
+  @ApiProperty({
+    description: 'A short description: a name, a listing or request title, or the message text',
+  })
   label: string;
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'User or listing status' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'User, listing or request status',
+  })
   status: string | null;
   @ApiPropertyOptional({
     type: String,

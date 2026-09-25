@@ -8,6 +8,10 @@ describe('notification preferences', () => {
     expect(pushSwitchFor('booking.reminder.overdue')).toBe('pushReminders');
     expect(pushSwitchFor('chat.message')).toBe('pushChat');
     expect(pushSwitchFor('account.security')).toBeNull();
+    expect(pushSwitchFor('search.alert')).toBe('pushSearchAlerts');
+    expect(pushSwitchFor('request.nearby')).toBe('pushRequests');
+    expect(pushSwitchFor('request.response')).toBe('pushRequests');
+    expect(pushSwitchFor('referral.rewarded')).toBeNull();
   });
 
   it('allows everything but marketing by default', () => {

@@ -21,7 +21,8 @@ import { LISTING_RULES } from '../listings/listing-rules.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PayoutsService } from '../payouts/payouts.service.js';
 import type { CheckoutDto, DevCheckoutDto, DevCheckoutResultDto } from './dto/payment.dto.js';
-import { capturePostings, depositKeepPostings } from './ledger.js';
+import { capturePostings, cashOf, depositKeepPostings, refundPostings } from './ledger.js';
+import { creditBackFor, releaseCredit } from '../referrals/credits.js';
 import { LedgerService } from './ledger.service.js';
 import { RefundsService } from './refunds.service.js';
 
@@ -149,7 +150,11 @@ export class PaymentsService implements OnModuleInit {
       await tx.$queryRaw`SELECT id FROM payments WHERE order_id = ${orderId} FOR UPDATE`;
       const p = await tx.payment.findUnique({
         where: { orderId },
-        include: { booking: { select: { rentPaise: true, feePaise: true, depositPaise: true } } },
+        include: {
+          booking: {
+            select: { rentPaise: true, feePaise: true, depositPaise: true, creditPaise: true },
+          },
+        },
       });
       if (!p) {
         this.logger.warn(`Capture for unknown order ${orderId} (${source})`);
@@ -287,26 +292,32 @@ export class PaymentsService implements OnModuleInit {
         rentPaise: 0,
         feePaise: 0,
         depositPaise: 0,
+        creditBackPaise: 0,
         tier: null,
         summary: 'Nothing has been paid, so there’s nothing to refund.',
       };
     }
     const party = b.borrowerId === userId ? 'BORROWER' : 'LENDER';
     const r = refundFor(b, party, new Date());
+    // Rent paid with referral credit comes back as credit, not cash.
+    const creditBack = creditBackFor(b.creditPaise, r.rentPaise);
+    const cash = r.totalPaise - creditBack;
+    const asCredit = creditBack > 0 ? ` (plus ${rupees(creditBack)} back as credit)` : '';
     return {
-      refundPaise: r.totalPaise,
+      refundPaise: cash,
       rentPaise: r.rentPaise,
       feePaise: r.feePaise,
       depositPaise: r.depositPaise,
+      creditBackPaise: creditBack,
       tier: r.tier,
       summary:
         party === 'LENDER'
-          ? `The borrower gets everything back (${rupees(r.totalPaise)}), and the cancellation counts against you.`
+          ? `The borrower gets everything back (${rupees(cash)}${asCredit}), and the cancellation counts against you.`
           : r.tier === 'FULL'
-            ? `You get everything back: ${rupees(r.totalPaise)}.`
+            ? `You get everything back: ${rupees(cash)}${asCredit}.`
             : r.tier === 'HALF_RENT'
-              ? `Less than 48 hours before pickup: you get half the rent and the deposit back, ${rupees(r.totalPaise)}.`
-              : `Less than 24 hours before pickup: you get the deposit back, ${rupees(r.totalPaise)}; the rent isn’t refunded.`,
+              ? `Less than 48 hours before pickup: you get half the rent and the deposit back, ${rupees(cash)}${asCredit}.`
+              : `Less than 24 hours before pickup: you get the deposit back, ${rupees(cash)}; the rent isn’t refunded.`,
     };
   }
 
@@ -390,10 +401,39 @@ export class PaymentsService implements OnModuleInit {
     if (!payment || b.refunds.length > 0) return; // nothing paid, or already refunded
     const party = b.cancelledBy ?? 'ADMIN';
     const r = refundFor(b, party, b.closedAt ?? new Date());
+    // Referral credit comes back first, as credit; only the rest is cash (Phase 10).
+    // Retried by the sweep: reuse what was given back the first time.
+    const released = await this.prisma.creditEntry.findFirst({
+      where: { bookingId, kind: 'RELEASE' },
+    });
+    const creditBack = released
+      ? released.amountPaise
+      : await releaseCredit(this.prisma, bookingId, creditBackFor(b.creditPaise, r.rentPaise));
+    const amounts = {
+      rentPaise: r.rentPaise,
+      feePaise: r.feePaise,
+      depositPaise: r.depositPaise,
+      creditBackPaise: creditBack,
+    };
+    if (cashOf(amounts) === 0 && creditBack > 0) {
+      // Nothing to send to the card, but the rent still leaves the lender's side.
+      if (await this.prisma.ledgerEntry.count({ where: { bookingId, type: 'REFUND_CREDIT' } })) {
+        return;
+      }
+      await this.prisma.$transaction((tx) =>
+        this.ledger.post(
+          tx,
+          { type: 'REFUND_CREDIT', bookingId },
+          refundPostings(amounts, b.rentPaise, LISTING_RULES.commissionBps),
+        ),
+      );
+      await this.payouts.onCancelled(bookingId, r.rentPaise);
+      return;
+    }
     await this.refunds.create({
       paymentRowId: payment.id,
       kind: 'CANCELLATION',
-      amounts: { rentPaise: r.rentPaise, feePaise: r.feePaise, depositPaise: r.depositPaise },
+      amounts,
       reason: b.noShowAt
         ? 'The borrower didn’t come for the pickup (deposit only)'
         : `Cancelled by the ${party.toLowerCase()} (${r.tier.toLowerCase().replace('_', ' ')})`,

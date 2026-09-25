@@ -57,6 +57,7 @@ export class LedgerService {
       LENDER_PAYABLE: 0,
       PLATFORM_REVENUE: 0,
       GOODWILL: 0,
+      PROMOTIONS: 0,
     } as Record<LedgerAccount, number>;
     let debit = 0;
     let credit = 0;

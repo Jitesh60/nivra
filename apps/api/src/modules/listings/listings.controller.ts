@@ -132,18 +132,25 @@ export class PublicListingsController {
   async quote(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query() query: QuoteQueryDto,
+    @OptionalUser() auth?: UserAuth,
   ): Promise<QuoteDto> {
     const dates = checkDates(query)!;
     const [listing, held] = await Promise.all([
       this.listings.publicGet(id),
       this.listings.heldRanges(id),
     ]);
-    return quote(
+    const q = quote(
       { ...listing, blocks: [...listing.blocks, ...held] },
       dates.startDate,
       dates.endDate,
       todayUtc(),
     );
+    // A signed-in borrower sees the invite credit a booking would use (Phase 10).
+    const credit =
+      auth && auth.userId !== listing.lenderId
+        ? await this.listings.creditFor(auth.userId, q.rentPaise)
+        : 0;
+    return { ...q, creditPaise: credit, totalPaise: q.totalPaise - credit };
   }
 }
 

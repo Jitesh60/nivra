@@ -80,6 +80,9 @@ src/
     ├── mail/               # transactional email queue (BullMQ `email`) + worker       (Phase 9a)
     ├── analytics/          # admin dashboard numbers, IST days, cached 5 min           (Phase 9a)
     ├── system/             # admin ops status: queue depth, workers, DB/Redis latency  (Phase 9d)
+    ├── discovery/          # BullMQ `discovery`: saved-search alerts, request fan-out, expiry (10a)
+    ├── requests/           # "Request an item" board, lender answers open the chat       (Phase 10a)
+    ├── referrals/          # invite codes, credit entries (hold/release), inviter rewards  (Phase 10a)
     ├── safety/             # blocks, reports, admin reports + audited transcripts  (Phase 5a)
     ├── bookings/           # state machine, requests, document sharing, timers (BullMQ) (Phase 6a)
     ├── payments/           # Razorpay orders, webhooks, refunds, ledger             (Phase 7)
@@ -215,6 +218,12 @@ The source of truth is [`apps/api/prisma/schema.prisma`](../apps/api/prisma/sche
 | `notifications` (6a) | userId, type (e.g. `booking.requested`), title, body, data (`{bookingId}`), readAt, createdAt; partial index on userId where unread (9a) |
 | `notification_preferences` (9a) | userId (PK), pushBookings, pushChat, pushReminders, emailBookings, smsReminders (all default on), marketing (default off); no row = defaults |
 | `device_tokens` | userId, sessionId, fcmToken, platform |
+| `saved_searches` (10a) | userId, name, filters (jsonb: q, area, radius, category, prices, condition, verified lenders), categoryId, lat/lng + `location` (trigger), radiusKm, alertsEnabled, lastPushedAt |
+| `item_requests` (10a) | borrowerId, title, details, categoryId, startDate/endDate, budgetPerDayPaise, lat/lng + `location` (trigger), areaLabel, status (OPEN/CLOSED/EXPIRED/REMOVED), expiresAt, removedReason, closedAt |
+| `request_responses` (10a) | requestId, lenderId, listingId, conversationId, message (masked); unique(requestId, listingId) |
+| `referral_codes` / `referrals` (10a) | userId → code (unique); refereeId (PK), referrerId, code, rewardedAt |
+| `credit_entries` (10a) | userId, amountPaise (signed), kind (GRANT_REFEREE/GRANT_REFERRER/HOLD/RELEASE/REVOKE), bookingId, referralId, adminId, reason; balance = sum; one HOLD and one RELEASE per booking (partial unique indexes) |
+| `bookings` (10a addition) | creditPaise; `total = rent + fee + deposit − credit`, `credit ≤ rent` (check constraint) |
 
 **Double-booking guard** (raw SQL in a migration; bookings, like availability blocks, are whole days):
 
@@ -490,6 +499,16 @@ sequenceDiagram
 
   Each step is idempotent, and the `payments` sweep re-runs settlement for completed bookings with rent still held or no deposit refund.
 - **Failures:** a failed provider call is saved with the reason and retried by the `payments` sweep (every 5 minutes, up to 5 attempts; refunds only when Razorpay never accepted them). The sweep also refunds cancelled paid bookings that were missed.
+
+### Referral credit (Phase 10a)
+
+Credit is an append-only ledger per person (`credit_entries`, balance = sum), changed under a per-person advisory lock:
+
+- **Booking:** `BookingsService.request()` / `createFromOffer()` hold up to half the rent (`HOLD`, negative) in the booking's transaction and store it as `creditPaise`; `totalPaise` (what the card pays) is net of it. The quote shows it to a signed-in borrower.
+- **Not paid:** when the booking closes before payment (declined, expired, cancelled), the state machine writes `RELEASE` in the same transaction.
+- **Capture:** `capturePostings` debits `PROMOTIONS` with the credit, so GATEWAY receives total − credit and the lender's share and commission are unchanged.
+- **Paid cancellation:** `refundFor` works out the rent refund; credit comes back first (`creditBackFor`: at most what was used, at most the rent refunded) as `RELEASE`, and only the rest is cash. `refundPostings` credits `PROMOTIONS` with the credit given back. When no cash is left to send, the ledger lines are posted without a provider refund (`REFUND_CREDIT`).
+- **Rewards:** a transition listener gives the inviter `GRANT_REFERRER` when the invited person's booking completes; `referrals.rewardedAt` is claimed atomically, and the cap is 20.
 
 ## 7. Chat & realtime (Phase 5a)
 

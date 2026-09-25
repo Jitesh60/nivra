@@ -98,6 +98,7 @@ Required everywhere unless marked. Staging and production **refuse to boot** wit
 | `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_PUBLIC_BASE_URL`, `S3_PRIVATE_SSE=aws:kms` | ✓ | ✓ | leave `S3_ENDPOINT` unset for AWS |
 | `PAYMENT_PROVIDER=razorpay`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | ✓ | ✓ | test keys on staging, live keys on production; webhook URL `https://api…/v1/payments/webhook` |
 | `SENTRY_DSN`, `SENTRY_ENVIRONMENT` | ✓ | ✓ | one Sentry project for the API; environment `staging` / `production` |
+| `PUBLIC_SITE_URL` | ✓ | ✓ | `https://sajha.app` (invite links; staging: the staging site) |
 | `LOG_LEVEL`, `PUBLIC_READ_LIMIT_PER_MIN`, the booking timers | optional | optional | defaults are the tested values |
 | `SWAGGER_ENABLED` | staging only | | `true` on staging if you want `/docs`; refused in production |
 

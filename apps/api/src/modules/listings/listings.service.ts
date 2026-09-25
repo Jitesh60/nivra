@@ -24,6 +24,8 @@ import {
 } from './listing-presenter.js';
 import { addDays, LISTING_RULES as R, todayUtc } from './listing-rules.js';
 import { heldRanges } from '../bookings/availability.js';
+import { DiscoveryQueue } from '../discovery/discovery-queue.js';
+import { creditBalance, creditLimitFor } from '../referrals/credits.js';
 import { OPEN_STATUSES } from '../bookings/booking-rules.js';
 
 /** Statuses a lender can still edit. */
@@ -43,7 +45,13 @@ export class ListingsService {
     private readonly categories: CategoriesService,
     private readonly audit: AuditService,
     private readonly presenter: ListingPresenter,
+    private readonly discovery: DiscoveryQueue,
   ) {}
+
+  /** Invite credit a booking with [rentPaise] of rent would use now (a preview; booking holds it). */
+  async creditFor(userId: string, rentPaise: number): Promise<number> {
+    return Math.min(await creditBalance(this.prisma, userId), creditLimitFor(rentPaise));
+  }
 
   // ── Lender ──
 
@@ -249,6 +257,7 @@ export class ListingsService {
       rejectionReason: null,
     });
     await this.log('USER', userId, 'user.listing.publish', id, { status }, client);
+    if (status === 'LIVE') await this.discovery.listingLive(id);
     return { listing: await this.getMine(userId, id), inReview: status === 'PENDING' };
   }
 
@@ -365,6 +374,7 @@ export class ListingsService {
       'Only a listing waiting for review can be approved',
     );
     await this.log('ADMIN', adminId, 'admin.listing.approve', id, {}, client);
+    await this.discovery.listingLive(id);
     return this.adminGet(id);
   }
 

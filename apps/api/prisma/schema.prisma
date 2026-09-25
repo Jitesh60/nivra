@@ -43,24 +43,31 @@ model User {
   listings      Listing[]
   favorites     Favorite[]
 
-  borrowerConversations Conversation[]    @relation("ConversationBorrower")
-  lenderConversations   Conversation[]    @relation("ConversationLender")
+  borrowerConversations Conversation[]           @relation("ConversationBorrower")
+  lenderConversations   Conversation[]           @relation("ConversationLender")
   messages              Message[]
   offers                Offer[]
-  blocksMade            UserBlock[]       @relation("BlockBlocker")
-  blocksReceived        UserBlock[]       @relation("BlockBlocked")
+  blocksMade            UserBlock[]              @relation("BlockBlocker")
+  blocksReceived        UserBlock[]              @relation("BlockBlocked")
   reports               Report[]
   deviceTokens          DeviceToken[]
-  borrowerBookings      Booking[]         @relation("BookingBorrower")
-  lenderBookings        Booking[]         @relation("BookingLender")
+  borrowerBookings      Booking[]                @relation("BookingBorrower")
+  lenderBookings        Booking[]                @relation("BookingLender")
   notifications         Notification[]
   notificationPrefs     NotificationPreferences?
   payoutAccount         PayoutAccount?
   transfers             Transfer[]
   conditionReports      ConditionReport[]
   disputesOpened        Dispute[]
-  reviewsWritten        Review[]          @relation("ReviewAuthor")
-  reviewsReceived       Review[]          @relation("ReviewSubject")
+  reviewsWritten        Review[]                 @relation("ReviewAuthor")
+  reviewsReceived       Review[]                 @relation("ReviewSubject")
+  savedSearches         SavedSearch[]
+  itemRequests          ItemRequest[]
+  requestResponses      RequestResponse[]
+  referralCode          ReferralCode?
+  referredBy            Referral?                @relation("ReferralReferee")
+  referralsMade         Referral[]               @relation("ReferralReferrer")
+  creditEntries         CreditEntry[]
 
   @@map("users")
 }
@@ -103,6 +110,7 @@ model AdminUser {
   reviewedListings  Listing[]
   resolvedReports   Report[]
   resolvedDisputes  Dispute[]
+  creditEntries     CreditEntry[]
 
   @@map("admin_users")
 }
@@ -330,6 +338,7 @@ model Category {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   listings Listing[]
+  requests ItemRequest[]
 
   @@index([isActive, sortOrder])
   @@map("categories")
@@ -412,6 +421,7 @@ model Listing {
   views         ListingView[]
   conversations Conversation[]
   bookings      Booking[]
+  responses     RequestResponse[]
 
   @@index([lenderId])
   @@index([status, createdAt])
@@ -523,12 +533,13 @@ model Conversation {
   lastMessagePreview String?  @map("last_message_preview")
   createdAt          DateTime @default(now()) @map("created_at")
 
-  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  borrower User      @relation("ConversationBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
-  lender   User      @relation("ConversationLender", fields: [lenderId], references: [id], onDelete: Cascade)
-  messages Message[]
-  offers   Offer[]
-  bookings Booking[]
+  listing          Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  borrower         User              @relation("ConversationBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
+  lender           User              @relation("ConversationLender", fields: [lenderId], references: [id], onDelete: Cascade)
+  messages         Message[]
+  offers           Offer[]
+  bookings         Booking[]
+  requestResponses RequestResponse[]
 
   @@unique([listingId, borrowerId])
   @@index([borrowerId, lastMessageAt])
@@ -629,6 +640,8 @@ enum ReportTarget {
   USER
   LISTING
   MESSAGE
+  /// A post on the requests board (Phase 10).
+  REQUEST
 }
 
 enum ReportReason {
@@ -735,7 +748,10 @@ model Booking {
   rentPaise        Int           @map("rent_paise")
   feePaise         Int           @map("fee_paise")
   depositPaise     Int           @map("deposit_paise")
+  /// What the borrower pays: rent + fee + deposit − credit.
   totalPaise       Int           @map("total_paise")
+  /// Referral credit taken off the rent (Phase 10); Sajha pays it (ledger PROMOTIONS).
+  creditPaise      Int           @default(0) @map("credit_paise")
   status           BookingStatus
   /// Deadline of the current step; the booking expires after it.
   expiresAt        DateTime?     @map("expires_at")
@@ -772,6 +788,7 @@ model Booking {
   conditionReports ConditionReport[]
   dispute          Dispute?
   reviews          Review[]
+  creditEntries    CreditEntry[]
 
   @@index([borrowerId, createdAt])
   @@index([lenderId, createdAt])
@@ -983,20 +1000,24 @@ model Notification {
 /// What a user wants to hear about, per channel. No row = the defaults.
 /// In-app notifications, codes and security or legal messages always go out.
 model NotificationPreferences {
-  userId        String   @id @map("user_id") @db.Uuid
+  userId           String   @id @map("user_id") @db.Uuid
   /// Push: requests, acceptances, payments, handover and return, disputes, refunds.
-  pushBookings  Boolean  @default(true) @map("push_bookings")
+  pushBookings     Boolean  @default(true) @map("push_bookings")
   /// Push: new chat messages.
-  pushChat      Boolean  @default(true) @map("push_chat")
+  pushChat         Boolean  @default(true) @map("push_chat")
   /// Push: pickup and return reminders.
-  pushReminders Boolean  @default(true) @map("push_reminders")
+  pushReminders    Boolean  @default(true) @map("push_reminders")
   /// Email: receipts, refunds and dispute outcomes (to a verified email).
-  emailBookings Boolean  @default(true) @map("email_bookings")
+  emailBookings    Boolean  @default(true) @map("email_bookings")
   /// SMS: overdue return reminders.
-  smsReminders  Boolean  @default(true) @map("sms_reminders")
+  smsReminders     Boolean  @default(true) @map("sms_reminders")
   /// News and offers from Sajha (off until the user opts in).
-  marketing     Boolean  @default(false)
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  marketing        Boolean  @default(false)
+  /// Push: a new listing matches a saved search (Phase 10).
+  pushSearchAlerts Boolean  @default(true) @map("push_search_alerts")
+  /// Push: requests near you and answers to your requests (Phase 10).
+  pushRequests     Boolean  @default(true) @map("push_requests")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1162,6 +1183,8 @@ enum LedgerAccount {
   PLATFORM_REVENUE
   /// Sajha's own money given back (manual refunds).
   GOODWILL
+  /// Sajha's money spent on referral credit taken off rent (Phase 10).
+  PROMOTIONS
 }
 
 /**
@@ -1199,4 +1222,153 @@ model WebhookEvent {
 
   @@unique([provider, eventId])
   @@map("webhook_events")
+}
+
+// ─── Phase 10: growth ────────────────────────────────────────────────────────
+
+/// A search a user saved; alerts when a newly live listing matches it.
+model SavedSearch {
+  id            String                    @id @default(uuid(7)) @db.Uuid
+  userId        String                    @map("user_id") @db.Uuid
+  name          String
+  /// The search filters (q, categoryId, lat, lng, radiusKm, prices, condition, verifiedLendersOnly).
+  filters       Json
+  categoryId    String?                   @map("category_id") @db.Uuid
+  lat           Float
+  lng           Float
+  radiusKm      Int                       @map("radius_km")
+  /// Generated from lat/lng (migration SQL); used to find searches near a new listing.
+  location      Unsupported("geography")?
+  alertsEnabled Boolean                   @default(true) @map("alerts_enabled")
+  lastPushedAt  DateTime?                 @map("last_pushed_at")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  updatedAt     DateTime                  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([location], map: "saved_searches_location_gist", type: Gist)
+  @@map("saved_searches")
+}
+
+enum ItemRequestStatus {
+  OPEN
+  CLOSED
+  EXPIRED
+  REMOVED
+}
+
+/// "Request an item": a borrower asks the community for something to rent.
+model ItemRequest {
+  id                String                    @id @default(uuid(7)) @db.Uuid
+  borrowerId        String                    @map("borrower_id") @db.Uuid
+  title             String
+  details           String
+  categoryId        String?                   @map("category_id") @db.Uuid
+  startDate         DateTime?                 @map("start_date") @db.Date
+  endDate           DateTime?                 @map("end_date") @db.Date
+  budgetPerDayPaise Int?                      @map("budget_per_day_paise")
+  /// The borrower's area; only areaLabel and a rounded distance are ever shown.
+  lat               Float
+  lng               Float
+  location          Unsupported("geography")?
+  areaLabel         String                    @map("area_label")
+  status            ItemRequestStatus         @default(OPEN)
+  expiresAt         DateTime                  @map("expires_at")
+  removedReason     String?                   @map("removed_reason")
+  closedAt          DateTime?                 @map("closed_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  borrower  User              @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+  category  Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  responses RequestResponse[]
+
+  @@index([borrowerId, createdAt])
+  @@index([status, expiresAt])
+  @@index([location], map: "item_requests_location_gist", type: Gist)
+  @@map("item_requests")
+}
+
+/// A lender offering one of their listings for a request; it opens the chat.
+model RequestResponse {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  requestId      String   @map("request_id") @db.Uuid
+  lenderId       String   @map("lender_id") @db.Uuid
+  listingId      String   @map("listing_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  message        String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  request      ItemRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  lender       User         @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  listing      Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, listingId])
+  @@index([lenderId, createdAt])
+  @@map("request_responses")
+}
+
+/// A user's invite code (created the first time they open Invite friends).
+model ReferralCode {
+  userId    String   @id @map("user_id") @db.Uuid
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referral_codes")
+}
+
+/// Who invited whom. The referrer is rewarded once the new user's first rental completes.
+model Referral {
+  refereeId  String    @id @map("referee_id") @db.Uuid
+  referrerId String    @map("referrer_id") @db.Uuid
+  code       String
+  rewardedAt DateTime? @map("rewarded_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  referee  User          @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
+  referrer User          @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  credits  CreditEntry[]
+
+  @@index([referrerId, createdAt])
+  @@map("referrals")
+}
+
+enum CreditKind {
+  /// ₹100 to a new user who entered an invite code.
+  GRANT_REFEREE
+  /// ₹100 to the inviter when the new user's first rental completes.
+  GRANT_REFERRER
+  /// Taken off a booking's rent (negative).
+  HOLD
+  /// Given back when that booking didn't go ahead or was cancelled.
+  RELEASE
+  /// Removed by an admin (negative).
+  REVOKE
+}
+
+/// Credit balance = sum of amountPaise. Append-only.
+model CreditEntry {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  /// Positive adds to the balance, negative spends it.
+  amountPaise Int        @map("amount_paise")
+  kind        CreditKind
+  bookingId   String?    @map("booking_id") @db.Uuid
+  referralId  String?    @map("referral_id") @db.Uuid
+  adminId     String?    @map("admin_id") @db.Uuid
+  reason      String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking  Booking?   @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  referral Referral?  @relation(fields: [referralId], references: [refereeId], onDelete: SetNull)
+  admin    AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([bookingId])
+  @@map("credit_entries")
 }

@@ -53,6 +53,8 @@ export interface ReceiptInput {
   rentPaise: number;
   feePaise: number;
   depositPaise: number;
+  /** Referral credit taken off the rent (Phase 10). */
+  creditPaise?: number;
   totalPaise: number;
   lenderName: string | null;
 }
@@ -76,6 +78,7 @@ export function bookingReceiptMessage(r: ReceiptInput): EmailMessage {
         },
         ...(r.feePaise > 0 ? [{ label: 'Service fee', value: rupees(r.feePaise) }] : []),
         { label: 'Refundable deposit', value: rupees(r.depositPaise) },
+        ...(r.creditPaise ? [{ label: 'Invite credit', value: `−${rupees(r.creditPaise)}` }] : []),
         { label: `Total paid (receipt ${r.ref})`, value: rupees(r.totalPaise), strong: true },
       ],
       reason: bookingReason,

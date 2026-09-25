@@ -59,6 +59,46 @@ export function tsQuery(q: string): Prisma.Sql {
   return Prisma.sql`websearch_to_tsquery('english', ${q})`;
 }
 
+/** The filters a search (and a saved search) applies to listings `l` of lenders `u`. */
+export interface ListingFilters {
+  q?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  categoryId?: string;
+  minPricePaise?: number;
+  maxPricePaise?: number;
+  condition?: string[];
+  verifiedLendersOnly?: boolean;
+}
+
+/**
+ * WHERE conditions for [f], without PUBLIC_LISTINGS, dates or paging. Shared
+ * by search and by saved-search alerts, so an alert fires exactly when the
+ * listing would show up in that search.
+ */
+export function filterConditions(f: ListingFilters): Prisma.Sql[] {
+  const where: Prisma.Sql[] = [];
+  if (f.q) where.push(Prisma.sql`l.search_vector @@ ${tsQuery(f.q)}`);
+  if (f.lat !== undefined && f.lng !== undefined) {
+    where.push(
+      Prisma.sql`ST_DWithin(l.location, ${point(f.lat, f.lng)}, ${(f.radiusKm ?? 5) * 1000}::float8)`,
+    );
+  }
+  if (f.categoryId) where.push(Prisma.sql`l.category_id = ${f.categoryId}::uuid`);
+  if (f.minPricePaise !== undefined) {
+    where.push(Prisma.sql`l.price_per_day_paise >= ${f.minPricePaise}::int`);
+  }
+  if (f.maxPricePaise !== undefined) {
+    where.push(Prisma.sql`l.price_per_day_paise <= ${f.maxPricePaise}::int`);
+  }
+  if (f.condition?.length) {
+    where.push(Prisma.sql`l.condition::text = ANY(${f.condition}::text[])`);
+  }
+  if (f.verifiedLendersOnly) where.push(LENDER_ID_VERIFIED);
+  return where;
+}
+
 /** Free for the whole [start, end] stay (no lender block, no held booking), within the listing's rules. */
 export function availableBetween(start: string, end: string, days: number): Prisma.Sql {
   return Prisma.sql`

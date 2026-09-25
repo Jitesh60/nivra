@@ -220,7 +220,9 @@ export class BookingDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty() feePaise: number;
   @ApiProperty({ description: 'Refundable' }) depositPaise: number;
-  @ApiProperty() totalPaise: number;
+  @ApiProperty({ description: 'Referral credit taken off the rent' }) creditPaise: number;
+  @ApiProperty({ description: 'What the borrower pays: rent + fee + deposit − credit' })
+  totalPaise: number;
   @ApiPropertyOptional({
     type: Date,
     nullable: true,
@@ -304,6 +306,8 @@ export class CancelPreviewDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty() feePaise: number;
   @ApiProperty() depositPaise: number;
+  @ApiProperty({ description: 'Rent paid with referral credit that comes back as credit' })
+  creditBackPaise: number;
   @ApiPropertyOptional({
     type: String,
     nullable: true,
@@ -377,6 +381,8 @@ export class AdminBookingDetailDto extends AdminBookingDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty() feePaise: number;
   @ApiProperty() depositPaise: number;
+  @ApiProperty({ description: 'Referral credit taken off the rent (Sajha pays it)' })
+  creditPaise: number;
   @ApiPropertyOptional({ type: String, nullable: true }) declineReason: string | null;
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['BORROWER', 'LENDER', 'ADMIN'] })
   cancelledBy: string | null;

@@ -22,6 +22,9 @@ import { EmailModule } from './providers/email/email.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { SystemModule } from './modules/system/system.module.js';
+import { DiscoveryModule } from './modules/discovery/discovery.module.js';
+import { RequestsModule } from './modules/requests/requests.module.js';
+import { ReferralsModule } from './modules/referrals/referrals.module.js';
 import { StorageModule } from './providers/storage/storage.module.js';
 import { BookingsModule } from './modules/bookings/bookings.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
@@ -77,6 +80,9 @@ import { RedisModule } from './redis/redis.module.js';
     RentalsModule,
     AnalyticsModule,
     SystemModule,
+    RequestsModule,
+    DiscoveryModule,
+    ReferralsModule,
   ],
 })
 export class AppModule {}

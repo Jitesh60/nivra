@@ -191,7 +191,11 @@ export class QuoteDto {
   @ApiProperty() rentPaise: number;
   @ApiProperty({ description: 'Borrower service fee (₹0 for now)' }) feePaise: number;
   @ApiProperty({ description: 'Refundable' }) depositPaise: number;
-  @ApiProperty() totalPaise: number;
+  @ApiProperty({
+    description: 'Invite credit a booking would take off the rent (signed-in borrowers)',
+  })
+  creditPaise: number;
+  @ApiProperty({ description: 'What you’d pay: rent + fee + deposit − credit' }) totalPaise: number;
   @ApiProperty() available: boolean;
   @ApiPropertyOptional({
     enum: ['BLOCKED', 'TOO_SHORT', 'TOO_LONG', 'NOT_ENOUGH_NOTICE'],

@@ -28,10 +28,13 @@ export function lenderShare(rentPaise: number, bps: number): number {
 }
 
 /** A booking's payment arrives: deposit held, the lender's share owed, the rest is Sajha's. */
-export function capturePostings(a: Amounts, bps: number): Line[] {
+export function capturePostings(a: Amounts & { creditPaise?: number }, bps: number): Line[] {
   const commission = commissionOn(a.rentPaise, bps);
+  const credit = a.creditPaise ?? 0;
   return drop([
-    { account: 'GATEWAY', debitPaise: a.rentPaise + a.feePaise + a.depositPaise },
+    // Referral credit (Phase 10): Sajha pays that part of the rent, the card the rest.
+    { account: 'GATEWAY', debitPaise: a.rentPaise + a.feePaise + a.depositPaise - credit },
+    { account: 'PROMOTIONS', debitPaise: credit },
     { account: 'DEPOSIT_HELD', creditPaise: a.depositPaise },
     { account: 'LENDER_PAYABLE', creditPaise: a.rentPaise - commission },
     { account: 'PLATFORM_REVENUE', creditPaise: commission + a.feePaise },
@@ -43,18 +46,30 @@ export function capturePostings(a: Amounts, bps: number): Line[] {
  * [refund] says how much of each part. The commission follows the rent, so
  * what's left owed to the lender is exactly their share of the rent they keep.
  */
-export function refundPostings(refund: Amounts, totalRentPaise: number, bps: number): Line[] {
+export function refundPostings(
+  refund: Amounts & { creditBackPaise?: number },
+  totalRentPaise: number,
+  bps: number,
+): Line[] {
   const commissionBack =
     commissionOn(totalRentPaise, bps) - commissionOn(totalRentPaise - refund.rentPaise, bps);
+  // Rent paid with referral credit goes back as credit, not cash (Phase 10).
+  const creditBack = refund.creditBackPaise ?? 0;
   return drop([
     { account: 'DEPOSIT_HELD', debitPaise: refund.depositPaise },
     { account: 'LENDER_PAYABLE', debitPaise: refund.rentPaise - commissionBack },
     { account: 'PLATFORM_REVENUE', debitPaise: commissionBack + refund.feePaise },
     {
       account: 'GATEWAY',
-      creditPaise: refund.rentPaise + refund.feePaise + refund.depositPaise,
+      creditPaise: refund.rentPaise + refund.feePaise + refund.depositPaise - creditBack,
     },
+    { account: 'PROMOTIONS', creditPaise: creditBack },
   ]);
+}
+
+/** Cash a cancellation refund sends to the card: everything but the credit given back. */
+export function cashOf(refund: Amounts & { creditBackPaise?: number }): number {
+  return refund.rentPaise + refund.feePaise + refund.depositPaise - (refund.creditBackPaise ?? 0);
 }
 
 /** An admin gives money back as goodwill: Sajha bears it. */

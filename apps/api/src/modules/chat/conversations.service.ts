@@ -88,6 +88,46 @@ export class ConversationsService {
     }
   }
 
+  /**
+   * Opens (or returns) the chat between [borrowerId] and the lender about the
+   * lender's own LIVE listing: how a lender answers a request (Phase 10). The
+   * lender's per-day response limit applies instead of the borrower's chat limit.
+   */
+  async openForLender(lenderId: string, borrowerId: string, listingId: string): Promise<string> {
+    const listing = await this.prisma.listing.findFirst({
+      where: { id: listingId, lenderId, status: 'LIVE', deletedAt: null },
+      select: { id: true },
+    });
+    if (!listing) {
+      throw new AppException(ErrorCode.NOT_FOUND, 'Listing not found', HttpStatus.NOT_FOUND);
+    }
+    if (lenderId === borrowerId) {
+      throw new AppException(
+        ErrorCode.CONVERSATION_NOT_ALLOWED,
+        'This is your own request',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.blocks.assertNotBlocked(lenderId, borrowerId);
+    const where = { listingId_borrowerId: { listingId, borrowerId } };
+    const existing = await this.prisma.conversation.findUnique({ where, select: { id: true } });
+    if (existing) return existing.id;
+    try {
+      return (
+        await this.prisma.conversation.create({
+          data: { listingId, borrowerId, lenderId },
+          select: { id: true },
+        })
+      ).id;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return (await this.prisma.conversation.findUniqueOrThrow({ where, select: { id: true } }))
+          .id;
+      }
+      throw err;
+    }
+  }
+
   /** The conversation if [userId] is in it; 404 otherwise (never reveal others' chats). */
   async participants(conversationId: string, userId: string): Promise<Participants> {
     const c = await this.prisma.conversation.findUnique({

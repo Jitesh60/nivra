@@ -343,6 +343,7 @@ describe('Discovery & search (e2e)', () => {
       rentPaise: 126_000,
       feePaise: 0,
       depositPaise: 100_000,
+      creditPaise: 0,
       totalPaise: 226_000,
       available: true,
       unavailableReason: null,

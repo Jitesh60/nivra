@@ -28,6 +28,9 @@ Related: [PRD](./PRD.md) · [PLAN](./PLAN.md) · [ARCHITECTURE](./ARCHITECTURE.m
 | 7 | Payments & payouts | `phase/7-payments` | api, mobile, admin |
 | 8 | Handover, return, reviews & disputes | `phase/8-handover-reviews-disputes` | api, mobile, admin |
 | 9 | Launch hardening & release | `phase/9-launch` | all |
+| 10a | Growth — API | `phase/10a-growth-api` | api |
+| 10b | Growth — Mobile | `phase/10b-growth-mobile` | mobile |
+| 10c | Growth — Admin + Web | `phase/10c-growth-admin-web` | admin, web |
 
 Larger phases (3, 5, 6, 7, 8) may also be split into `-api`, `-mobile` and `-admin` sub-branches, like Phase 1, if the PR gets too big to review.
 
@@ -47,6 +50,7 @@ flowchart LR
   P6 --> P7[7 Payments]
   P7 --> P8[8 Handover, reviews, disputes]
   P8 --> P9[9 Launch]
+  P9 --> P10[10 Growth]
 ```
 
 ## Definition of done (every phase)
@@ -826,4 +830,51 @@ Delivered in four parts, each with its own PR and green CI: **9a API → 9b Mobi
   - Playwright for the queue table and the security headers on admin and web
   - the image job in CI
   - the deploy script checked against a mock of Railway's API
+
+---
+
+## Phase 10 — Growth
+Three "Later" features from the PRD that help most after launch, delivered as **10a API → 10b Mobile → 10c Admin + Web**. The rules are in [PRD §7](PRD.md#7-business-rules-proposed-defaults--to-be-confirmed).
+
+- **Saved searches with alerts:** save a search and hear about new listings that match it.
+- **"Request an item" board:** borrowers post what they need; lenders nearby answer with one of their listings.
+- **Invite credit:** ₹100 for the new person, ₹100 for the inviter after the first rental, taken off rent.
+- **Done when:** all three work end to end in the app, with admin moderation and support views.
+
+### 10a — API
+**Branch:** `phase/10a-growth-api`
+
+- **Saved searches** (`/v1/me/saved-searches`: list, create, rename or turn alerts off, delete, `/:id/results`):
+  - Up to 10 per person, with the filters stored as JSON. The name is suggested when left out.
+  - Search's WHERE clause is now `filterConditions()` in `search-sql.ts`. Alerts use the same SQL, so an alert fires exactly when the listing would show up in that search.
+- **Alerts:**
+  - When a listing goes live (trusted publish, or admin approval; not an unpause), a `match-listing` job is queued on the new BullMQ `discovery` queue, with the job id taken from the listing.
+  - `SearchAlertsService` prefilters saved searches by radius (GIST), category, owner and blocks, then checks each with the search SQL.
+  - Each matching person gets one `search.alert` notice. A push goes out at most once per search every 6 hours and 5 a day per person, and follows the new `pushSearchAlerts` switch.
+- **Requests board** (`/v1/requests`, `/v1/me/requests`):
+  - Verified people post a request with a title, details, an optional category and dates, a budget and an area. Limits: 5 open, 5 a day.
+  - The board lists open requests nearest first, with the distance rounded; never your own or a blocked person's.
+  - A lender answers with one of their LIVE listings (`POST /v1/requests/:id/responses`). `ConversationsService.openForLender` opens or reuses the chat about that listing, and `MessagesService.sendText` posts the masked message. The borrower gets `request.response`.
+  - A `notify-request` job tells up to 50 lenders nearby with a live listing in the same category (or matching the title): `request.nearby`, at most 3 a day each, following `pushRequests`.
+  - `expire-requests` runs hourly.
+  - Requests can be reported (`ReportTarget.REQUEST`). Admins list and read them; OPS removes them with a reason (audited, and the borrower is told).
+- **Invite credit** (`/v1/me/referral`, `/v1/me/referral/redeem`):
+  - Codes are 8 characters with no look-alike characters, created on first read; the link is `PUBLIC_SITE_URL/r/<code>`. Redeem rules are in PRD §7, and redeeming is rate-limited.
+  - `credit_entries` is an append-only ledger per person, with holds and releases per booking under an advisory lock.
+  - Bookings store `creditPaise`, and the check constraint is now `total = rent + fee + deposit − credit`.
+  - The ledger's new `PROMOTIONS` account carries Sajha's cost. Paid cancellations give credit back first, then cash. The cancel preview, the quote and the receipt email show it (ARCHITECTURE §6).
+  - The inviter's reward is a transition listener on completion.
+  - Admin: `GET /v1/admin/users/:id/referral` and `POST …/credits/revoke` (OPS, audited).
+- **Also:**
+  - Notifications can link to a listing or a request (`listingId`, `requestId`).
+  - Preferences gain `pushSearchAlerts` and `pushRequests`.
+  - Analytics gains `referralSignups` and `creditsSpentPaise`.
+  - `/v1/admin/system` lists the `discovery` queue.
+  - Deleting an account removes saved searches, closes open requests and retires the invite code.
+- **Tests:**
+  - Unit: the new push switches, capture and refund postings with credit, credit limits, request expiry, and `filterConditions`.
+  - e2e (`test/growth.e2e-spec.ts`, 11 tests):
+    - saved searches: CRUD and the limit; alerts on approval (once, the push limit, not the lender, not on an unpause, blocked people, pushes off)
+    - requests board: the full flow (nearby notice, board, answer opens the masked chat, duplicate and closed checks); validation, limits, report, admin removal and expiry
+    - invite credit: redeem rules; held and released on decline; the half-rent cap; paid with credit (order amount, balanced ledger, cancellation giving credit and cash back); the inviter rewarded once; admin view and revoke
 

@@ -51,6 +51,13 @@ const METRICS: Record<Metric, { table: string; at: string; value: string; where?
   },
   disputesOpened: { table: 'disputes', at: 'created_at', value: 'count(*)' },
   disputesSettled: { table: 'disputes', at: 'resolved_at', value: 'count(*)' },
+  referralSignups: { table: 'referrals', at: 'created_at', value: 'count(*)' },
+  creditsSpentPaise: {
+    table: 'ledger_entries',
+    at: 'created_at',
+    value: 'sum(debit_paise - credit_paise)',
+    where: `account = 'PROMOTIONS'`,
+  },
 };
 
 const METRIC_NAMES = Object.keys(METRICS) as Metric[];

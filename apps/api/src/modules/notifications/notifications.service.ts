@@ -20,6 +20,17 @@ export interface InAppNotice {
   title: string;
   body: string;
   bookingId?: string;
+  /** What to open when tapped (Phase 10): a listing (saved-search alert) or a request. */
+  listingId?: string;
+  requestId?: string;
+}
+
+function links(notice: InAppNotice): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (notice.bookingId) out.bookingId = notice.bookingId;
+  if (notice.listingId) out.listingId = notice.listingId;
+  if (notice.requestId) out.requestId = notice.requestId;
+  return out;
 }
 
 /**
@@ -124,7 +135,7 @@ export class NotificationsService {
           type: notice.type,
           title: notice.title,
           body: notice.body,
-          data: notice.bookingId ? { bookingId: notice.bookingId } : undefined,
+          data: Object.keys(links(notice)).length ? links(notice) : undefined,
         },
       });
       this.realtime.toUser(userId, NOTIFICATION_NEW, toDto(row));
@@ -135,7 +146,7 @@ export class NotificationsService {
           data: {
             type: notice.type,
             notificationId: row.id,
-            ...(notice.bookingId ? { bookingId: notice.bookingId } : {}),
+            ...links(notice),
           },
         });
       }
@@ -177,13 +188,15 @@ export class NotificationsService {
 }
 
 function toDto(n: Notification): NotificationDto {
-  const data = (n.data ?? {}) as { bookingId?: string };
+  const data = (n.data ?? {}) as { bookingId?: string; listingId?: string; requestId?: string };
   return {
     id: n.id,
     type: n.type,
     title: n.title,
     body: n.body,
     bookingId: data.bookingId ?? null,
+    listingId: data.listingId ?? null,
+    requestId: data.requestId ?? null,
     readAt: n.readAt,
     createdAt: n.createdAt,
   };
