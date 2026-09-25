@@ -14,9 +14,10 @@ class ShaderBackground extends StatefulWidget {
     super.key,
     this.child,
     this.colors = const [
+      // DESIGN.md §8: the web MeshGradient palette.
       SajhaColors.brand950,
       SajhaColors.brand700,
-      SajhaColors.accent500,
+      SajhaColors.accent400,
     ],
   }) : assert(colors.length == 3);
 

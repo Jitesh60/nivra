@@ -10,10 +10,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const sharp = createRequire(join(here, '../../../api/package.json'))('sharp');
 
 for (const [svg, png, size] of [
-  ['sajha-mark.svg', 'icon.png', 1024],
-  ['sajha-mark-foreground.svg', 'icon-foreground.png', 1024],
-  ['sajha-splash.svg', 'splash.png', 768],
-  ['sajha-mark.svg', 'store-icon-512.png', 512],
+  ['nivra-icon.svg', 'icon.png', 1024],
+  ['nivra-foreground.svg', 'icon-foreground.png', 1024],
+  ['nivra-splash.svg', 'splash.png', 768],
+  ['nivra-icon.svg', 'store-icon-512.png', 512],
+  // The rounded tile shown inside the app (NivraLogo).
+  ['nivra-tile.svg', 'logo-mark.png', 384],
 ]) {
   await sharp(join(here, svg), { density: 300 }).resize(size, size).png().toFile(join(here, png));
   console.log(`${png} (${size}×${size})`);
