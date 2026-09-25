@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/router/routes.dart';
+import '../../../core/router/sign_in_return.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../../shared/widgets/date_range_chooser.dart';
 import '../../listings/data/models.dart';
 import '../../listings/presentation/listing_detail_view.dart';
+import '../application/discovery_providers.dart';
+import '../application/saved_searches.dart';
 import '../application/search_area.dart';
 import '../data/discovery_repository.dart';
 import '../data/models.dart';
+import '../data/saved_searches.dart';
 import 'area_sheet.dart';
 import 'filters_sheet.dart';
 import 'listing_card.dart';
@@ -44,6 +50,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _loadingMore = false;
   String? _error;
 
+  /// This search (as it is now) was saved; any change makes it a new one.
+  bool _saved = false;
+  bool _saving = false;
+
   /// Bumped per search, so a slow older response can't overwrite a newer one.
   int _generation = 0;
 
@@ -66,6 +76,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _saved = false;
     });
     try {
       final area = await _area();
@@ -159,6 +170,53 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  /// Guests sign in first and come back to the same keywords and category.
+  Future<void> _save(SearchArea area) async {
+    if (!ref.read(signedInProvider)) {
+      requireSignIn(
+        context,
+        ref,
+        Uri(
+          path: Routes.search,
+          queryParameters: {
+            if (_filters.query.trim().isNotEmpty) 'q': _filters.query.trim(),
+            'categoryId': ?_filters.categoryId,
+          },
+        ).toString(),
+      );
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(savedSearchesRepositoryProvider)
+          .create(SavedSearchFilters.from(_filters, area));
+      ref.invalidate(savedSearchesProvider);
+      if (mounted) setState(() => _saved = true);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Search saved. We’ll tell you about new listings.',
+            ),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => router.push(Routes.savedSearches),
+            ),
+          ),
+        );
+    } on ApiException catch (e) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.friendlyMessage)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _openFilters() async {
     final next = await showFiltersSheet(context, _filters);
     if (next != null) _update(next);
@@ -203,6 +261,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           onChanged: (_) => setState(() {}),
           onSubmitted: (q) => _update(_filters.copyWith(query: q)),
         ),
+        actions: [
+          // Alerts need a place to watch, so saving needs an area.
+          if (area != null)
+            IconButton(
+              key: const ValueKey('save-search'),
+              tooltip: _saved ? 'Search saved' : 'Save search',
+              onPressed: _saved || _saving ? null : () => _save(area),
+              icon: Icon(_saved ? Icons.bookmark : Icons.bookmark_add_outlined),
+            ),
+        ],
       ),
       body: Column(
         children: [

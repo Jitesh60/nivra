@@ -9,7 +9,7 @@ import '../../chat/presentation/chat_format.dart' show chatTime;
 import '../application/bookings_providers.dart';
 import '../data/models.dart';
 
-/// The bell: booking news, newest first. Opening it marks them read.
+/// The bell: bookings, requests and alerts, newest first. Opening it marks them read.
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -38,7 +38,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           child: Padding(
             padding: EdgeInsets.all(SajhaSpacing.xl),
             child: Text(
-              'Nothing yet. Booking requests and updates show up here.',
+              'Nothing yet. Bookings, requests and alerts show up here.',
               key: ValueKey('notifications-empty'),
               textAlign: TextAlign.center,
             ),
@@ -82,18 +82,25 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bold = n.unread ? FontWeight.w700 : FontWeight.w400;
+    final route = Routes.forNotification(
+      type: n.type,
+      bookingId: n.bookingId,
+      listingId: n.listingId,
+      requestId: n.requestId,
+    );
     return ListTile(
       key: ValueKey('notification-${n.id}'),
-      leading: Icon(
-        n.type.contains('docs') ? Icons.badge_outlined : Icons.event_note,
-        color: n.unread ? SajhaColors.brand600 : null,
-      ),
+      leading: Icon(switch (n.type) {
+        final t when t.contains('docs') => Icons.badge_outlined,
+        final t when t.startsWith('search.') => Icons.bookmark_outline,
+        final t when t.startsWith('request.') => Icons.campaign_outlined,
+        final t when t.startsWith('referral.') => Icons.card_giftcard,
+        _ => Icons.event_note,
+      }, color: n.unread ? SajhaColors.brand600 : null),
       title: Text(n.title, style: TextStyle(fontWeight: bold)),
       subtitle: Text(n.body),
       trailing: Text(chatTime(n.createdAt)),
-      onTap: n.bookingId == null
-          ? null
-          : () => context.push(Routes.booking(n.bookingId!)),
+      onTap: route == null ? null : () => context.push(route),
     );
   }
 }

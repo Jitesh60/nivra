@@ -79,6 +79,7 @@ class Booking {
     required this.depositPaise,
     required this.totalPaise,
     required this.createdAt,
+    this.creditPaise = 0,
     this.expiresAt,
     this.declineReason,
     this.cancelledBy,
@@ -100,6 +101,7 @@ class Booking {
     rentPaise: (json['rentPaise'] as num).toInt(),
     feePaise: (json['feePaise'] as num).toInt(),
     depositPaise: (json['depositPaise'] as num).toInt(),
+    creditPaise: (json['creditPaise'] as num?)?.toInt() ?? 0,
     totalPaise: (json['totalPaise'] as num).toInt(),
     expiresAt: _dateOrNull(json['expiresAt']),
     declineReason: json['declineReason'] as String?,
@@ -126,6 +128,11 @@ class Booking {
   final int rentPaise;
   final int feePaise;
   final int depositPaise;
+
+  /// Invite credit taken off the borrower's total.
+  final int creditPaise;
+
+  /// Rent + fee + deposit − credit.
   final int totalPaise;
 
   /// The current step times out then, and the booking expires.
@@ -835,6 +842,7 @@ class CancelPreview {
     required this.feePaise,
     required this.depositPaise,
     required this.summary,
+    this.creditBackPaise = 0,
     this.tier,
   });
 
@@ -843,6 +851,7 @@ class CancelPreview {
     rentPaise: (json['rentPaise'] as num).toInt(),
     feePaise: (json['feePaise'] as num).toInt(),
     depositPaise: (json['depositPaise'] as num).toInt(),
+    creditBackPaise: (json['creditBackPaise'] as num?)?.toInt() ?? 0,
     tier: json['tier'] as String?,
     summary: json['summary'] as String,
   );
@@ -851,6 +860,9 @@ class CancelPreview {
   final int rentPaise;
   final int feePaise;
   final int depositPaise;
+
+  /// Invite credit that goes back to the borrower's balance.
+  final int creditBackPaise;
 
   /// FULL, HALF_RENT or DEPOSIT_ONLY; null when nothing was paid.
   final String? tier;
@@ -887,6 +899,8 @@ class AppNotification {
     required this.body,
     required this.createdAt,
     this.bookingId,
+    this.listingId,
+    this.requestId,
     this.readAt,
   });
 
@@ -897,6 +911,8 @@ class AppNotification {
         title: json['title'] as String,
         body: json['body'] as String,
         bookingId: json['bookingId'] as String?,
+        listingId: json['listingId'] as String?,
+        requestId: json['requestId'] as String?,
         readAt: _dateOrNull(json['readAt']),
         createdAt: _date(json['createdAt']),
       );
@@ -906,6 +922,12 @@ class AppNotification {
   final String title;
   final String body;
   final String? bookingId;
+
+  /// A new listing for a saved search (`search.alert`).
+  final String? listingId;
+
+  /// `request.*` notifications.
+  final String? requestId;
   final DateTime? readAt;
   final DateTime createdAt;
 

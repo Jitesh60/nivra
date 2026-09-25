@@ -31,6 +31,7 @@ import '../../features/documents/presentation/document_viewer_screen.dart';
 import '../../features/documents/presentation/documents_screen.dart';
 import '../../features/discovery/presentation/area_picker_screen.dart';
 import '../../features/discovery/presentation/item_screen.dart';
+import '../../features/discovery/presentation/saved_searches_screen.dart';
 import '../../features/discovery/presentation/search_screen.dart';
 import '../../features/discovery/presentation/wishlist_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -39,6 +40,11 @@ import '../../features/listings/presentation/listing_editor_screen.dart';
 import '../../features/listings/presentation/my_listings_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/referrals/presentation/invite_screen.dart';
+import '../../features/requests/presentation/my_requests_screen.dart';
+import '../../features/requests/presentation/new_request_screen.dart';
+import '../../features/requests/presentation/request_screen.dart';
+import '../../features/requests/presentation/requests_board_screen.dart';
 import '../../features/settings/presentation/devices_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -212,6 +218,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const AreaPickerScreen(),
       ),
       GoRoute(path: Routes.wishlist, builder: (_, _) => const WishlistScreen()),
+      GoRoute(
+        path: Routes.savedSearches,
+        builder: (_, _) => const SavedSearchesScreen(),
+      ),
+      GoRoute(
+        path: Routes.savedSearchPattern,
+        builder: (_, state) =>
+            SavedSearchResultsScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.requests,
+        builder: (_, _) => const RequestsBoardScreen(),
+      ),
+      GoRoute(
+        path: Routes.newRequest,
+        builder: (_, _) => const NewRequestScreen(),
+      ),
+      GoRoute(
+        path: Routes.myRequests,
+        builder: (_, _) => const MyRequestsScreen(),
+      ),
+      GoRoute(
+        path: Routes.requestPattern,
+        builder: (_, state) => RequestScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(path: Routes.invite, builder: (_, _) => const InviteScreen()),
       GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: Routes.devices, builder: (_, _) => const DevicesScreen()),
       GoRoute(

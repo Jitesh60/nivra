@@ -144,6 +144,8 @@ class _ConfirmSheet extends StatelessWidget {
               ),
             if (q.feePaise > 0) line('Service fee', formatRupees(q.feePaise)),
             line('Refundable deposit', formatRupees(q.depositPaise)),
+            if (q.creditPaise > 0)
+              line('Invite credit', '− ${formatRupees(q.creditPaise)}'),
             const Divider(),
             line('Total', formatRupees(q.totalPaise), bold: true),
             if (listing.requiredDocs.isNotEmpty) ...[
