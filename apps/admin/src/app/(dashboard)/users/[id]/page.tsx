@@ -22,6 +22,7 @@ import {
 } from '@/lib/documents';
 import { LISTING_STATUS_LABEL, rupees } from '@/lib/listings';
 import { canSee, NAV } from '@/lib/roles';
+import { RevokeCreditForm } from './revoke-credit-form';
 import { StatusActions } from './status-actions';
 
 export const metadata: Metadata = { title: 'User' };
@@ -44,6 +45,17 @@ const ACTION_LABEL: Record<string, string> = {
   'admin.listing.reject': 'Admin sent a listing back',
   'admin.listing.unpublish': 'Admin unpublished a listing',
   'admin.listing.category': 'Admin moved a listing to another category',
+  'admin.credit.revoke': 'Admin took invite credit away',
+  'admin.request.remove': 'Admin removed a request',
+};
+
+/** Invite credit ledger kinds, in words. */
+const CREDIT_KIND_LABEL: Record<string, string> = {
+  GRANT_REFEREE: 'Joined with an invite code',
+  GRANT_REFERRER: 'A friend finished a first rental',
+  HOLD: 'Used on a booking',
+  RELEASE: 'Given back (booking cancelled)',
+  REVOKE: 'Taken away by an admin',
 };
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
@@ -56,13 +68,16 @@ function Check({ ok, label }: { ok: boolean; label: string }) {
 
 export default async function UserDetailPage({ params }: PageProps<'/users/[id]'>) {
   const { id } = await params;
-  const [me, detail] = await Promise.all([
+  const api = await adminApi();
+  const [me, detail, referral] = await Promise.all([
     getMe(),
-    unwrap((await adminApi()).GET('/v1/admin/users/{id}', { params: { path: { id } } })).catch(
-      (err: unknown) => {
-        if (err instanceof ApiRequestError && err.error.code === 'NOT_FOUND') notFound();
-        throw err;
-      },
+    unwrap(api.GET('/v1/admin/users/{id}', { params: { path: { id } } })).catch((err: unknown) => {
+      if (err instanceof ApiRequestError && err.error.code === 'NOT_FOUND') notFound();
+      throw err;
+    }),
+    // Invite credit is a bonus: the page still renders without it.
+    unwrap(api.GET('/v1/admin/users/{id}/referral', { params: { path: { id } } })).catch(
+      () => null,
     ),
   ]);
   const { user, documents, listings, activeSessions, activity } = detail;
@@ -200,6 +215,81 @@ export default async function UserDetailPage({ params }: PageProps<'/users/[id]'
             </div>
           </section>
 
+          {referral && (referral.entries.length > 0 || referral.invited.length > 0) && (
+            <section>
+              <h2 className="mb-2 text-lg font-semibold">Invite credit history</h2>
+              <div className="rounded-lg border bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>When</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>What</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {referral.entries.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-6 text-center text-muted-foreground">
+                          No credit yet.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {referral.entries.map((e) => (
+                      <TableRow key={e.id} data-testid="credit-entry">
+                        <TableCell className="whitespace-nowrap">
+                          {dateTime.format(new Date(e.createdAt))}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono ${e.amountPaise < 0 ? 'text-destructive' : 'text-sj-success'}`}
+                        >
+                          {e.amountPaise > 0 ? '+' : '−'}
+                          {rupees(Math.abs(e.amountPaise))}
+                        </TableCell>
+                        <TableCell>
+                          {CREDIT_KIND_LABEL[e.kind] ?? e.kind}
+                          {e.bookingId && (
+                            <>
+                              {' · '}
+                              <Link
+                                href={`/bookings/${e.bookingId}`}
+                                className="text-primary hover:underline"
+                              >
+                                booking
+                              </Link>
+                            </>
+                          )}
+                          {e.reason && <span className="text-muted-foreground"> · {e.reason}</span>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {referral.invited.length > 0 && (
+                <>
+                  <h3 className="mt-4 mb-2 font-semibold">People they invited</h3>
+                  <ul className="grid gap-1 text-sm">
+                    {referral.invited.map((p) => (
+                      <li key={p.user.id} data-testid="invited-person">
+                        <Link href={`/users/${p.user.id}`} className="text-primary hover:underline">
+                          {p.user.name ?? 'New member'}
+                        </Link>
+                        <span className="text-muted-foreground">
+                          {' '}
+                          · joined {dateOnly.format(new Date(p.joinedAt))}
+                          {p.rewardedAt
+                            ? ` · first rental done ${dateOnly.format(new Date(p.rewardedAt))}`
+                            : ' · no rental yet'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+
           <section>
             <h2 className="mb-2 text-lg font-semibold">Activity</h2>
             <div className="rounded-lg border bg-card">
@@ -271,6 +361,52 @@ export default async function UserDetailPage({ params }: PageProps<'/users/[id]'
               )}
             </CardContent>
           </Card>
+          {referral && (
+            <Card data-testid="invite-credit">
+              <CardHeader>
+                <CardTitle className="text-title">Invite credit</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 text-sm">
+                <dl className="grid gap-1">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Balance</dt>
+                    <dd className="font-mono font-semibold" data-testid="credit-balance">
+                      {rupees(referral.creditBalancePaise)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Invite code</dt>
+                    <dd className="font-mono">{referral.code ?? '—'}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Invited by</dt>
+                    <dd data-testid="referred-by">
+                      {referral.referredBy ? (
+                        <Link
+                          href={`/users/${referral.referredBy.id}`}
+                          className="text-primary hover:underline"
+                        >
+                          {referral.referredBy.name ?? 'Member'}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">People invited</dt>
+                    <dd data-testid="invited-count">{referral.invited.length}</dd>
+                  </div>
+                </dl>
+                {canModerate && referral.creditBalancePaise > 0 && (
+                  <RevokeCreditForm
+                    id={user.id}
+                    balanceRupees={Math.floor(referral.creditBalancePaise / 100)}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

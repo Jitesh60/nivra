@@ -23,11 +23,13 @@ export const REPORT_TARGET_LABEL: Record<string, string> = {
   USER: 'User',
   LISTING: 'Listing',
   MESSAGE: 'Chat message',
+  REQUEST: 'Request',
 };
 
-/** Where to act on what was reported (users: suspend/ban; listings: unpublish). */
+/** Where to act on what was reported (users: suspend/ban; listings: unpublish; requests: remove). */
 export function targetHref(r: Report): string | null {
   if (r.target.type === 'USER') return `/users/${r.target.id}`;
   if (r.target.type === 'LISTING') return `/listings/${r.target.id}`;
+  if (r.target.type === 'REQUEST') return `/requests/${r.target.id}`;
   return r.target.ownerId ? `/users/${r.target.ownerId}` : null;
 }

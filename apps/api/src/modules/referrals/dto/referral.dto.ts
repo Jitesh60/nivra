@@ -84,3 +84,16 @@ export class RevokeCreditDto {
   @MaxLength(300)
   reason: string;
 }
+
+/** What the website's /r/<code> page shows. Unknown codes are simply not valid. */
+export class ReferralCodeLookupDto {
+  @ApiProperty() valid: boolean;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'The inviter’s first name, when the code is valid',
+  })
+  inviterFirstName: string | null;
+  @ApiProperty() refereeCreditPaise: number;
+  @ApiProperty() redeemWithinDays: number;
+}

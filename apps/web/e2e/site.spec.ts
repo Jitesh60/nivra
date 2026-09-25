@@ -191,3 +191,64 @@ test.describe('waitlist (needs the API)', () => {
     ).toBe(false);
   });
 });
+
+test.describe('invite links (needs the API)', () => {
+  const API = process.env.NEXT_PUBLIC_SAJHA_API_URL ?? 'http://localhost:3000';
+
+  /** Signs a new person up (OTP bypass code) and returns their invite code. */
+  async function inviteCode(name: string): Promise<string> {
+    const phone = `9${String(Date.now()).slice(-9)}`;
+    const ip = { 'x-forwarded-for': `203.0.113.${(Number(phone.slice(-6)) % 254) + 1}` };
+    const post = async (path: string, body: unknown, token?: string, method = 'POST') => {
+      const res = await fetch(`${API}/v1${path}`, {
+        method,
+        headers: {
+          'content-type': 'application/json',
+          ...ip,
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      expect(res.ok, `${path} → ${res.status}`).toBe(true);
+      return res.json();
+    };
+    const { challengeId } = await post('/auth/otp/request', { phone: `+91${phone}` });
+    const login = await post('/auth/otp/verify', {
+      challengeId,
+      code: process.env.E2E_OTP_CODE ?? '000000',
+      deviceId: `web-e2e-${phone}`,
+      deviceName: 'Web E2E',
+    });
+    await post('/me', { name }, login.accessToken, 'PATCH');
+    const res = await fetch(`${API}/v1/me/referral`, {
+      headers: { authorization: `Bearer ${login.accessToken}` },
+    });
+    return (await res.json()).code;
+  }
+
+  test('a valid link shows who invited you, the credit and the code', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    const code = await inviteCode('Meera Iyer');
+    await page.goto(`/r/${code.toLowerCase()}`);
+    await expect(page.getByTestId('invite-heading')).toHaveText('Meera invited you to Nivra');
+    await expect(page.getByRole('main')).toContainText('₹100');
+    await expect(page.getByTestId('invite-code')).toHaveText(code);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+
+    if (browserName === 'chromium') {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      await page.getByRole('button', { name: 'Copy code' }).click();
+      await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(code);
+    }
+  });
+
+  test('an unknown code says the link doesn’t work', async ({ page }) => {
+    const res = await page.goto('/r/NOTACODE');
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId('invite-invalid')).toContainText('This invite link doesn’t work');
+  });
+});

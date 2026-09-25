@@ -107,4 +107,12 @@ export const faqs = [
     q: 'What can’t be listed?',
     a: 'Weapons, drugs, alcohol, medicines, vehicles that need registration, animals, counterfeit or stolen goods, adult content and hazardous materials.',
   },
+  {
+    q: 'How does invite credit work?',
+    a: 'Share your invite link or code from Profile → Invite friends. A friend who joins with it gets ₹100 of credit, entered within 7 days of joining and before their first booking. You get ₹100 once they finish their first rental. Credit comes off the rent (never the deposit), up to half of it per booking.',
+  },
+  {
+    q: 'What if I can’t find what I need?',
+    a: 'Post a request: say what you need, when, and your budget. Lenders near you see it and can answer with one of their listings, which starts a chat with you.',
+  },
 ] as const;

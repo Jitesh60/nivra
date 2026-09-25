@@ -669,6 +669,35 @@ describe('Growth: saved searches, requests board, referrals (e2e)', () => {
       expect(mine).toMatchObject({ rewarded: 1, creditBalancePaise: 10_000 });
     });
 
+    it('the website can look a code up without signing in (first name only)', async () => {
+      const inviter = await verifiedUser(app, sms, 'Meera Iyer');
+      const { code } = await referral(inviter);
+      const lookup = (c: string) =>
+        http(app)
+          .get(`/v1/referral-codes/${encodeURIComponent(c)}`)
+          .expect(200);
+
+      const rules = { refereeCreditPaise: 10_000, redeemWithinDays: 7 };
+      expect((await lookup(code)).body).toEqual({
+        valid: true,
+        inviterFirstName: 'Meera',
+        ...rules,
+      });
+      // Case, spaces and dashes don't matter, as when redeeming.
+      const messy = ` ${code.slice(0, 4).toLowerCase()}-${code.slice(4)} `;
+      expect((await lookup(messy)).body.valid).toBe(true);
+      // Unknown or malformed: not valid, never a 404.
+      expect((await lookup('ZZZZZZZZ')).body).toEqual({
+        valid: false,
+        inviterFirstName: null,
+        ...rules,
+      });
+      expect((await lookup('no!')).body.valid).toBe(false);
+      // A suspended inviter's code stops working.
+      await prisma.user.update({ where: { id: inviter.userId }, data: { status: 'SUSPENDED' } });
+      expect((await lookup(code)).body).toMatchObject({ valid: false, inviterFirstName: null });
+    });
+
     it('admins see referrals and can take unused credit away', async () => {
       const inviter = await verifiedUser(app, sms, 'Meera Iyer');
       const friend = await invited(inviter, 'Kiran Joshi');

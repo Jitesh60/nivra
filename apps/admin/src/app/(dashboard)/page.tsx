@@ -21,6 +21,8 @@ const KPIS: { key: keyof Metrics; label: string; money?: boolean }[] = [
   { key: 'gmvPaise', label: 'Money taken (GMV)', money: true },
   { key: 'revenuePaise', label: 'Nivra revenue', money: true },
   { key: 'disputesOpened', label: 'Disputes opened' },
+  { key: 'referralSignups', label: 'Joined with an invite' },
+  { key: 'creditsSpentPaise', label: 'Invite credit used', money: true },
 ];
 
 export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
@@ -69,7 +71,7 @@ export default async function OverviewPage({ searchParams }: PageProps<'/'>) {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {KPIS.map(({ key, label, money: isMoney }) => {
           const delta = change(a.totals[key], a.previous[key]);
           return (

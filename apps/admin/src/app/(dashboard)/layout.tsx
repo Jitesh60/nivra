@@ -1,9 +1,8 @@
-import { headers } from 'next/headers';
-import Link from 'next/link';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { LogOut } from 'lucide-react';
-import { Logo } from '@sajha/ui';
-import { NavLinks } from '@/components/dashboard/nav-links';
+import { MobileNav, Sidebar } from '@/components/dashboard/sidebar';
+import { SIDEBAR_COOKIE } from '@/lib/sidebar';
 import { ThemeToggle } from '@/components/dashboard/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
   if (me.mustChangePassword && pathname !== '/account/password') redirect('/account/password');
 
   const items = NAV.filter((item) => canSee(item, me.role));
+  const collapsed = (await cookies()).get(SIDEBAR_COOKIE)?.value === 'collapsed';
   const initials = me.name
     .split(' ')
     .map((w) => w[0])
@@ -25,15 +25,12 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
     .toUpperCase();
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <aside className="border-b bg-card px-3 pt-4 pb-2 md:sticky md:top-0 md:flex md:h-screen md:w-64 md:shrink-0 md:flex-col md:border-r md:border-b-0 md:px-4 md:py-5">
-        <Link href="/" className="mb-4 flex rounded-md px-2 md:mb-6" aria-label="Admin home">
-          <Logo suffix="Admin" />
-        </Link>
-        {!me.mustChangePassword && <NavLinks items={items} />}
-      </aside>
+    <div className="flex min-h-screen">
+      <Sidebar items={items} showNav={!me.mustChangePassword} defaultCollapsed={collapsed} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-end gap-3 border-b bg-card/85 px-4 py-3 backdrop-blur md:px-8">
+        <header className="sticky top-0 z-20 flex items-center gap-2 border-b bg-card/85 px-3 py-3 backdrop-blur sm:gap-3 md:justify-end md:px-8">
+          <MobileNav items={items} showNav={!me.mustChangePassword} />
+          <div className="flex-1 md:hidden" />
           <ThemeToggle />
           <div className="flex min-w-0 items-center gap-3">
             <span
@@ -42,7 +39,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
             >
               {initials}
             </span>
-            <div className="min-w-0 text-right text-small leading-tight sm:text-left">
+            <div className="hidden min-w-0 text-small leading-tight sm:block">
               <p className="font-semibold" data-testid="admin-name">
                 {me.name}
               </p>
@@ -53,9 +50,9 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
             {ROLE_LABEL[me.role]}
           </Badge>
           <form action="/logout" method="post">
-            <Button type="submit" variant="outline" size="sm">
+            <Button type="submit" variant="outline" size="sm" aria-label="Log out">
               <LogOut aria-hidden />
-              Log out
+              <span className="hidden sm:inline">Log out</span>
             </Button>
           </form>
         </header>

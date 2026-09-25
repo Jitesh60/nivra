@@ -15,7 +15,12 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { ParticipantPresenter } from '../safety/participants.js';
 import { userViewInclude } from '../users/user-view.js';
 import { creditBalance, lockCredit, REFERRAL_RULES as R } from './credits.js';
-import type { AdminReferralDto, CreditEntryDto, MyReferralDto } from './dto/referral.dto.js';
+import type {
+  AdminReferralDto,
+  CreditEntryDto,
+  MyReferralDto,
+  ReferralCodeLookupDto,
+} from './dto/referral.dto.js';
 
 /** No 0/O, 1/I/L: easy to read out and type. */
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -49,6 +54,28 @@ export class ReferralsService implements OnModuleInit {
 
   onModuleInit(): void {
     this.machine.onTransition((t) => this.onBookingChanged(t));
+  }
+
+  /**
+   * Public lookup for the website's invite page. Only the first name is
+   * shown, and an unknown, suspended or deleted owner reads as not valid
+   * (never a 404), so the endpoint can't be used to probe accounts.
+   */
+  async lookup(rawCode: string): Promise<ReferralCodeLookupDto> {
+    const code = rawCode.replace(/[\s-]/g, '').toUpperCase();
+    const owner = /^[A-Z0-9]{4,12}$/.test(code)
+      ? await this.prisma.referralCode.findUnique({
+          where: { code },
+          select: { user: { select: { name: true, status: true, deletedAt: true } } },
+        })
+      : null;
+    const active = owner && owner.user.status === 'ACTIVE' && !owner.user.deletedAt;
+    return {
+      valid: Boolean(active),
+      inviterFirstName: active ? (owner.user.name?.trim().split(/\s+/)[0] ?? null) || null : null,
+      refereeCreditPaise: R.refereeCreditPaise,
+      redeemWithinDays: R.redeemWithinDays,
+    };
   }
 
   /** Your code (created the first time), counts, balance and history. */

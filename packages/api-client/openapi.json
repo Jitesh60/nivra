@@ -7135,6 +7135,38 @@
           "admin · users"
         ]
       }
+    },
+    "/v1/referral-codes/{code}": {
+      "get": {
+        "description": "Unknown codes return `valid: false`, never 404.",
+        "operationId": "PublicReferralsController_lookup_v1",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCodeLookupDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Look up an invite code for the website (no sign-in)",
+        "tags": [
+          "invites"
+        ]
+      }
     }
   },
   "info": {
@@ -14723,6 +14755,30 @@
         "required": [
           "amountPaise",
           "reason"
+        ]
+      },
+      "ReferralCodeLookupDto": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "inviterFirstName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The inviter’s first name, when the code is valid"
+          },
+          "refereeCreditPaise": {
+            "type": "number"
+          },
+          "redeemWithinDays": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "valid",
+          "refereeCreditPaise",
+          "redeemWithinDays"
         ]
       }
     }
