@@ -249,6 +249,14 @@ jobs:
       # Staging, debug-signed: proves the release build (R8, plugins) compiles.
       # Prod store bundles need the upload key (docs/RELEASE.md).
       - run: flutter build apk --release --flavor staging --dart-define-from-file=config/staging.json
+      # Keep the APK so it can be downloaded from the run's Summary page and
+      # installed on a phone (debug-signed; talks to the staging API).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nivra-staging-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-staging-release.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: A prod release without the upload key is refused
         run: |
           if flutter build appbundle --release --flavor prod --dart-define-from-file=config/prod.json 2> build.log; then
