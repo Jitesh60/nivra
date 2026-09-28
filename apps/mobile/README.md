@@ -18,6 +18,15 @@ flutter run --dart-define-from-file=config/dev.json
 | staging | `com.sajha.app.staging` | Nivra Staging |
 | prod | `com.sajha.app` | Nivra |
 
+## Get a test APK (no Android setup needed)
+
+GitHub builds the APK, so you don't need Android Studio or the SDK:
+
+- **Any build:** every CI run on a pull request or `main` keeps a staging APK. Open the run under **Actions**, scroll to **Artifacts** on its Summary page, and download `nivra-staging-apk`.
+- **On demand:** **Actions → Build APK → Run workflow**. Pick the flavor (`staging` or `dev`) and, optionally, the API address the app should use (for example your server's `https://…` address). When it finishes, download `nivra-<flavor>-apk` from the run's Summary page.
+
+Unzip the download and open the `.apk` on the phone. Android asks you to allow installing apps from that source (Files or the browser) the first time. These APKs are debug-signed: fine for testing, but Play Store builds need the upload key (see [RELEASE.md](../../docs/RELEASE.md)). The app needs its API to be running at that address to sign in and show listings.
+
 ## Checks
 
 ```bash

@@ -28,6 +28,8 @@ PROPS
 
 `key.properties` and `*.jks` are git-ignored. Without them, `flutter build appbundle --flavor prod` stops with "Prod release builds need android/key.properties" (CI checks that it does).
 
+**Test APKs** for phones (no store, no upload key) come from GitHub Actions: see [Get a test APK](../apps/mobile/README.md#get-a-test-apk-no-android-setup-needed).
+
 ### Each release
 
 1. Bump `version:` in `apps/mobile/pubspec.yaml` (`1.2.0+12`: the name, then a build number that always goes up).
