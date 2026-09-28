@@ -47,13 +47,18 @@ echo "Dump: $(du -h "$WORK/db.dump" | cut -f1)"
 step "Starting a throwaway PostGIS ($IMAGE)"
 docker run -d --name "$NAME" -e POSTGRES_USER=drill -e POSTGRES_PASSWORD=drill \
   -e POSTGRES_DB=sajha -p 127.0.0.1::5432 "$IMAGE" >/dev/null
-for _ in $(seq 1 60); do
-  docker exec "$NAME" pg_isready -U drill -d sajha -q 2>/dev/null && break
+# Wait over TCP, not the Unix socket: the image's init runs a temporary
+# server on the socket only (while it loads PostGIS), then restarts. A socket
+# check can pass on that temporary server and the restore gets cut off.
+ready=
+for _ in $(seq 1 90); do
+  if docker exec "$NAME" pg_isready -h 127.0.0.1 -U drill -d sajha -q 2>/dev/null; then
+    ready=1
+    break
+  fi
   sleep 1
 done
-# The image's init scripts restart the server once; wait for it to settle.
-sleep 3
-until docker exec "$NAME" pg_isready -U drill -d sajha -q 2>/dev/null; do sleep 1; done
+[ -n "$ready" ] || { docker logs "$NAME" >&2; echo "PostGIS did not start" >&2; exit 1; }
 PORT="$(docker port "$NAME" 5432/tcp | head -1 | sed 's/.*://')"
 URL="postgresql://drill:drill@127.0.0.1:$PORT/sajha"
 
@@ -64,7 +69,10 @@ docker cp "$WORK/db.dump" "$NAME:/tmp/db.dump"
 # "already exists" notices are expected, anything else fails the drill.
 if ! docker exec "$NAME" pg_restore --no-owner --no-privileges -U drill -d sajha /tmp/db.dump \
   2>"$WORK/restore.log"; then
-  if grep -v -E 'already exists|errors ignored on restore|^pg_restore: (while|from TOC|error: could not execute query: ERROR:  (extension|schema|type|function) .* already exists)|Command was:|^$|^LINE|^ +\^|COMMENT ON EXTENSION' "$WORK/restore.log" | grep -q .; then
+  # Collect the lines first: piping into `grep -q` can end the first grep
+  # with SIGPIPE, which pipefail turns into "no unexpected errors".
+  unexpected="$(grep -v -E 'already exists|errors ignored on restore|^pg_restore: (while|from TOC|error: could not execute query: ERROR:  (extension|schema|type|function) .* already exists)|Command was:|^$|^LINE|^ +\^|COMMENT ON EXTENSION' "$WORK/restore.log" || true)"
+  if [ -n "$unexpected" ]; then
     cat "$WORK/restore.log" >&2
     echo "Restore failed" >&2
     exit 1
