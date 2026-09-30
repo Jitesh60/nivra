@@ -94,6 +94,15 @@ describe('validateEnv', () => {
       SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1',
     };
 
+    it('accepts storage that encrypts at rest by itself (Cloudflare R2)', () => {
+      expect(validateEnv({ ...production, S3_PRIVATE_SSE: 'provider' })).toMatchObject({
+        S3_PRIVATE_SSE: 'provider',
+      });
+      expect(() => validateEnv({ ...production, S3_PRIVATE_SSE: 'none' })).toThrow(
+        /S3_PRIVATE_SSE/,
+      );
+    });
+
     it('accepts a complete production setup', () => {
       expect(validateEnv(production)).toMatchObject({
         NODE_ENV: 'production',
