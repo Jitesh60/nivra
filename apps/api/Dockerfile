@@ -8,6 +8,9 @@
 ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION}-bookworm-slim AS build
+# Prisma reads the OpenSSL version to pick its engine; slim images lack it.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 ARG PNPM_VERSION=10.33.0
 RUN npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /repo
@@ -28,6 +31,9 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
  && cp -r apps/api/dist /out/dist
 
 FROM node:${NODE_VERSION}-bookworm-slim AS run
+# Prisma reads the OpenSSL version to pick its engine; slim images lack it.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 ARG GIT_SHA=dev
 ENV NODE_ENV=production \
     PORT=3000 \
