@@ -167,6 +167,8 @@ DEPLOY_MODE=
 DOMAIN=
 PUBLIC_HOST=
 CLOUDFLARE_TUNNEL_TOKEN=
+# true = photos and documents live in Cloudflare R2 or AWS S3 (set the S3_* values above).
+EXTERNAL_S3=false
 ENV
 fi
 
@@ -240,8 +242,12 @@ case "$MODE" in
 esac
 url="${url%/}"
 set_env PUBLIC_URL "$url"
-set_env S3_ENDPOINT "$url"
-set_env S3_PUBLIC_BASE_URL "$url/sajha-public-media"
+# Built-in storage is served on the same address; with EXTERNAL_S3=true in .env
+# (Cloudflare R2 or AWS S3, docs/ORACLE.md) the S3_* values are left as you set them.
+if [ "$(get_env EXTERNAL_S3)" != true ]; then
+  set_env S3_ENDPOINT "$url"
+  set_env S3_PUBLIC_BASE_URL "$url/sajha-public-media"
+fi
 set_env CORS_ORIGINS "$url"
 
 # ── Migrate and start the API ──

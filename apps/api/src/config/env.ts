@@ -93,8 +93,12 @@ export const envSchema = z.object({
   S3_PRIVATE_BUCKET: z.string().min(3),
   /** Base URL for public objects: a CDN in production, the bucket URL locally. */
   S3_PUBLIC_BASE_URL: z.url(),
-  /** Server-side encryption for the private bucket. */
-  S3_PRIVATE_SSE: z.enum(['AES256', 'aws:kms', 'none']).default('none'),
+  /**
+   * Server-side encryption for the private bucket: AES256 / aws:kms ask AWS S3 for it on each
+   * write; `provider` means the store already encrypts everything at rest by itself (Cloudflare
+   * R2, or an S3 bucket with default encryption), so no per-request header is sent.
+   */
+  S3_PRIVATE_SSE: z.enum(['AES256', 'aws:kms', 'provider', 'none']).default('none'),
 
   // ── Bookings & jobs ──
   /** Requests a minute per IP to public reads (search, home, listings, reviews). */

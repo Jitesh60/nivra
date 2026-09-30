@@ -53,7 +53,8 @@ export class StorageService implements OnModuleDestroy {
     };
     this.publicBaseUrl = config.get('S3_PUBLIC_BASE_URL', { infer: true }).replace(/\/$/, '');
     const sse = config.get('S3_PRIVATE_SSE', { infer: true });
-    this.privateSse = sse === 'none' ? undefined : sse;
+    // `provider`: the store encrypts at rest on its own, so no header is sent (e.g. Cloudflare R2).
+    this.privateSse = sse === 'none' || sse === 'provider' ? undefined : sse;
   }
 
   /**

@@ -81,9 +81,32 @@ Create two buckets in ap-south-1, both with *Block Public Access* on:
 
 For backups, create a third bucket (or a prefix) with a lifecycle rule: move to Glacier after 30 days, delete after 180.
 
+### 4b. Or: Cloudflare R2 instead of AWS S3 (free tier)
+
+R2 speaks the S3 API, has no charge for downloads, and its free tier (10 GB stored, 1M writes and 10M reads a month) covers Nivra well into launch. It encrypts every object at rest by itself, so documents use `S3_PRIVATE_SSE=provider` (no per-request encryption header is sent).
+
+1. **Cloudflare dashboard → R2 → Create bucket**, twice: `nivra-public` (photos) and `nivra-private` (ID documents). Pick location hint *Asia-Pacific*.
+2. **Public bucket → Settings → Custom domains → Connect domain**, e.g. `media.yourdomain.com` (the domain must be on Cloudflare). The `r2.dev` address works for testing but is rate-limited. Leave the private bucket private: the API hands out short-lived signed links.
+3. **R2 → Manage API tokens → Create API token**: permission *Object Read & Write*, applied to those two buckets only. Copy the access key ID and secret (shown once) and note your **account ID**.
+4. Set on the API (and worker) service:
+
+   ```
+   S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+   S3_REGION=auto
+   S3_FORCE_PATH_STYLE=true
+   S3_ACCESS_KEY_ID=<R2 access key ID>
+   S3_SECRET_ACCESS_KEY=<R2 secret>
+   S3_PUBLIC_BUCKET=nivra-public
+   S3_PRIVATE_BUCKET=nivra-private
+   S3_PUBLIC_BASE_URL=https://media.yourdomain.com
+   S3_PRIVATE_SSE=provider
+   ```
+
+Uploads go straight from the app to R2 with presigned URLs, so no CORS rule is needed unless a browser uploads directly. Backups can go to a third R2 bucket the same way.
+
 ## API environment variables
 
-Required everywhere unless marked. Staging and production **refuse to boot** with development settings: OTP bypass, console SMS or push, SMTP email, the fake payment provider, an empty or `*` CORS list, unencrypted documents, and Swagger in production (`apps/api/src/config/env.ts`).
+Required everywhere unless marked. Staging and production **refuse to boot** with development settings: OTP bypass, console SMS or push, SMTP email, the fake payment provider, an empty or `*` CORS list, unencrypted documents (`S3_PRIVATE_SSE=none`), and Swagger in production (`apps/api/src/config/env.ts`).
 
 | Variable | api | worker | Value in staging / production |
 |---|---|---|---|
@@ -97,7 +120,7 @@ Required everywhere unless marked. Staging and production **refuse to boot** wit
 | `SMS_PROVIDER=msg91`, `MSG91_AUTH_KEY`, `MSG91_OTP_TEMPLATE_ID`, `MSG91_OVERDUE_TEMPLATE_ID` | ✓ | ✓ | DLT-approved templates |
 | `PUSH_PROVIDER=fcm`, `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` | ✓ | ✓ | Firebase service account (JSON in one line) |
 | `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM` | ✓ | ✓ | verified sending domain |
-| `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_PUBLIC_BASE_URL`, `S3_PRIVATE_SSE=aws:kms` | ✓ | ✓ | leave `S3_ENDPOINT` unset for AWS |
+| `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_PUBLIC_BASE_URL`, `S3_PRIVATE_SSE` | ✓ | ✓ | AWS: `S3_PRIVATE_SSE=aws:kms`, leave `S3_ENDPOINT` unset. Cloudflare R2: see [4b](#4b-or-cloudflare-r2-instead-of-aws-s3-free-tier) (`S3_ENDPOINT`, `S3_REGION=auto`, `S3_PRIVATE_SSE=provider`) |
 | `PAYMENT_PROVIDER=razorpay`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | ✓ | ✓ | test keys on staging, live keys on production; webhook URL `https://api…/v1/payments/webhook` |
 | `SENTRY_DSN`, `SENTRY_ENVIRONMENT` | ✓ | ✓ | one Sentry project for the API; environment `staging` / `production` |
 | `PUBLIC_SITE_URL` | ✓ | ✓ | `https://sajha.app` (invite links; staging: the staging site) |

@@ -112,7 +112,7 @@ The server runs with `NODE_ENV=test`, which allows the simulated SMS, push, emai
 | **Push** | `PUSH_PROVIDER=fcm`, `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` |
 | **Email** | `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` |
 | **Payments** | `PAYMENT_PROVIDER=razorpay` and the three `RAZORPAY_*` keys (webhook: `https://<address>/v1/payments/webhook`) |
-| **Documents at rest** | `S3_PRIVATE_SSE`. This needs real S3; SeaweedFS can't provide it. For launch, move storage to AWS S3 as described in [DEPLOY.md](DEPLOY.md). |
+| **Documents at rest** | SeaweedFS doesn't encrypt at rest, so move storage to **Cloudflare R2** (free tier) or AWS S3: set the `S3_*` values from [DEPLOY.md](DEPLOY.md#4b-or-cloudflare-r2-instead-of-aws-s3-free-tier) (R2: `S3_PRIVATE_SSE=provider`) and add `EXTERNAL_S3=true`, so the script stops pointing storage at the VM. |
 
 ## Security notes
 
