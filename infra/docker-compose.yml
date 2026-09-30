@@ -5,7 +5,7 @@ name: sajha
 
 services:
   postgres:
-    image: postgis/postgis:16-3.4
+    image: imresamu/postgis:16-3.4 # multi-arch build of postgis/postgis (also runs on ARM: AWS t4g, Oracle Ampere, Apple silicon)
     environment:
       POSTGRES_USER: sajha
       POSTGRES_PASSWORD: sajha
