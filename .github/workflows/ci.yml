@@ -171,6 +171,8 @@ jobs:
       S3_PUBLIC_BASE_URL: http://localhost:9000/sajha-public-media
       # The admin suite signs up app users through the API (never allowed in production).
       OTP_DEV_BYPASS_CODE: '000000'
+      # Shared by the API and the website's server: web sign-ins count per visitor IP.
+      WEB_CLIENT_SECRET: ci-web-client-secret-0123456789abcdef
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

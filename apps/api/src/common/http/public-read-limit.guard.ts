@@ -3,11 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import type { Env } from '../../config/env.js';
 import { RateLimiter } from '../../redis/rate-limiter.js';
+import { clientInfoFrom } from './client-info.js';
 
 /**
  * Caps public reads (search, home, listings, reviews) per IP, so scraping or a
  * runaway client can't starve everyone else. Signed-in or not, it's per IP:
  * a whole office on one IP still gets PUBLIC_READ_LIMIT_PER_MIN a minute.
+ * Website visitors count by their own IP (see clientInfoFrom), not the web server's.
  */
 @Injectable()
 export class PublicReadLimitGuard implements CanActivate {
@@ -23,7 +25,7 @@ export class PublicReadLimitGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>();
     await this.limiter.hit({
-      key: `read:${req.ip ?? 'unknown'}`,
+      key: `read:${clientInfoFrom(req).ip ?? 'unknown'}`,
       limit: this.limit,
       windowSec: 60,
       message: 'You’re browsing very fast. Please wait a moment and try again.',

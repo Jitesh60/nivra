@@ -66,7 +66,7 @@ Create the environments `staging` and `production`. On `production`, add **requi
 | Project | Root directory | Domain | Variables |
 |---|---|---|---|
 | `sajha-admin` | `apps/admin` | `admin.sajha.app` | `SAJHA_API_URL`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT` |
-| `sajha-web` | `apps/web` | `sajha.app` | `NEXT_PUBLIC_SAJHA_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_PLAY_STORE_URL`, `NEXT_PUBLIC_APP_STORE_URL`, Sentry as above |
+| `sajha-web` | `apps/web` | `sajha.app` | `NEXT_PUBLIC_SAJHA_API_URL`, `SAJHA_API_URL`, `WEB_CLIENT_SECRET` (the API's value), `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_PLAY_STORE_URL`, `NEXT_PUBLIC_APP_STORE_URL`, Sentry as above |
 
 - **Build settings:** each app's `vercel.json` sets the install and build commands (turbo builds the workspace packages first), region `bom1` (Mumbai), and skips builds that don't touch the app (`turbo-ignore`).
 - **Security headers:** HSTS, `nosniff`, frame options, referrer and permissions policies come from each app's `next.config.ts`, so they apply on Vercel and under `next start` alike. The admin panel also sends `X-Robots-Tag: noindex`.
