@@ -23,6 +23,17 @@ In the Oracle Cloud console, go to **Compute → Instances → Create instance**
 - **Boot volume:** 50 GB or more.
 - Add your SSH key and create it. Then connect with `ssh ubuntu@<public-ip>`.
 
+### Or: AWS EC2
+
+The same script works on EC2. In **EC2 → Launch instance**:
+- **Image:** Ubuntu Server 24.04.
+- **Type:** `t4g.small` (ARM, 2 GB) or `t3.small` (x86, 2 GB). Every image in the kit runs on both.
+- **Storage:** 30 GB gp3.
+- **Credit specification:** under **Advanced details**, choose **Standard**. The default, Unlimited, bills extra if the CPU stays busy for long, for example during the image build.
+- **Security group:** SSH only for tunnel modes. Add 80 and 443 only for option B below.
+
+On VMs with less than 3 GB of memory, the script adds 2 GB of swap on the first run, so the image build doesn't run out of memory. For storage, [Cloudflare R2](#going-live) with `EXTERNAL_S3=true` keeps photos and documents off the VM's disk.
+
 ## 2. Deploy
 
 ```bash
@@ -33,7 +44,7 @@ scripts/oracle-deploy.sh
 On the first run, this:
 1. Installs Docker if it's missing.
 2. Generates secrets into `infra/oracle/.env`. That file stays on the VM and is never committed.
-3. Builds the API image. This takes about 5–10 minutes on Ampere.
+3. Builds the API image. This takes about 5–10 minutes on Ampere or a t4g.small.
 4. Starts everything and migrates the database.
 5. Checks health, then prints the address, for example:
 

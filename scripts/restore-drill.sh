@@ -9,7 +9,7 @@
 # Never touches the source database beyond a read-only pg_dump.
 set -euo pipefail
 
-IMAGE="${DRILL_IMAGE:-postgis/postgis:16-3.4}"
+IMAGE="${DRILL_IMAGE:-imresamu/postgis:16-3.4}" # multi-arch build of postgis/postgis
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 NAME="sajha-restore-drill-$$"

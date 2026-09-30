@@ -73,6 +73,18 @@ docker compose version >/dev/null 2>&1 || die "the Docker compose plugin is miss
 DOCKER="docker"
 docker info >/dev/null 2>&1 || DOCKER="$SUDO docker"
 
+# Small VMs (t4g.small / t3.small at 2 GB, Oracle's 1 GB shapes) can run out of
+# memory while the API image builds, so give them 2 GB of swap once.
+mem_kb="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
+if [ "$MODE" != local ] && [ "${mem_kb:-0}" -lt 3000000 ] && [ -z "$(swapon --noheadings 2>/dev/null)" ] && [ ! -e /swapfile ]; then
+  say "Adding 2 GB of swap (this VM has little memory)"
+  $SUDO fallocate -l 2G /swapfile || $SUDO dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  $SUDO chmod 600 /swapfile
+  $SUDO mkswap /swapfile >/dev/null
+  $SUDO swapon /swapfile
+  grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' | $SUDO tee -a /etc/fstab >/dev/null
+fi
+
 FILES=(-f "$DIR/docker-compose.yml")
 PROFILES=()
 case "$MODE" in
