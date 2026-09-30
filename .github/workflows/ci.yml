@@ -116,6 +116,14 @@ jobs:
       - run: pnpm install --frozen-lockfile --filter @sajha/api
       - name: Restore drill (dump → throwaway PostGIS → migrate status → sanity counts)
         run: scripts/restore-drill.sh --from-url postgresql://sajha:sajha@localhost:5432/sajha
+      - name: One-VM deploy kit is valid (docs/ORACLE.md)
+        run: |
+          bash -n scripts/oracle-deploy.sh
+          printf 'POSTGRES_PASSWORD=ci\nS3_ACCESS_KEY_ID=ci\nS3_SECRET_ACCESS_KEY=ci\n' > infra/oracle/.env
+          echo '{}' > infra/oracle/s3.json
+          for mode in "--profile quick" "--profile named" "-f infra/oracle/docker-compose.domain.yml" "-f infra/oracle/docker-compose.local.yml"; do
+            docker compose -f infra/oracle/docker-compose.yml $mode config -q
+          done
 
   admin-e2e:
     name: Browser e2e · admin + website (Playwright against the real API)

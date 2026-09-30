@@ -1,0 +1,22 @@
+# Sends the storage buckets to SeaweedFS and everything else to the API.
+# The Host header is passed through unchanged, so presigned S3 URLs (signed
+# for the public address) still verify.
+{
+	admin off
+}
+
+{$SITE_ADDRESS::80} {
+	encode gzip
+	request_body {
+		max_size 25MB
+	}
+
+	@storage path /sajha-public-media/* /sajha-private-docs/*
+	handle @storage {
+		reverse_proxy s3:8333
+	}
+
+	handle {
+		reverse_proxy api:3000
+	}
+}

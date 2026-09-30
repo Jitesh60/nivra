@@ -13,6 +13,8 @@ flowchart LR
 
 Until the accounts and secrets below exist, every deploy step **skips with a notice** and CI stays green. The image is still built and pushed to GHCR on each push to `main`.
 
+**Just need a test server?** [ORACLE.md](ORACLE.md) runs the whole backend on one VM (Oracle Cloud Always Free, or any Linux box with Docker) with a single command, `scripts/oracle-deploy.sh`, and prints an https address for the app.
+
 ## One image, two services
 
 `apps/api/Dockerfile` builds a Node 22 image that runs as the `node` user. It contains the compiled API, the production dependencies and the Prisma CLI (for migrations), and bakes `GIT_SHA` in so `/v1/health` reports the version. Build it locally from the repository root:
