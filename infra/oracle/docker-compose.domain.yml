@@ -1,0 +1,8 @@
+# Own-domain mode: Caddy answers on ports 80/443 and gets a certificate for
+# SITE_ADDRESS automatically. Open both ports in the VM's firewall and the
+# Oracle Cloud security list first (docs/ORACLE.md).
+services:
+  caddy:
+    ports:
+      - '80:80'
+      - '443:443'

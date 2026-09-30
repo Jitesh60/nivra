@@ -1,0 +1,9 @@
+# Local mode (trying the stack on a laptop): Caddy on http://localhost:8080.
+# The API reaches storage through Caddy on the host, as it does over a tunnel.
+services:
+  caddy:
+    ports:
+      - '8080:80'
+  api:
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

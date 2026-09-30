@@ -1,0 +1,145 @@
+# Nivra on one VM (Oracle Cloud or any Linux box with Docker).
+# Don't run this directly: scripts/oracle-deploy.sh creates .env and s3.json,
+# picks the mode (quick tunnel, named tunnel, own domain or local) and starts it.
+# See docs/ORACLE.md.
+#
+# Nothing but Caddy is reachable from outside the Docker network. Caddy sends
+# the storage buckets to SeaweedFS and everything else to the API, so the app
+# only needs one public address (presigned uploads are signed for it).
+name: nivra
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: sajha
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/oracle-deploy.sh}
+      POSTGRES_DB: sajha
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U sajha -d sajha']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  s3:
+    <<: *restart
+    image: chrislusf/seaweedfs:latest
+    # volume.max=0: as many volumes as the disk has room for (each bucket needs its own).
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=512 -volume.max=0
+    volumes:
+      - s3data:/data
+      - ./s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/status || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  # Creates the buckets once storage is healthy, then exits.
+  s3-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ap-south-1
+    entrypoint: >
+      /bin/sh -c "
+      for b in sajha-public-media sajha-private-docs; do
+        aws --endpoint-url http://s3:8333 s3api head-bucket --bucket $$b 2>/dev/null ||
+        aws --endpoint-url http://s3:8333 s3api create-bucket --bucket $$b;
+      done && echo 'buckets ready'
+      "
+
+  # Catches outgoing email until a real provider is set up (no ports: read it
+  # with `docker compose logs mailpit` or temporarily publish 8025).
+  mailpit:
+    <<: *restart
+    image: axllent/mailpit:latest
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # Applies database migrations, then exits; the API waits for it.
+  migrate:
+    image: nivra-api:local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-dev}
+    env_file: .env
+    command: ['node_modules/.bin/prisma', 'migrate', 'deploy']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *restart
+    image: nivra-api:local
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      s3-init:
+        condition: service_completed_successfully
+
+  # The only way in. SITE_ADDRESS is ":80" behind a tunnel, or your domain
+  # (automatic HTTPS) with docker-compose.domain.yml.
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+
+  # Quick tunnel: a random https://….trycloudflare.com address, new on every restart.
+  tunnel-quick:
+    <<: *restart
+    profiles: [quick]
+    image: cloudflare/cloudflared:latest
+    command: ['tunnel', '--no-autoupdate', '--url', 'http://caddy:80']
+    depends_on:
+      - caddy
+
+  # Named tunnel: your own hostname, stable. Point its public hostname at http://caddy:80.
+  tunnel:
+    <<: *restart
+    profiles: [named]
+    image: cloudflare/cloudflared:latest
+    command: ['tunnel', '--no-autoupdate', 'run']
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - caddy
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:
+  caddydata:
