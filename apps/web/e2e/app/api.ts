@@ -35,6 +35,8 @@ export interface AppUser {
   name: string;
   phone: string;
   token: string;
+  /** When this number may ask for a new SMS code (the API's resend cooldown). */
+  codeAgainAt: number;
 }
 
 /** Each API-made user asks for codes from their own IP (documentation range). */
@@ -74,7 +76,7 @@ export async function createAppUser(name: string): Promise<AppUser> {
     challengeId: email.challengeId,
     code: OTP,
   });
-  return { id: login.user.id, name, phone, token };
+  return { id: login.user.id, name, phone, token, codeAgainAt: Date.now() + 31_000 };
 }
 
 async function uploadPhoto(token: string, purpose = 'LISTING_PHOTO'): Promise<string> {
