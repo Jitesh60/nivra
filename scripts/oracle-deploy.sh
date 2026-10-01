@@ -264,7 +264,10 @@ if [ "$(get_env EXTERNAL_S3)" != true ]; then
   set_env S3_ENDPOINT "$url"
   set_env S3_PUBLIC_BASE_URL "$url/sajha-public-media"
 fi
-set_env CORS_ORIGINS "$url"
+# Browsers may call the API from this address, plus any website addresses in
+# WEB_ORIGINS (comma-separated, e.g. the Vercel site), kept across runs.
+web_origins="$(get_env WEB_ORIGINS || true)"
+set_env CORS_ORIGINS "$url${web_origins:+,$web_origins}"
 
 # ── Migrate and start the API ──
 say "Migrating the database and starting the API"

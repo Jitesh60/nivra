@@ -76,3 +76,6 @@ export const JPEG = Buffer.from(
 );
 
 export const photo = (name = 'photo.jpg') => ({ name, mimeType: 'image/jpeg', buffer: JPEG });
+
+/** A short unique tag for test data (time + randomness, so parallel workers never collide). */
+export const uniq = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

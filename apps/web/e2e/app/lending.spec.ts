@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { approveListing } from './api';
-import { photo, signIn } from './helpers';
+import { photo, signIn, uniq } from './helpers';
 
 test('a lender lists an item from scratch and sends it for review', async ({ page }) => {
   test.slow();
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  const title = `Web camping stove ${Date.now().toString(36)}`;
+  const title = `Web camping stove ${uniq()}`;
   await signIn(page, { name: 'Meera Lender', next: '/listings' });
 
   await expect(page.getByText('Nothing listed yet')).toBeVisible();
@@ -65,7 +65,7 @@ test('a lender lists an item from scratch and sends it for review', async ({ pag
 
 test('a lender pauses, resumes and deletes a listing', async ({ page }) => {
   test.slow();
-  const title = `Web drill ${Date.now().toString(36)}`;
+  const title = `Web drill ${uniq()}`;
   await signIn(page, { name: 'Kabir Lender', next: '/listings/new' });
   await page.getByLabel('Title').fill(title);
   await page.getByLabel('Category').selectOption({ index: 1 });

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { createAppUser, liveListing, type AppUser } from './api';
-import { photo, signIn } from './helpers';
+import { photo, signIn, uniq } from './helpers';
 
 const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -9,7 +9,7 @@ let listing: { id: string };
 let title: string;
 
 test.beforeAll(async () => {
-  title = `Web chat speaker ${Date.now().toString(36)}`;
+  title = `Web chat speaker ${uniq()}`;
   lender = await createAppUser('Asha Lender');
   listing = await liveListing(lender, { title });
 });

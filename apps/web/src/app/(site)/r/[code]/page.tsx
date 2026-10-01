@@ -99,8 +99,14 @@ export default async function InvitePage({ params }: PageProps<'/r/[code]'>) {
             your first rental. Borrow tents, cameras and tools from people nearby, for a few days
             and a small price.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-wrap items-center gap-4">
             <CopyCode code={code} />
+            <GlowLink
+              href={`/login?next=${encodeURIComponent(`/invite?code=${code}`)}`}
+              variant="primary"
+            >
+              Join on the web
+            </GlowLink>
           </div>
         </div>
       </section>

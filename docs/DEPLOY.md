@@ -73,6 +73,12 @@ Create the environments `staging` and `production`. On `production`, add **requi
 - **Access:** protect the admin project's preview deployments (Vercel Authentication).
 - **Launching the apps:** changing a `NEXT_PUBLIC_*` variable needs a redeploy. Set the store URLs and redeploy `sajha-web`, and the waitlist becomes download buttons.
 
+**The web app:** `apps/web` is also a full web version of the app: sign-in, listing, booking, payments, chat and rentals. It calls the API **from the server only**, keeps tokens in httpOnly cookies, and uploads through the API's presigned URLs. So the browser never needs CORS for it, and the bucket needs no CORS rules.
+- `SAJHA_API_URL` is read at run time.
+- `WEB_CLIENT_SECRET` must match the API's, so sign-in limits count per visitor.
+- `NEXT_PUBLIC_MAP_TILE_URL` (optional) overrides the OpenStreetMap tiles for the pickup map.
+- Razorpay's checkout runs in the browser; the payment itself is verified by the API.
+
 ### 4. AWS
 
 Create two buckets in ap-south-1, both with *Block Public Access* on:
