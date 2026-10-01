@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AreaControl } from '@/components/browse/area-control';
 import { ListingGrid } from '@/components/browse/listing-card';
+import { SaveSearchButton } from '@/components/growth/save-search-button';
+import { hasSession } from '@/lib/session';
 import {
   getCategories,
   getHome,
@@ -43,9 +45,10 @@ export default async function ExplorePage({ searchParams }: PageProps<'/explore'
   const params = await searchParams;
   const query = parseBrowseQuery(params);
   const searching = isSearch(query);
-  const [categories, results] = await Promise.all([
+  const [categories, results, signedIn] = await Promise.all([
     getCategories(),
     searching ? search(query) : getHome(query),
+    hasSession(),
   ]);
   const dates =
     query.startDate && query.endDate ? `start=${query.startDate}&end=${query.endDate}` : undefined;
@@ -77,6 +80,12 @@ export default async function ExplorePage({ searchParams }: PageProps<'/explore'
         </div>
       </div>
 
+      {searching && signedIn && query.lat !== undefined && (
+        <SaveSearchButton
+          query={{ ...query, cursor: undefined }}
+          name={query.q ?? activeCategory?.name ?? 'Nearby'}
+        />
+      )}
       {'items' in results ? (
         <Results
           items={results.items}

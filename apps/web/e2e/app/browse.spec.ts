@@ -1,12 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { createAppUser, liveListing } from './api';
-import { browseFromOwnIp, newPhone, signIn } from './helpers';
+import { browseFromOwnIp, newPhone, signIn, uniq } from './helpers';
 
-const run = Date.now().toString(36);
-const title = `Webtest dome tent ${run}`;
+let run: string;
+let title: string;
 let listingId: string;
 
 test.beforeAll(async () => {
+  // Fresh per run of this hook: a worker may run it more than once.
+  run = uniq();
+  title = `Webtest dome tent ${run}`;
   const lender = await createAppUser('Asha Lender');
   ({ id: listingId } = await liveListing(lender, {
     title,

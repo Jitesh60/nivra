@@ -92,6 +92,20 @@ On GitHub, go to **Actions → Build APK → Run workflow**. Set **api_base_url*
 docker compose -f infra/oracle/docker-compose.yml logs api | grep OTP
 ```
 
+## 4. The website (optional)
+
+The website on `apps/web` is also the **web app**: people can sign in, list, book, pay and chat without installing anything. Host it free on **Vercel**, pointed at this server:
+
+1. In Vercel, go to **Add New → Project**, import the GitHub repo and set **Root Directory** to `apps/web`. `vercel.json` already sets the build.
+2. Under **Environment Variables**, add:
+   - `SAJHA_API_URL` = this server's address, for example `https://….trycloudflare.com`
+   - `NEXT_PUBLIC_SAJHA_API_URL` = the same address
+   - `NEXT_PUBLIC_SITE_URL` = the Vercel address, for example `https://nivra.vercel.app`
+   - `WEB_CLIENT_SECRET` = the value on this server, from `grep WEB_CLIENT_SECRET infra/oracle/.env`
+3. Deploy. On this server, add `WEB_ORIGINS=https://nivra.vercel.app` (your Vercel address) to `infra/oracle/.env`, because the waitlist form calls the API from the browser. Then re-run `scripts/oracle-deploy.sh`.
+
+The web app calls the API from Vercel's servers, so nothing else needs opening. With a quick tunnel, update `SAJHA_API_URL` whenever the address changes.
+
 ## Everyday commands
 
 Run these from the `nivra` folder.

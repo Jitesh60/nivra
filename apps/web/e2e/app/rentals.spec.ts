@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { confirmedBooking, createAppUser, liveListing, resolveDispute, type AppUser } from './api';
-import { photo, signIn } from './helpers';
+import { photo, signIn, uniq } from './helpers';
 
 const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -12,7 +12,7 @@ test.beforeAll(async () => {
   lender = await createAppUser('Asha Lender');
   borrower = await createAppUser('Rahul Borrower');
   const listing = await liveListing(lender, {
-    title: `Web rental tent ${Date.now().toString(36)}`,
+    title: `Web rental tent ${uniq()}`,
   });
   ({ id: bookingId } = await confirmedBooking(borrower, lender, listing.id, day(1), day(2)));
 });

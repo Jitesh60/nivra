@@ -22,6 +22,10 @@ export const ACCOUNT_MENU = [
   { href: '/listings', label: 'My listings' },
   { href: '/documents', label: 'Documents' },
   { href: '/earnings', label: 'Earnings' },
+  { href: '/requests', label: 'Requests' },
+  { href: '/saved-searches', label: 'Saved searches' },
+  { href: '/invite', label: 'Invite friends' },
+  { href: '/settings', label: 'Settings' },
 ] as const;
 
 export const BROWSE_LINK = { href: '/explore', label: 'Explore', icon: Compass } as const;

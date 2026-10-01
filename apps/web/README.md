@@ -22,7 +22,19 @@ Signing in, browsing, listing and borrowing, the same features as the Android ap
 - **Environment:**
   - `SAJHA_API_URL`: the API, for server-side calls; defaults to `NEXT_PUBLIC_SAJHA_API_URL`.
   - `WEB_CLIENT_SECRET`: the API's value. It passes each visitor's IP on, so sign-in limits count per visitor, not per web server. Leave it empty locally.
-- **Sign-in:** phone OTP. New accounts add a name, then an email: verify it now or skip for later.
+- **Sign-in:** phone OTP. New accounts add a name, then an email: verify it now or skip for later. Listing, booking and chat need a verified email, and those buttons take people to verify it and back.
+- **Pages:**
+  - Public: `/explore` (feed, search, filters, Near me), `/item/[id]` (gallery, quote, reviews), `/u/[id]` (member reviews).
+  - Signed in:
+    - `/wishlist`, `/listings` and `/listings/new|[id]` (editor with a Leaflet pickup map)
+    - `/bookings` and `/bookings/[id]`, with:
+      - `share`, `documents/[shareId]` (watermarked viewer), `pay` (Razorpay)
+      - `code`, `handover`, `return`
+      - `dispute`, `respond`, `review`
+    - `/documents`, `/earnings`, `/inbox` and `/inbox/[id]` (polling chat, offers), `/notifications`
+    - `/requests`, `/saved-searches`, `/invite`, `/settings`, `/profile`
+- **Live updates:** an open chat polls every 4 s; the unread badges poll `/unread` every 30 s. There's no socket, so tokens never reach the browser.
+- **Private images:** ID documents stream through route handlers (`src/lib/private-image.ts`), never cached. Signed storage URLs stay on the server.
 
 ## Effects
 
@@ -40,5 +52,5 @@ All effects respect `prefers-reduced-motion`. The shader only runs on GPU-backed
 ## Tests
 
 ```bash
-pnpm build && pnpm test:e2e      # Playwright, desktop + mobile; the waitlist and app tests (e2e/app) need the API running with OTP_DEV_BYPASS_CODE=000000
+pnpm build && pnpm test:e2e      # Playwright, desktop + mobile; the waitlist and app tests (e2e/app) need the API running with OTP_DEV_BYPASS_CODE=000000 (e2e/app/api.ts seeds users, listings and an Ops admin through it)
 ```
