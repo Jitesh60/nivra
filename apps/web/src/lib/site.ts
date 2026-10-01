@@ -18,6 +18,7 @@ export const STORE_LINKS = {
 };
 
 export const NAV = [
+  { href: '/explore', label: 'Explore' },
   { href: '/how-it-works', label: 'How it works' },
   { href: '/lend', label: 'Lend' },
   { href: '/faq', label: 'FAQ' },
