@@ -20,7 +20,7 @@ const MESSAGES: Record<string, string> = {
   BOOKING_OPEN_EXISTS: 'You already have an open request for this item.',
   BOOKING_OWN_LISTING: 'This is your own listing.',
   BOOKING_INVALID_TRANSITION: 'This booking has changed. Reload the page.',
-  EMAIL_NOT_VERIFIED: 'Verify your email first (Profile → Email).',
+  VERIFICATION_REQUIRED: 'Verify your email first (Profile → Email).',
 };
 
 async function act(id: string, run: () => Promise<unknown>, success?: string): Promise<Result> {
@@ -40,6 +40,10 @@ export async function requestBookingAction(
   const result = await attempt(() =>
     unwrap(api.POST('/v1/bookings', { body: { listingId, startDate, endDate } })),
   );
+  if (!result.ok && result.apiError.code === 'VERIFICATION_REQUIRED') {
+    const back = `/item/${listingId}?start=${startDate}&end=${endDate}`;
+    redirect(`/welcome/email?next=${encodeURIComponent(back)}`);
+  }
   if (!result.ok) return { error: MESSAGES[result.apiError.code] ?? result.error };
   revalidatePath('/bookings');
   redirect(`/bookings/${result.data.id}?requested=1`);

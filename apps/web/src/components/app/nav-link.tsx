@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useUnread } from './unread';
 
 /** A nav item that highlights itself on its section's pages. */
 export function NavLink({
@@ -10,15 +11,19 @@ export function NavLink({
   label,
   icon,
   compact = false,
-  badge,
+  badgeKey,
+  ariaLabel,
 }: {
   href: string;
   label: string;
+  /** For icon-only links (no visible label). */
+  ariaLabel?: string;
   icon: React.ReactNode;
   compact?: boolean;
-  badge?: number;
+  badgeKey?: 'conversations' | 'notifications';
 }) {
   const pathname = usePathname();
+  const badge = useUnread(badgeKey);
   const active =
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
   const count = badge && badge > 0 ? (badge > 99 ? '99+' : String(badge)) : null;
@@ -26,6 +31,7 @@ export function NavLink({
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
+      aria-label={ariaLabel}
       className={cn(
         'relative transition-colors [&_svg]:size-5',
         compact
@@ -41,7 +47,10 @@ export function NavLink({
       <span className="relative">
         {icon}
         {count && (
-          <span className="absolute -top-1.5 -right-2 min-w-4 rounded-full bg-sj-accent px-1 text-center text-[10px] leading-4 font-bold text-sj-on-accent">
+          <span
+            data-testid={`badge-${badgeKey}`}
+            className="absolute -top-1.5 -right-2 min-w-4 rounded-full bg-sj-accent px-1 text-center text-[10px] leading-4 font-bold text-sj-on-accent"
+          >
             {count}
           </span>
         )}

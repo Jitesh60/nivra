@@ -27,7 +27,7 @@ const MESSAGES: Record<string, string> = {
   RATE_LIMITED: 'Too many attempts. Please wait a minute and try again.',
   EMAIL_IN_USE: 'Another account already uses this email.',
   ACCOUNT_SUSPENDED: 'This account is suspended. Contact support.',
-  EMAIL_NOT_VERIFIED: 'Verify your email first (Profile → Email).',
+  VERIFICATION_REQUIRED: 'Verify your email first (Profile → Email).',
   PHONE_NOT_VERIFIED: 'Verify your phone number first.',
   NOT_FOUND: 'Not found. It may have been removed.',
   FORBIDDEN: 'You can’t do that.',

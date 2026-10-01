@@ -128,6 +128,11 @@ export default async function BookingPage({ params, searchParams }: PageProps<'/
               <Link href={`/bookings/${id}/pay`}>Pay {rupees(booking.totalPaise)}</Link>
             </Button>
           )}
+          <Button asChild variant="outline">
+            <Link href={`/inbox/${booking.conversationId}`}>
+              Message {borrower ? 'lender' : 'borrower'}
+            </Link>
+          </Button>
           {can.cancel && (
             <ReasonAction
               run={cancelAction.bind(null, id)}
