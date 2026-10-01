@@ -2,6 +2,7 @@ import 'server-only';
 import { createSajhaClient, type Schemas } from '@sajha/api-client';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { friendlyMessage, toApiError, type ApiError } from './errors';
 import { getAccessToken } from './session';
 
@@ -109,8 +110,8 @@ export async function getMe(): Promise<User> {
   return (await unwrap(api.GET('/v1/me'))).user;
 }
 
-/** The signed-in user, or null for guests (never redirects). */
-export async function getMeOrNull(): Promise<User | null> {
+/** The signed-in user, or null for guests (never redirects). Once per request. */
+export const getMeOrNull = cache(async (): Promise<User | null> => {
   if (!(await getAccessToken())) return null;
   try {
     const { data } = await (await userApi()).GET('/v1/me');
@@ -118,4 +119,4 @@ export async function getMeOrNull(): Promise<User | null> {
   } catch {
     return null;
   }
-}
+});

@@ -52,8 +52,8 @@ test('a wrong code is refused and the number can be changed', async ({ page }) =
 
 test('signing out ends the session', async ({ page }) => {
   await signIn(page, { next: '/profile', skipEmail: true });
-  await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: 'Me', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Me' }).getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto('/profile');
   await expect(page).toHaveURL(/\/login/);

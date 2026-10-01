@@ -14,7 +14,7 @@ export default async function MyListingsPage({ searchParams }: PageProps<'/listi
     <div className="grid gap-6">
       <PageHeader
         title="My listings"
-        description="Things you lend. Earn from what sits idle."
+        description="Things you lend. Earn from what sits idle, and borrow from others with the same account."
         actions={
           visible.length > 0 && (
             <Button asChild>

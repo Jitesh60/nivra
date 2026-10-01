@@ -1,9 +1,9 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+/**
+ * The shared class merger, which knows the Nivra type scale: plain
+ * tailwind-merge took `text-small` for a colour and dropped it next to
+ * `text-sj-muted-foreground`, so those labels lost their size.
+ */
+export { cn } from '@sajha/ui';
 
 const inr = new Intl.NumberFormat('en-IN', {
   style: 'currency',
