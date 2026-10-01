@@ -50,36 +50,6 @@ body {
   }
 }
 
-/* The app dock's raised "List an item" button (gradient with a passing shine). */
-.dock-primary {
-  background: linear-gradient(135deg, var(--color-brand-500), var(--color-accent-500));
-  box-shadow:
-    0 8px 20px -6px color-mix(in oklab, var(--color-brand-600) 60%, transparent),
-    inset 0 1px 0 rgb(255 255 255 / 0.35);
-  overflow: hidden;
-}
-
-.dock-primary::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    110deg,
-    transparent 35%,
-    rgb(255 255 255 / 0.45) 50%,
-    transparent 65%
-  );
-  transform: translateX(-120%);
-  animation: dock-shine 3.2s ease-in-out infinite;
-}
-
-@keyframes dock-shine {
-  60%,
-  100% {
-    transform: translateX(120%);
-  }
-}
-
 /* The "Me" sheet slides up from the dock (native <dialog>). */
 .me-sheet {
   transition:
@@ -126,9 +96,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dock-primary::after {
-    animation: none;
-  }
   .me-sheet,
   .me-sheet::backdrop {
     transition: none;

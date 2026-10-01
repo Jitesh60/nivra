@@ -8,10 +8,8 @@ import {
   Megaphone,
   MessagesSquare,
   Package,
-  Plus,
   Search,
   Settings,
-  User,
   Wallet,
 } from 'lucide-react';
 
@@ -27,13 +25,12 @@ export interface DockItem {
   match: readonly string[];
   /** Prefixes that belong to another item even though they share a prefix. */
   except?: readonly string[];
-  /** The raised "List an item" button in the middle. */
-  primary?: boolean;
 }
 
 /**
- * The bottom dock of the signed-in web app (every screen size). One account
- * borrows and lends: "Borrow" and "Lend" sit side by side.
+ * The bottom dock of the signed-in web app (every screen size). Kept to five
+ * so it stays easy to read. One account borrows and lends: "Borrow" and
+ * "Lend" sit side by side.
  */
 export const DOCK: readonly DockItem[] = [
   {
@@ -47,9 +44,7 @@ export const DOCK: readonly DockItem[] = [
     label: 'Lend',
     icon: Package,
     match: ['/listings', '/earnings'],
-    except: ['/listings/new'],
   },
-  { href: '/listings/new', label: 'List', icon: Plus, match: ['/listings/new'], primary: true },
   {
     href: '/inbox',
     label: 'Inbox',
@@ -73,34 +68,16 @@ export interface MeLink {
   badgeKey?: BadgeKey;
 }
 
-/** The "Me" sheet: the same account, grouped by what you're doing. */
-export const ME_SECTIONS: readonly { title: string; hint: string; links: readonly MeLink[] }[] = [
-  {
-    title: 'Borrowing',
-    hint: 'Rent what you need',
-    links: [
-      { href: '/explore', label: 'Browse items', icon: Search },
-      { href: '/bookings?role=BORROWER', label: 'Things I’m renting', icon: CalendarCheck },
-      { href: '/wishlist', label: 'Wishlist', icon: Heart },
-      { href: '/requests', label: 'Requests board', icon: Megaphone },
-    ],
-  },
-  {
-    title: 'Lending',
-    hint: 'Earn from idle things',
-    links: [
-      { href: '/listings', label: 'My listings', icon: Package },
-      { href: '/bookings?role=LENDER', label: 'Things I’m lending', icon: CalendarCheck },
-      { href: '/earnings', label: 'Earnings', icon: Wallet },
-      { href: '/listings/new', label: 'List an item', icon: Plus },
-    ],
-  },
-];
-
-export const ME_ACCOUNT: readonly MeLink[] = [
-  { href: '/profile', label: 'Profile', icon: User },
+/**
+ * The "Me" sheet: one short list of everything not already in the dock,
+ * most used first.
+ */
+export const ME_LINKS: readonly MeLink[] = [
+  { href: '/wishlist', label: 'Wishlist', icon: Heart },
+  { href: '/earnings', label: 'Earnings', icon: Wallet },
   { href: '/notifications', label: 'Notifications', icon: Bell, badgeKey: 'notifications' },
-  { href: '/documents', label: 'Documents', icon: FileText },
+  { href: '/documents', label: 'My documents', icon: FileText },
+  { href: '/requests', label: 'Requests board', icon: Megaphone },
   { href: '/saved-searches', label: 'Saved searches', icon: Search },
   { href: '/invite', label: 'Invite friends', icon: Gift },
   { href: '/settings', label: 'Settings', icon: Settings },

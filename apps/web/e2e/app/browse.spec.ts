@@ -67,7 +67,11 @@ test('saving as a guest asks for sign-in, then the item lands in the wishlist', 
   await expect(page.getByRole('heading', { name: 'Wishlist', level: 1 })).toBeVisible();
   await expect(page.getByRole('link', { name: new RegExp(title) })).toBeVisible();
 
-  await page.getByRole('button', { name: `Remove ${title} from wishlist` }).click();
+  // Wait for the server action to finish before reloading (the heart flips at once).
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/wishlist')),
+    page.getByRole('button', { name: `Remove ${title} from wishlist` }).click(),
+  ]);
   await page.reload();
   await expect(page.getByText('Nothing saved yet')).toBeVisible();
 });
