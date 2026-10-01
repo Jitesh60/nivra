@@ -17,7 +17,7 @@ export function newPhone(): string {
  * X-Forwarded-For). The web server passes it on to the API, so the suite
  * stays under the per-IP sign-in limit, as real visitors would.
  */
-export async function useOwnIp(page: Page, phone: string): Promise<void> {
+export async function browseFromOwnIp(page: Page, phone: string): Promise<void> {
   const n = Number(phone.slice(-6));
   await page.setExtraHTTPHeaders({
     'x-forwarded-for': `203.0.${Math.floor(n / 254) % 254}.${(n % 254) + 1}`,
@@ -37,7 +37,7 @@ export async function signIn(
     skipEmail?: boolean;
   },
 ): Promise<{ phone: string; name: string }> {
-  await useOwnIp(page, phone);
+  await browseFromOwnIp(page, phone);
   await page.goto(next ? `/login?next=${encodeURIComponent(next)}` : '/login');
   await page.getByLabel('Mobile number').fill(phone);
   await page.getByRole('button', { name: 'Send code' }).click();

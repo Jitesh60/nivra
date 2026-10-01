@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { newPhone, OTP, photo, signIn, useOwnIp } from './helpers';
+import { newPhone, OTP, photo, signIn, browseFromOwnIp } from './helpers';
 
 test('a new visitor signs up, names themselves, verifies email and edits their profile', async ({
   page,
@@ -35,7 +35,7 @@ test('private pages ask for sign-in and come back afterwards', async ({ page }) 
 
 test('a wrong code is refused and the number can be changed', async ({ page }) => {
   const phone = newPhone();
-  await useOwnIp(page, phone);
+  await browseFromOwnIp(page, phone);
   await page.goto('/login');
   await page.getByLabel('Mobile number').fill('12345');
   await page.getByRole('button', { name: 'Send code' }).click();
