@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/app/avatar';
 import { Gallery } from '@/components/browse/gallery';
 import { RequestButton } from '@/components/browse/request-button';
+import { StartChatButton } from '@/components/chat/start-chat-button';
 import { SaveButton } from '@/components/browse/save-button';
 import { Stars } from '@/components/browse/stars';
 import { ApiRequestError } from '@/lib/api';
@@ -223,6 +224,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
           )}
         </section>
 
+        <StartChatButton listingId={listing.id} />
         <section className="flex items-center gap-3 rounded-lg border border-sj-border bg-sj-surface p-5">
           <Avatar name={lender.name} url={lender.avatarUrl} size={48} />
           <div className="min-w-0">

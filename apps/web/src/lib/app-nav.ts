@@ -1,16 +1,22 @@
-import { CalendarCheck, Compass, Heart, Package, User } from 'lucide-react';
+import { CalendarCheck, Compass, MessagesSquare, Package, User } from 'lucide-react';
 
 /** Main sections of the signed-in web app (top bar on desktop, bottom bar on phones). */
-export const APP_NAV = [
-  { href: '/wishlist', label: 'Wishlist', icon: Heart },
+export const APP_NAV: readonly {
+  href: string;
+  label: string;
+  icon: typeof Compass;
+  badgeKey?: 'conversations' | 'notifications';
+}[] = [
+  { href: '/inbox', label: 'Inbox', icon: MessagesSquare, badgeKey: 'conversations' },
   { href: '/bookings', label: 'Bookings', icon: CalendarCheck },
   { href: '/listings', label: 'Lend', icon: Package },
   { href: '/profile', label: 'Profile', icon: User },
-] as const;
+];
 
 /** Links in the account menu. */
 export const ACCOUNT_MENU = [
   { href: '/profile', label: 'Profile' },
+  { href: '/notifications', label: 'Notifications' },
   { href: '/wishlist', label: 'Wishlist' },
   { href: '/bookings', label: 'Bookings' },
   { href: '/listings', label: 'My listings' },

@@ -155,6 +155,7 @@ export const config = {
     '/item/:path*',
     '/u/:path*',
     '/session',
+    '/unread',
     '/welcome/:path*',
     '/profile/:path*',
     '/wishlist/:path*',
