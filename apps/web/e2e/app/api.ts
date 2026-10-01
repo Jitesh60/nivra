@@ -132,6 +132,11 @@ export async function liveListing(lender: AppUser, input: ListingInput): Promise
   return listing;
 }
 
+/** Approves a listing in review, as Ops. */
+export async function approveListing(id: string): Promise<void> {
+  await call('POST', `/admin/listings/${id}/approve`, await opsToken());
+}
+
 // ── Ops admin (approves first listings) ──
 
 let ops: Promise<string> | undefined;
