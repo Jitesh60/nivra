@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
+import '../../../shared/widgets/verify_email_dialog.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../data/listings_repository.dart';
 import '../data/models.dart';
@@ -43,6 +45,8 @@ class MyListingsScreen extends ConsumerWidget {
   ) async {
     final action = await showModalBottomSheet<String>(
       context: context,
+      // Over the tab bar, not under it.
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Column(
@@ -134,6 +138,13 @@ class MyListingsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('new-listing'),
         onPressed: () async {
+          final auth = ref.read(authControllerProvider);
+          if (auth is Authenticated && !auth.user.emailVerified) {
+            return askToVerifyEmail(
+              context,
+              why: 'Lenders need a verified phone and email, so borrowers can trust them.',
+            );
+          }
           await context.push(Routes.newListing);
           ref.invalidate(myListingsProvider);
         },

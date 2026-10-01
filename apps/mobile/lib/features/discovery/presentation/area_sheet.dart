@@ -9,6 +9,8 @@ import '../application/search_area.dart';
 
 Future<void> showAreaSheet(BuildContext context) => showModalBottomSheet<void>(
   context: context,
+  // Over the tab bar, not under it.
+  useRootNavigator: true,
   isScrollControlled: true,
   showDragHandle: true,
   builder: (_) => const AreaSheet(),

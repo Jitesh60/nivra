@@ -244,7 +244,7 @@ void main() {
     final t = await awaiting(tester, asLender: true);
     t.api.payAs(t.booking.id);
 
-    await go(tester, t.h, Routes.profile);
+    await go(tester, t.h, Routes.me);
     await tapKey(tester, 'open-earnings');
     expect(location(t.h), Routes.earnings);
     expect(find.text('Set up payouts'), findsOneWidget);

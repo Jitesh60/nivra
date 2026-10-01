@@ -17,11 +17,60 @@ void main() {
     return h;
   }
 
+  String location(TestHarness h) =>
+      h.container.read(routerProvider).state.matchedLocation;
+
   AppUser currentUser(TestHarness h) =>
       (h.container.read(authControllerProvider) as Authenticated).user;
 
+  testWidgets('five labelled tabs; Me holds the rest and logs out', (
+    tester,
+  ) async {
+    final h = await signedIn(tester);
+    for (final label in ['Borrow', 'Lend', 'Inbox', 'Bookings', 'Me']) {
+      expect(find.text(label), findsOneWidget);
+    }
+    // The home top bar keeps only notifications.
+    expect(find.byTooltip('Settings'), findsNothing);
+    expect(find.byKey(const ValueKey('open-notifications')), findsOneWidget);
+
+    await tapKey(tester, 'tab-lend');
+    expect(location(h), Routes.myListings);
+    await tapKey(tester, 'tab-bookings');
+    expect(location(h), Routes.bookings);
+
+    await tapKey(tester, 'tab-me');
+    expect(location(h), Routes.me);
+    for (final key in [
+      'open-profile',
+      'open-wishlist',
+      'open-earnings',
+      'open-documents',
+      'open-settings',
+    ]) {
+      expect(find.byKey(ValueKey(key)), findsOneWidget);
+    }
+    await tapKey(tester, 'open-wishlist');
+    expect(location(h), Routes.wishlist);
+    await tester.pageBack();
+    await settle(tester);
+    expect(location(h), Routes.me);
+
+    await tapKey(tester, 'me-logout');
+    expect(h.container.read(authControllerProvider), isA<Unauthenticated>());
+  });
+
+  testWidgets('guests browse; other tabs ask them to sign in', (tester) async {
+    final h = TestHarness(prefs: FakeAppPrefs(seen: true));
+    await h.start(tester);
+    expect(location(h), Routes.home);
+    await tapKey(tester, 'tab-bookings');
+    expect(location(h), Routes.login);
+  });
+
   testWidgets('edits name, city and bio from Home → Profile', (tester) async {
     final h = await signedIn(tester);
+    await tapKey(tester, 'tab-me');
     await tapKey(tester, 'open-profile');
     expect(find.text('Your profile'), findsOneWidget);
     expect(find.text('ID not verified'), findsOneWidget);

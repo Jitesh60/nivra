@@ -384,7 +384,7 @@ void main() {
     final lent = m.api.requestAs(m.lender, mine.id, start: iso(8), end: iso(9));
     m.api.expireBooking(lent.id);
 
-    await tapKey(tester, 'open-bookings');
+    await tapKey(tester, 'tab-bookings');
     expect(location(h), Routes.bookings);
     expect(find.byKey(ValueKey('booking-${open.id}')), findsOneWidget);
 

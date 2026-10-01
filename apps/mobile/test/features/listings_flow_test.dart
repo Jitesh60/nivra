@@ -84,7 +84,8 @@ void main() {
     tester,
   ) async {
     final h = await signedIn(tester);
-    await tapKey(tester, 'list-item');
+    await tapKey(tester, 'tab-lend');
+    await tapKey(tester, 'new-listing');
     expect(location(h), Routes.newListing);
 
     // Each step checks its fields before moving on.
@@ -158,7 +159,7 @@ void main() {
   testWidgets('pause, resume and delete from My listings', (tester) async {
     final h = await signedIn(tester);
     final l = h.api.seedListing();
-    h.container.read(routerProvider).push(Routes.myListings);
+    h.container.read(routerProvider).go(Routes.myListings);
     await settle(tester);
     expect(find.text('Live'), findsOneWidget);
     expect(find.text('₹150/day'), findsOneWidget);
@@ -191,7 +192,7 @@ void main() {
       status: 'REJECTED',
       rejectionReason: 'Photos are blurry',
     );
-    h.container.read(routerProvider).push(Routes.myListings);
+    h.container.read(routerProvider).go(Routes.myListings);
     await settle(tester);
     expect(find.text('Needs changes'), findsOneWidget);
     expect(find.text('Edit it to fix: Photos are blurry'), findsOneWidget);
@@ -223,7 +224,7 @@ void main() {
   testWidgets('editing a live listing saves without re-review', (tester) async {
     final h = await signedIn(tester);
     final l = h.api.seedListing();
-    h.container.read(routerProvider).push(Routes.myListings);
+    h.container.read(routerProvider).go(Routes.myListings);
     await settle(tester);
     await tapKey(tester, 'my-listing-${l.id}');
     await tapKey(tester, 'action-edit');
@@ -298,7 +299,8 @@ void main() {
     final h = await signedIn(tester, emailVerified: false);
     h.container.read(routerProvider).go(Routes.home);
     await settle(tester);
-    await tapKey(tester, 'list-item');
+    await tapKey(tester, 'tab-lend');
+    await tapKey(tester, 'new-listing');
     expect(find.text('Verify your email first'), findsOneWidget);
     await tapText(tester, 'Verify email');
     expect(location(h), Routes.setupEmail);

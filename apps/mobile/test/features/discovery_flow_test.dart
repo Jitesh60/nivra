@@ -160,7 +160,7 @@ void main() {
     // Nothing to go back to: home is one tap away.
     await tapKey(tester, 'item-home');
     expect(location(h), Routes.home);
-    expect(find.byKey(const ValueKey('open-wishlist')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tab-me')), findsOneWidget);
   });
 
   testWidgets('backing out of sign-in returns to the item, unsaved', (
@@ -393,11 +393,13 @@ void main() {
     await tapKey(tester, 'save-${m.camera}');
     expect(find.text('Saved to wishlist'), findsOneWidget);
     // Every card for it shows the heart filled.
-    for (final e in find.byKey(ValueKey('save-${m.camera}')).evaluate()) {
-      final button = e.widget as IconButton;
-      expect((button.icon as Icon).icon, Icons.favorite);
-    }
+    final hearts = find.byKey(ValueKey('save-${m.camera}'));
+    expect(
+      find.descendant(of: hearts, matching: find.byIcon(Icons.favorite)),
+      findsNWidgets(hearts.evaluate().length),
+    );
 
+    await tapKey(tester, 'tab-me');
     await tapKey(tester, 'open-wishlist');
     expect(location(h), Routes.wishlist);
     expect(find.byKey(ValueKey('card-${m.camera}')), findsOneWidget);
