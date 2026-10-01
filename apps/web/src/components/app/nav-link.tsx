@@ -2,30 +2,30 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { BadgeKey } from '@/lib/app-nav';
 import { cn } from '@/lib/utils';
 import { useUnread } from './unread';
 
-/** A nav item that highlights itself on its section's pages. */
+/** A top-bar link that highlights itself on its section's pages. */
 export function NavLink({
   href,
   label,
   icon,
-  compact = false,
   badgeKey,
   ariaLabel,
+  className,
 }: {
   href: string;
   label: string;
   /** For icon-only links (no visible label). */
   ariaLabel?: string;
   icon: React.ReactNode;
-  compact?: boolean;
-  badgeKey?: 'conversations' | 'notifications';
+  badgeKey?: BadgeKey;
+  className?: string;
 }) {
   const pathname = usePathname();
   const badge = useUnread(badgeKey);
-  const active =
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+  const active = pathname === href || pathname.startsWith(`${href}/`);
   const count = badge && badge > 0 ? (badge > 99 ? '99+' : String(badge)) : null;
   return (
     <Link
@@ -33,15 +33,11 @@ export function NavLink({
       aria-current={active ? 'page' : undefined}
       aria-label={ariaLabel}
       className={cn(
-        'relative transition-colors [&_svg]:size-5',
-        compact
-          ? 'flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold'
-          : 'flex items-center gap-2 rounded-full px-3 py-2 text-small font-semibold',
+        'relative flex items-center gap-2 rounded-full px-3 py-2 text-small font-semibold transition-colors [&_svg]:size-5',
         active
-          ? compact
-            ? 'text-sj-primary'
-            : 'bg-sj-primary-soft text-sj-on-primary-soft'
-          : 'text-sj-muted-foreground hover:text-sj-foreground',
+          ? 'bg-sj-primary-soft text-sj-on-primary-soft'
+          : 'text-sj-muted-foreground hover:bg-sj-surface-muted hover:text-sj-foreground',
+        className,
       )}
     >
       <span className="relative">

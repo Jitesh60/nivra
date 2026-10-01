@@ -119,7 +119,7 @@ export function ChatRoom({
   const pendingOfferId = c.pendingOffer?.id;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-9.5rem)] max-w-3xl flex-col overflow-hidden rounded-lg border border-sj-border bg-sj-surface md:h-[calc(100dvh-7.5rem)]">
+    <div className="mx-auto flex h-[calc(100dvh-12.5rem)] max-w-3xl flex-col overflow-hidden rounded-lg border border-sj-border bg-sj-surface">
       <header className="flex items-center gap-3 border-b border-sj-border p-3">
         <Link
           href="/inbox"

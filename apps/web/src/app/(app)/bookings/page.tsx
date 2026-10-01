@@ -21,13 +21,13 @@ export default async function BookingsPage({ searchParams }: PageProps<'/booking
     <div className="grid gap-6">
       <PageHeader
         title="Bookings"
-        description="Things you’re renting, and things you’re lending."
+        description="One account for both: what you’re borrowing and what you’re lending."
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav aria-label="Side" className="flex rounded-full bg-sj-surface-muted p-1">
           {(
             [
-              ['BORROWER', 'Renting'],
+              ['BORROWER', 'Borrowing'],
               ['LENDER', 'Lending'],
             ] as const
           ).map(([r, label]) => (

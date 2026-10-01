@@ -1,5 +1,13 @@
 import { Badge, Button, Input } from '@sajha/ui';
-import { BadgeCheck, CalendarDays, FileText, MapPin, ShieldCheck } from 'lucide-react';
+import {
+  BadgeCheck,
+  CalendarDays,
+  Compass,
+  FileText,
+  MapPin,
+  PencilLine,
+  ShieldCheck,
+} from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -9,10 +17,9 @@ import { RequestButton } from '@/components/browse/request-button';
 import { StartChatButton } from '@/components/chat/start-chat-button';
 import { SaveButton } from '@/components/browse/save-button';
 import { Stars } from '@/components/browse/stars';
-import { ApiRequestError } from '@/lib/api';
+import { ApiRequestError, getMeOrNull } from '@/lib/api';
 import { getListing, getQuote, getReviews, type PublicListing, type Quote } from '@/lib/discovery';
 import { CONDITION_LABEL, DOC_LABEL, longDate, rupees, shortDate, todayIst } from '@/lib/format';
-import { hasSession } from '@/lib/session';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -52,8 +59,11 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
       quoteError = e.message;
     }
   }
-  const [reviews, signedIn] = await Promise.all([getReviews(id), hasSession()]);
+  const [reviews, me] = await Promise.all([getReviews(id), getMeOrNull()]);
   const lender = listing.lender;
+  const signedIn = me != null;
+  // Everyone can borrow, lenders included: only your own items can't be booked.
+  const mine = me?.id === lender.id;
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -80,7 +90,9 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
                 )}
               </p>
             </div>
-            <SaveButton listingId={listing.id} saved={listing.saved} title={listing.title} />
+            {!mine && (
+              <SaveButton listingId={listing.id} saved={listing.saved} title={listing.title} />
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge tone="neutral">{CONDITION_LABEL[listing.condition]}</Badge>
@@ -162,69 +174,103 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
       </div>
 
       <aside className="grid content-start gap-4 lg:sticky lg:top-24">
-        <section className="grid gap-4 rounded-lg border border-sj-border bg-sj-surface p-5 shadow-sm">
-          <p>
-            <span className="font-display text-h2">{rupees(listing.pricePerDayPaise)}</span>
-            <span className="text-sj-muted-foreground"> / day</span>
-          </p>
-          <form method="get" className="grid gap-3" aria-label="Check dates">
-            <div className="grid grid-cols-2 gap-2">
-              <label className="grid gap-1 text-caption font-semibold">
-                From
-                <Input
-                  type="date"
-                  name="start"
-                  min={todayIst()}
-                  defaultValue={start ?? ''}
-                  required
-                />
-              </label>
-              <label className="grid gap-1 text-caption font-semibold">
-                To
-                <Input type="date" name="end" min={todayIst()} defaultValue={end ?? ''} required />
-              </label>
-            </div>
-            <Button type="submit" variant="secondary">
-              Check price
+        {mine ? (
+          <section
+            data-testid="own-listing"
+            className="grid gap-3 rounded-lg border border-sj-border bg-sj-surface p-5 shadow-sm"
+          >
+            <p>
+              <span className="font-display text-h2">{rupees(listing.pricePerDayPaise)}</span>
+              <span className="text-sj-muted-foreground"> / day</span>
+            </p>
+            <p className="font-semibold">This is your listing</p>
+            <p className="text-small text-sj-muted-foreground">
+              This is how borrowers see it. You can borrow from other people with the same account.
+            </p>
+            <Button asChild>
+              <Link href={`/listings/${listing.id}`}>
+                <PencilLine /> Edit listing
+              </Link>
             </Button>
-          </form>
-          {quoteError && <p className="text-small text-sj-danger">{quoteError}</p>}
-          {quote && (
-            <div className="grid gap-1.5 text-small" data-testid="quote">
-              {!quote.available && quote.unavailableReason && (
-                <p className="rounded-md bg-sj-surface-muted px-3 py-2 text-sj-danger">
-                  {UNAVAILABLE[quote.unavailableReason]?.(listing) ??
-                    'Not available on these dates.'}
-                </p>
+            <Button asChild variant="secondary">
+              <Link href="/explore">
+                <Compass /> Browse things to borrow
+              </Link>
+            </Button>
+          </section>
+        ) : (
+          <>
+            <section className="grid gap-4 rounded-lg border border-sj-border bg-sj-surface p-5 shadow-sm">
+              <p>
+                <span className="font-display text-h2">{rupees(listing.pricePerDayPaise)}</span>
+                <span className="text-sj-muted-foreground"> / day</span>
+              </p>
+              <form method="get" className="grid gap-3" aria-label="Check dates">
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-caption font-semibold">
+                    From
+                    <Input
+                      type="date"
+                      name="start"
+                      min={todayIst()}
+                      defaultValue={start ?? ''}
+                      required
+                    />
+                  </label>
+                  <label className="grid gap-1 text-caption font-semibold">
+                    To
+                    <Input
+                      type="date"
+                      name="end"
+                      min={todayIst()}
+                      defaultValue={end ?? ''}
+                      required
+                    />
+                  </label>
+                </div>
+                <Button type="submit" variant="secondary">
+                  Check price
+                </Button>
+              </form>
+              {quoteError && <p className="text-small text-sj-danger">{quoteError}</p>}
+              {quote && (
+                <div className="grid gap-1.5 text-small" data-testid="quote">
+                  {!quote.available && quote.unavailableReason && (
+                    <p className="rounded-md bg-sj-surface-muted px-3 py-2 text-sj-danger">
+                      {UNAVAILABLE[quote.unavailableReason]?.(listing) ??
+                        'Not available on these dates.'}
+                    </p>
+                  )}
+                  <Line
+                    label={`${rupees(quote.pricePerDayPaise)} × ${quote.days} ${quote.days === 1 ? 'day' : 'days'}`}
+                    value={rupees(quote.rentBeforeDiscountPaise)}
+                  />
+                  {quote.weeklyDiscountPaise > 0 && (
+                    <Line label="Weekly discount" value={`−${rupees(quote.weeklyDiscountPaise)}`} />
+                  )}
+                  <Line label="Service fee" value={rupees(quote.feePaise)} />
+                  {quote.creditPaise > 0 && (
+                    <Line label="Your credit" value={`−${rupees(quote.creditPaise)}`} />
+                  )}
+                  <Line label="Refundable deposit" value={rupees(quote.depositPaise)} />
+                  <div className="mt-1 border-t border-sj-border pt-2">
+                    <Line label="Total today" value={rupees(quote.totalPaise)} strong />
+                  </div>
+                </div>
               )}
-              <Line
-                label={`${rupees(quote.pricePerDayPaise)} × ${quote.days} ${quote.days === 1 ? 'day' : 'days'}`}
-                value={rupees(quote.rentBeforeDiscountPaise)}
-              />
-              {quote.weeklyDiscountPaise > 0 && (
-                <Line label="Weekly discount" value={`−${rupees(quote.weeklyDiscountPaise)}`} />
+              {quote?.available && start && end && (
+                <RequestButton
+                  listingId={listing.id}
+                  startDate={start}
+                  endDate={end}
+                  signedIn={signedIn}
+                />
               )}
-              <Line label="Service fee" value={rupees(quote.feePaise)} />
-              {quote.creditPaise > 0 && (
-                <Line label="Your credit" value={`−${rupees(quote.creditPaise)}`} />
-              )}
-              <Line label="Refundable deposit" value={rupees(quote.depositPaise)} />
-              <div className="mt-1 border-t border-sj-border pt-2">
-                <Line label="Total today" value={rupees(quote.totalPaise)} strong />
-              </div>
-            </div>
-          )}
-          {quote?.available && start && end && (
-            <RequestButton
-              listingId={listing.id}
-              startDate={start}
-              endDate={end}
-              signedIn={signedIn}
-            />
-          )}
-        </section>
+            </section>
 
-        <StartChatButton listingId={listing.id} />
+            <StartChatButton listingId={listing.id} />
+          </>
+        )}
         <section className="flex items-center gap-3 rounded-lg border border-sj-border bg-sj-surface p-5">
           <Avatar name={lender.name} url={lender.avatarUrl} size={48} />
           <div className="min-w-0">

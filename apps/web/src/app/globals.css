@@ -49,3 +49,93 @@ body {
     animation: none;
   }
 }
+
+/* The app dock's raised "List an item" button (gradient with a passing shine). */
+.dock-primary {
+  background: linear-gradient(135deg, var(--color-brand-500), var(--color-accent-500));
+  box-shadow:
+    0 8px 20px -6px color-mix(in oklab, var(--color-brand-600) 60%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+  overflow: hidden;
+}
+
+.dock-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.45) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: dock-shine 3.2s ease-in-out infinite;
+}
+
+@keyframes dock-shine {
+  60%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* The "Me" sheet slides up from the dock (native <dialog>). */
+.me-sheet {
+  transition:
+    translate 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    overlay 0.32s allow-discrete,
+    display 0.32s allow-discrete;
+  translate: 0 100%;
+  opacity: 0;
+}
+
+.me-sheet[open] {
+  translate: 0 0;
+  opacity: 1;
+}
+
+@starting-style {
+  .me-sheet[open] {
+    translate: 0 100%;
+    opacity: 0;
+  }
+}
+
+.me-sheet::backdrop {
+  background: rgb(15 23 42 / 0);
+  backdrop-filter: blur(0);
+  transition:
+    background 0.3s ease,
+    backdrop-filter 0.3s ease,
+    overlay 0.3s allow-discrete,
+    display 0.3s allow-discrete;
+}
+
+.me-sheet[open]::backdrop {
+  background: rgb(15 23 42 / 0.4);
+  backdrop-filter: blur(3px);
+}
+
+@starting-style {
+  .me-sheet[open]::backdrop {
+    background: rgb(15 23 42 / 0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-primary::after {
+    animation: none;
+  }
+  .me-sheet,
+  .me-sheet::backdrop {
+    transition: none;
+  }
+}
+
+/* Keep focused or scrolled-to elements clear of the app dock. */
+html:has(nav[data-dock]) {
+  scroll-padding-bottom: 7rem;
+}
