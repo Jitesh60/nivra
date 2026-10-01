@@ -327,7 +327,7 @@ void main() {
       '1',
     );
 
-    await tapKey(tester, 'open-inbox');
+    await tapKey(tester, 'tab-inbox');
     expect(location(h), Routes.inbox);
     expect(find.text('Hi Rahul, yes it is free'), findsOneWidget);
     expect(find.byKey(ValueKey('unread-${c.id}')), findsOneWidget);
@@ -337,8 +337,7 @@ void main() {
     await tester.pageBack();
     await settle(tester);
     expect(find.byKey(ValueKey('unread-${c.id}')), findsNothing);
-    await tester.pageBack();
-    await settle(tester);
+    await tapKey(tester, 'tab-borrow');
     expect(find.byKey(const ValueKey('inbox-badge')), findsNothing);
   });
 
@@ -363,7 +362,9 @@ void main() {
     await h.start(tester);
     expect(h.realtime.connected.value, isFalse);
     expect(h.push.registrations, 0);
-    expect(find.byKey(const ValueKey('open-inbox')), findsNothing);
+    // The Inbox tab asks guests to sign in.
+    await tapKey(tester, 'tab-inbox');
+    expect(location(h), Routes.login);
     h.container.read(routerProvider).go(Routes.inbox);
     await settle(tester);
     expect(location(h), Routes.login);

@@ -39,6 +39,7 @@ import '../../features/listings/data/models.dart';
 import '../../features/listings/presentation/listing_editor_screen.dart';
 import '../../features/listings/presentation/my_listings_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/profile/presentation/me_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/referrals/presentation/invite_screen.dart';
 import '../../features/requests/presentation/my_requests_screen.dart';
@@ -49,6 +50,7 @@ import '../../features/settings/presentation/devices_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../shared/widgets/app_shell.dart';
 import 'auth_redirect.dart';
 import 'routes.dart';
 import 'sign_in_return.dart';
@@ -110,7 +112,47 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             EmailOtpScreen(args: state.extra! as EmailOtpArgs),
       ),
-      GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+      // The five tabs (see AppShell). Everything else opens full screen on
+      // top of them.
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) => AppShell(shell: shell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.myListings,
+                builder: (_, _) => const MyListingsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.inbox,
+                builder: (_, _) => const InboxScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.bookings,
+                builder: (_, _) => const MyBookingsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: Routes.me, builder: (_, _) => const MeScreen()),
+            ],
+          ),
+        ],
+      ),
       GoRoute(
         path: Routes.search,
         builder: (_, state) => SearchScreen(
@@ -126,10 +168,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           chatOnOpen: state.uri.queryParameters['chat'] == '1',
           bookOnOpen: bookDates(state.uri.queryParameters),
         ),
-      ),
-      GoRoute(
-        path: Routes.bookings,
-        builder: (_, _) => const MyBookingsScreen(),
       ),
       GoRoute(
         path: Routes.bookingPattern,
@@ -207,7 +245,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.notifications,
         builder: (_, _) => const NotificationsScreen(),
       ),
-      GoRoute(path: Routes.inbox, builder: (_, _) => const InboxScreen()),
       GoRoute(
         path: Routes.chatPattern,
         builder: (_, state) =>
@@ -251,10 +288,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const NotificationSettingsScreen(),
       ),
       GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
-      GoRoute(
-        path: Routes.myListings,
-        builder: (_, _) => const MyListingsScreen(),
-      ),
       GoRoute(
         path: Routes.newListing,
         builder: (_, _) => const ListingEditorScreen(),

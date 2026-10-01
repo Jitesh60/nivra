@@ -161,8 +161,8 @@ void main() {
 
     // Access token expires while the app is open: the next call refreshes.
     api.expireAccessTokens();
-    await tester.tap(find.byTooltip('Settings'));
-    await settle(tester);
+    await tapKey(tester, 'tab-me');
+    await tapKey(tester, 'open-settings');
     await tester.tap(find.byKey(const ValueKey('devices')));
     await settle(tester);
     expect(find.text('This device'), findsOneWidget);
@@ -182,8 +182,8 @@ void main() {
     expect(location(h), Routes.home);
 
     api.revokeAllSessions();
-    await tester.tap(find.byTooltip('Settings'));
-    await settle(tester);
+    await tapKey(tester, 'tab-me');
+    await tapKey(tester, 'open-settings');
     await tester.tap(find.byKey(const ValueKey('devices')));
     await settle(tester);
 
@@ -225,8 +225,8 @@ void main() {
         prefs: FakeAppPrefs(seen: true),
       );
       await h.start(tester);
-      await tester.tap(find.byTooltip('Settings'));
-      await settle(tester);
+      await tapKey(tester, 'tab-me');
+      await tapKey(tester, 'open-settings');
       return h;
     }
 

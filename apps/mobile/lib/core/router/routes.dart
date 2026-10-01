@@ -7,6 +7,10 @@ abstract final class Routes {
   static const setupEmail = '/setup/email';
   static const setupEmailVerify = '/setup/email/verify';
   static const home = '/home';
+
+  /// Everything not in the bottom tabs: profile, wishlist, earnings,
+  /// documents, settings and log out.
+  static const me = '/me';
   static const settings = '/settings';
   static const devices = '/settings/devices';
   static const notificationSettings = '/settings/notifications';
@@ -109,6 +113,9 @@ abstract final class Routes {
     if (type != null && type.startsWith('referral.')) return invite;
     return null;
   }
+
+  /// The bottom tabs, in order: Borrow, Lend, Inbox, Bookings, Me.
+  static const tabs = [home, myListings, inbox, bookings, me];
 
   /// The sign-in screens.
   static const public = {onboarding, login, loginVerify};

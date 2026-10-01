@@ -14,3 +14,20 @@ extension ReducedMotion on Widget {
     return build(animate(delay: delay));
   }
 }
+
+/// [children] fade and rise in one after another when they first appear
+/// (a section that loads later animates in on its own). Kept short and small
+/// so it reads as calm, and skipped under "reduce motion".
+List<Widget> staggered(BuildContext context, List<Widget> children) {
+  if (MediaQuery.disableAnimationsOf(context)) return children;
+  return [
+    for (final (i, child) in children.indexed)
+      child
+          .animate(
+            key: ValueKey(child.key ?? '$i-${child.runtimeType}'),
+            delay: Duration(milliseconds: 40 * (i < 8 ? i : 8)),
+          )
+          .fadeIn(duration: 280.ms)
+          .slideY(begin: 0.06, end: 0, curve: Curves.easeOut),
+  ];
+}

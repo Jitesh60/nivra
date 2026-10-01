@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/media/photo_picker.dart';
 import '../../../core/network/api_exception.dart';
-import '../../../core/router/routes.dart';
 import '../../../core/theme/tokens.g.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../shared/widgets/verification_badges.dart';
@@ -200,65 +198,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Text(_saving ? 'Saving…' : 'Save'),
             ),
             const SizedBox(height: SajhaSpacing.lg),
-            const Divider(),
-            ListTile(
-              key: const ValueKey('open-my-bookings'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.calendarDays),
-              title: const Text('My bookings'),
-              subtitle: const Text('Things you’re borrowing and lending'),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.bookings),
-            ),
-            ListTile(
-              key: const ValueKey('open-saved-searches'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.bookmark),
-              title: const Text('Saved searches'),
-              subtitle: const Text('Alerts for new listings you’d like'),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.savedSearches),
-            ),
-            ListTile(
-              key: const ValueKey('open-my-requests'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.megaphone),
-              title: const Text('My requests'),
-              subtitle: const Text('Things you asked the community for'),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.myRequests),
-            ),
-            ListTile(
-              key: const ValueKey('open-invite'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.gift),
-              title: const Text('Invite friends'),
-              subtitle: const Text('Give credit, get credit'),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.invite),
-            ),
-            ListTile(
-              key: const ValueKey('open-earnings'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.wallet),
-              title: const Text('Earnings & payouts'),
-              subtitle: const Text('Money from lending, and your bank account'),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.earnings),
-            ),
-            ListTile(
-              key: const ValueKey('open-documents'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.idCard),
-              title: const Text('My documents'),
-              subtitle: Text(
-                user.idVerified
-                    ? 'ID verified'
-                    : 'Add an ID to get the verified badge',
-              ),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => context.push(Routes.documents),
-            ),
             Text(
               'Your name, city, photo and badges are shown to people you '
               'rent with. Your phone number and documents are not.',

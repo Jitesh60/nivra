@@ -102,7 +102,7 @@ void main() {
 
       // Reachable from the profile.
       await back(tester);
-      await tapKey(tester, 'open-profile');
+      await tapKey(tester, 'tab-me');
       await tapKey(tester, 'open-saved-searches');
       expect(location(h), Routes.savedSearches);
       expect(find.text('“tent” within 5 km'), findsOneWidget);
@@ -334,7 +334,7 @@ void main() {
     await tapKey(tester, 'dismiss-invite-card');
     expect(find.byKey(const ValueKey('invite-code-card')), findsNothing);
 
-    await tapKey(tester, 'open-profile');
+    await tapKey(tester, 'tab-me');
     await tapKey(tester, 'open-invite');
     expect(location(h), Routes.invite);
     final code = m.api.referralCodeFor(rahul);

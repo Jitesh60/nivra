@@ -212,10 +212,21 @@ class SaveButton extends ConsumerWidget {
       }
     }
 
-    final icon = Icon(
-      // Lucide has no filled heart: the saved state keeps Material's.
-      saved ? Icons.favorite : LucideIcons.heart,
-      color: saved ? SajhaColors.accent600 : (onPhoto ? Colors.white : null),
+    // Saving pops the heart in; under "reduce motion" it just swaps.
+    final icon = AnimatedSwitcher(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+      transitionBuilder: (child, animation) => ScaleTransition(
+        scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        child: child,
+      ),
+      child: Icon(
+        // Lucide has no filled heart: the saved state keeps Material's.
+        saved ? Icons.favorite : LucideIcons.heart,
+        key: ValueKey(saved),
+        color: saved ? SajhaColors.accent600 : (onPhoto ? Colors.white : null),
+      ),
     );
     return IconButton(
       key: ValueKey('save-$listingId'),

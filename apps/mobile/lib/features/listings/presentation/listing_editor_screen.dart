@@ -126,7 +126,7 @@ class _EditorState extends ConsumerState<_Editor> {
     );
     if (!mounted) return;
     if (widget.existing == null) {
-      context.pushReplacement(Routes.myListings);
+      context.go(Routes.myListings);
     } else {
       context.pop();
     }

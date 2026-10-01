@@ -3,17 +3,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/effects/motion.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/router/sign_in_return.dart';
 import '../../../core/theme/tokens.g.dart';
-import '../../../shared/widgets/user_avatar.dart';
-import '../../../shared/widgets/verify_email_dialog.dart';
 import '../../../shared/widgets/verification_badges.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/data/models.dart';
 import '../../bookings/application/bookings_providers.dart';
-import '../../chat/application/inbox.dart';
 import '../../discovery/application/discovery_providers.dart';
 import '../../discovery/application/search_area.dart';
 import '../../discovery/data/models.dart';
@@ -24,8 +22,9 @@ import '../../../shared/widgets/nivra_logo.dart';
 import '../../referrals/application/referral_controller.dart';
 import '../../referrals/presentation/invite_code_card.dart';
 
-/// The borrower's front page: search, the area, categories and feeds.
-/// Guests see it too; signed-in users also get verification and lending.
+/// The Borrow tab: search, the area, categories and feeds. The top bar
+/// keeps only the logo and notifications; everything else is a tab.
+/// Guests see it too, with a card about lending.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -55,33 +54,8 @@ class HomeScreen extends ConsumerWidget {
               onPressed: () => requireSignIn(context, ref, Routes.home),
               child: const Text('Sign in'),
             )
-          else ...[
-            const _InboxButton(),
+          else
             const _BellButton(),
-            IconButton(
-              key: const ValueKey('open-bookings'),
-              tooltip: 'My bookings',
-              icon: const Icon(LucideIcons.calendarDays),
-              onPressed: () => context.push(Routes.bookings),
-            ),
-            IconButton(
-              key: const ValueKey('open-wishlist'),
-              tooltip: 'Wishlist',
-              icon: const Icon(LucideIcons.heart),
-              onPressed: () => context.push(Routes.wishlist),
-            ),
-            IconButton(
-              key: const ValueKey('open-profile'),
-              tooltip: 'Profile',
-              icon: UserAvatar(user: user, radius: 14),
-              onPressed: () => context.push(Routes.profile),
-            ),
-            IconButton(
-              tooltip: 'Settings',
-              icon: const Icon(LucideIcons.settings),
-              onPressed: () => context.push(Routes.settings),
-            ),
-          ],
         ],
       ),
       body: RefreshIndicator(
@@ -89,7 +63,7 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           key: const ValueKey('home-feed'),
           padding: const EdgeInsets.only(bottom: SajhaSpacing.x2xl),
-          children: [
+          children: staggered(context, [
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 SajhaSpacing.lg,
@@ -160,16 +134,18 @@ class HomeScreen extends ConsumerWidget {
               ),
               child: _AskCard(signedIn: user != null),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                SajhaSpacing.lg,
-                SajhaSpacing.md,
-                SajhaSpacing.lg,
-                0,
+            // Signed-in people lend from the Lend tab.
+            if (user == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  SajhaSpacing.lg,
+                  SajhaSpacing.md,
+                  SajhaSpacing.lg,
+                  0,
+                ),
+                child: const _LendCard(),
               ),
-              child: _LendCard(user: user),
-            ),
-          ],
+          ]),
         ),
       ),
     );
@@ -442,17 +418,13 @@ class _AskCard extends ConsumerWidget {
   );
 }
 
+/// For guests: what lending is, and a way to start.
 class _LendCard extends ConsumerWidget {
-  const _LendCard({required this.user});
-  final AppUser? user;
+  const _LendCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
-    final user = this.user;
-    // The theme's buttons are full-width; these sit in a row.
-    final rowButton = FilledButton.styleFrom(minimumSize: const Size(0, 48));
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(SajhaSpacing.md),
@@ -467,61 +439,16 @@ class _LendCard extends ConsumerWidget {
               style: text.bodyMedium,
             ),
             const SizedBox(height: SajhaSpacing.md),
-            if (user == null)
-              FilledButton.icon(
-                key: const ValueKey('guest-lend'),
-                style: rowButton,
-                onPressed: () => requireSignIn(context, ref, Routes.home),
-                icon: const Icon(LucideIcons.logIn),
-                label: const Text('Sign in to lend'),
-              )
-            else
-              Wrap(
-                spacing: SajhaSpacing.sm,
-                runSpacing: SajhaSpacing.sm,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    key: const ValueKey('list-item'),
-                    style: rowButton,
-                    onPressed: () => user.emailVerified
-                        ? context.push(Routes.newListing)
-                        : askToVerifyEmail(
-                            context,
-                            why: 'Lenders need a verified phone and email, so borrowers can trust them.',
-                          ),
-                    icon: const Icon(LucideIcons.plus),
-                    label: const Text('List an item'),
-                  ),
-                  TextButton(
-                    key: const ValueKey('my-listings'),
-                    onPressed: () => context.push(Routes.myListings),
-                    child: const Text('My listings'),
-                  ),
-                ],
-              ),
+            FilledButton.icon(
+              key: const ValueKey('guest-lend'),
+              // The theme's buttons are full-width; this one hugs its label.
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              onPressed: () => requireSignIn(context, ref, Routes.myListings),
+              icon: const Icon(LucideIcons.logIn),
+              label: const Text('Sign in to lend'),
+            ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// The chats, with a badge for unread ones.
-class _InboxButton extends ConsumerWidget {
-  const _InboxButton();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unread = ref.watch(unreadCountProvider).value ?? 0;
-    return IconButton(
-      key: const ValueKey('open-inbox'),
-      tooltip: unread == 0 ? 'Chats' : 'Chats, $unread unread',
-      onPressed: () => context.push(Routes.inbox),
-      icon: Badge(
-        isLabelVisible: unread > 0,
-        label: Text('$unread', key: const ValueKey('inbox-badge')),
-        child: const Icon(LucideIcons.messageCircle),
       ),
     );
   }
