@@ -195,6 +195,10 @@ set_env() {
 }
 get_env() { grep "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2-; }
 
+# The website's server passes visitors' IPs with this (same value in its
+# WEB_CLIENT_SECRET). Added once, also to .env files from before it existed.
+[ -n "$(get_env WEB_CLIENT_SECRET)" ] || set_env WEB_CLIENT_SECRET "$(hex 32)"
+
 # SeaweedFS credentials follow .env; public media is readable without a key.
 cat >"$DIR/s3.json" <<JSON
 {

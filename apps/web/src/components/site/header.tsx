@@ -1,6 +1,7 @@
 import { Logo } from '@sajha/ui';
 import Link from 'next/link';
 import { GlowLink } from '@/components/ui/glow-button';
+import { HeaderAccount } from './header-account';
 import { NAV } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
@@ -30,9 +31,17 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             </Link>
           ))}
         </nav>
-        <GlowLink href="/#waitlist" variant={overlay ? 'primary' : 'brand'} size="sm">
-          Join the waitlist
-        </GlowLink>
+        <div className="flex items-center gap-4">
+          <HeaderAccount overlay={overlay} />
+          <GlowLink
+            href="/#waitlist"
+            variant={overlay ? 'primary' : 'brand'}
+            size="sm"
+            className="hidden sm:inline-flex"
+          >
+            Join the waitlist
+          </GlowLink>
+        </div>
       </div>
     </header>
   );

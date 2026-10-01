@@ -27,6 +27,12 @@ export const envSchema = z.object({
         .filter(Boolean),
     ),
   SWAGGER_ENABLED: booleanString,
+  /**
+   * Shared with the website's server (same value there). Lets it pass each
+   * visitor's IP on, so web users get their own OTP and read limits instead
+   * of sharing the web server's. Empty = the website isn't trusted to.
+   */
+  WEB_CLIENT_SECRET: optional(z.string().min(32)),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }),
 
