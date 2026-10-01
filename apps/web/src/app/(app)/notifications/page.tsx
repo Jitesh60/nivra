@@ -28,7 +28,7 @@ export default async function NotificationsPage() {
         />
       ) : (
         <ul className="grid divide-y divide-sj-border overflow-hidden rounded-lg border border-sj-border bg-sj-surface">
-          {items.map((n) => {
+          {items.map((n, i) => {
             const href = notificationHref(n);
             const body = (
               <span className="flex gap-3 p-4">
@@ -49,7 +49,7 @@ export default async function NotificationsPage() {
               </span>
             );
             return (
-              <li key={n.id}>
+              <li key={n.id} className="rise-in" style={{ '--i': i } as React.CSSProperties}>
                 {href ? (
                   <Link href={href} className="block hover:bg-sj-surface-muted">
                     {body}

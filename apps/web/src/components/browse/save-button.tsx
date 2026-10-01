@@ -21,6 +21,8 @@ export function SaveButton({
   className?: string;
 }) {
   const [saved, setSaved] = useState(initial);
+  // Bumped on each save, to replay the pop.
+  const [burst, setBurst] = useState(0);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -31,6 +33,7 @@ export function SaveButton({
     e.preventDefault();
     e.stopPropagation();
     const next = !saved;
+    if (next) setBurst((b) => b + 1);
     start(async () => {
       setSaved(next);
       const result = await setSavedAction(listingId, next);
@@ -60,9 +63,11 @@ export function SaveButton({
       )}
     >
       <Heart
+        key={burst}
         className={cn(
           size === 'sm' ? 'size-4.5' : 'size-5',
           saved && 'fill-sj-danger text-sj-danger',
+          burst > 0 && saved && 'heart-pop',
         )}
       />
     </button>

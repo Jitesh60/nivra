@@ -5,12 +5,21 @@ import { rupees } from '@/lib/format';
 import { SaveButton } from './save-button';
 
 /** A listing in a grid: photo, title, price per day, area and rating. */
-export function ListingCard({ listing, dates }: { listing: Card; dates?: string }) {
+export function ListingCard({
+  listing,
+  dates,
+  index = 0,
+}: {
+  listing: Card;
+  dates?: string;
+  /** Position in the grid, for the staggered entrance. */
+  index?: number;
+}) {
   const href = `/item/${listing.id}${dates ? `?${dates}` : ''}`;
   return (
-    <article className="group relative">
+    <article className="group rise-in relative" style={{ '--i': index } as React.CSSProperties}>
       <Link href={href} className="block rounded-lg focus-visible:outline-2">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-sj-surface-muted">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-sj-surface-muted shadow-xs transition-[transform,box-shadow] duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg">
           {listing.thumbUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- public storage URL
             <img
@@ -65,7 +74,7 @@ export function ListingCard({ listing, dates }: { listing: Card; dates?: string 
         saved={listing.saved}
         title={listing.title}
         size="sm"
-        className="absolute top-2 right-2"
+        className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-1"
       />
     </article>
   );
@@ -74,8 +83,8 @@ export function ListingCard({ listing, dates }: { listing: Card; dates?: string 
 export function ListingGrid({ listings, dates }: { listings: Card[]; dates?: string }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-      {listings.map((l) => (
-        <ListingCard key={l.id} listing={l} dates={dates} />
+      {listings.map((l, i) => (
+        <ListingCard key={l.id} listing={l} dates={dates} index={i} />
       ))}
     </div>
   );

@@ -116,7 +116,8 @@ function DockLink({
   );
 }
 
-/** One dock position: icon (grows with the mouse), then its label. */
+/** One dock position: icon (grows with the mouse), then its label. The
+ * current section's highlight slides between positions. */
 function DockSlot({
   mouseX,
   label,
@@ -141,8 +142,15 @@ function DockSlot({
       <motion.div
         ref={ref}
         style={{ width: size, height: size }}
-        className={cn('grid place-items-center', active && 'rounded-2xl bg-sj-primary-soft')}
+        className="relative grid place-items-center"
       >
+        {active && (
+          <motion.span
+            layoutId="dock-active"
+            transition={{ type: 'spring', bounce: 0.25, duration: 0.45 }}
+            className="absolute inset-0 rounded-2xl bg-sj-primary-soft"
+          />
+        )}
         {children(size)}
       </motion.div>
       <span

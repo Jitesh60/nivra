@@ -3,9 +3,9 @@ import { CalendarCheck, ImageOff } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Avatar } from '@/components/app/avatar';
+import { SlidingTabs } from '@/components/effects/sliding-tabs';
 import { getBookings, STATUS_TEXT } from '@/lib/bookings';
 import { rupees, shortDate } from '@/lib/format';
-import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Bookings' };
 
@@ -24,26 +24,14 @@ export default async function BookingsPage({ searchParams }: PageProps<'/booking
         description="One account for both: what you’re borrowing and what you’re lending."
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Side" className="flex rounded-full bg-sj-surface-muted p-1">
-          {(
-            [
-              ['BORROWER', 'Borrowing'],
-              ['LENDER', 'Lending'],
-            ] as const
-          ).map(([r, label]) => (
-            <Link
-              key={r}
-              href={href(r, scope)}
-              aria-current={role === r ? 'page' : undefined}
-              className={cn(
-                'rounded-full px-4 py-1.5 text-small font-semibold',
-                role === r ? 'bg-sj-surface shadow-xs' : 'text-sj-muted-foreground',
-              )}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <SlidingTabs
+          id="bookings-side"
+          label="Side"
+          items={[
+            { href: href('BORROWER', scope), label: 'Borrowing', active: role === 'BORROWER' },
+            { href: href('LENDER', scope), label: 'Lending', active: role === 'LENDER' },
+          ]}
+        />
         <nav aria-label="When" className="flex gap-3 text-small font-semibold">
           {(
             [
@@ -85,13 +73,13 @@ export default async function BookingsPage({ searchParams }: PageProps<'/booking
         />
       ) : (
         <ul className="grid gap-3">
-          {page.items.map((b) => {
+          {page.items.map((b, i) => {
             const status = STATUS_TEXT[b.status];
             return (
-              <li key={b.id}>
+              <li key={b.id} className="rise-in" style={{ '--i': i } as React.CSSProperties}>
                 <Link
                   href={`/bookings/${b.id}`}
-                  className="flex items-center gap-4 rounded-lg border border-sj-border bg-sj-surface p-3 shadow-xs transition-shadow hover:shadow-md"
+                  className="flex items-center gap-4 rounded-lg border border-sj-border bg-sj-surface p-3 shadow-xs transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-md bg-sj-surface-muted text-sj-muted-foreground">
                     {b.listing.thumbUrl ? (
