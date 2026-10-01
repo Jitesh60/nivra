@@ -228,7 +228,9 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
         <section className="flex items-center gap-3 rounded-lg border border-sj-border bg-sj-surface p-5">
           <Avatar name={lender.name} url={lender.avatarUrl} size={48} />
           <div className="min-w-0">
-            <p className="font-semibold">{lender.name ?? 'Nivra lender'}</p>
+            <Link href={`/u/${lender.id}`} className="font-semibold hover:underline">
+              {lender.name ?? 'Nivra lender'}
+            </Link>
             <p className="text-caption text-sj-muted-foreground">
               {lender.city ? `${lender.city} · ` : ''}On Nivra since {longDate(lender.memberSince)}
             </p>
