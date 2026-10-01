@@ -6,8 +6,6 @@ import { useState, useTransition } from 'react';
 import { setSavedAction } from '@/lib/favorite-actions';
 import { cn } from '@/lib/utils';
 
-const SPARKS = [0, 45, 90, 135, 180, 225, 270, 315];
-
 /** The wishlist heart. Guests go to sign-in and come back to the same page. */
 export function SaveButton({
   listingId,
@@ -23,7 +21,7 @@ export function SaveButton({
   className?: string;
 }) {
   const [saved, setSaved] = useState(initial);
-  // Bumped on each save, to replay the pop and sparks.
+  // Bumped on each save, to replay the pop.
   const [burst, setBurst] = useState(0);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
@@ -59,7 +57,7 @@ export function SaveButton({
       aria-label={saved ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
       title={error ?? (saved ? 'Saved' : 'Save')}
       className={cn(
-        'relative grid place-items-center rounded-full bg-white/90 text-ink-900 shadow-sm backdrop-blur transition hover:scale-105',
+        'grid place-items-center rounded-full bg-white/90 text-ink-900 shadow-sm backdrop-blur transition hover:scale-105',
         size === 'sm' ? 'size-9' : 'size-11',
         className,
       )}
@@ -72,13 +70,6 @@ export function SaveButton({
           burst > 0 && saved && 'heart-pop',
         )}
       />
-      {burst > 0 && saved && (
-        <span key={`s${burst}`} aria-hidden>
-          {SPARKS.map((a) => (
-            <span key={a} className="spark" style={{ '--a': `${a}deg` } as React.CSSProperties} />
-          ))}
-        </span>
-      )}
     </button>
   );
 }

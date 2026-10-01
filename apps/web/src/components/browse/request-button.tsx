@@ -28,7 +28,6 @@ export function RequestButton({
       <Button
         type="button"
         size="lg"
-        className="sheen"
         loading={pending}
         loadingLabel="Sending request"
         onClick={() => {

@@ -12,7 +12,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/app/avatar';
-import { BorderBeam } from '@/components/effects/border-beam';
 import { Gallery } from '@/components/browse/gallery';
 import { RequestButton } from '@/components/browse/request-button';
 import { StartChatButton } from '@/components/chat/start-chat-button';
@@ -201,8 +200,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
           </section>
         ) : (
           <>
-            <section className="relative grid gap-4 rounded-lg border border-sj-border bg-sj-surface p-5 shadow-sm">
-              <BorderBeam />
+            <section className="grid gap-4 rounded-lg border border-sj-border bg-sj-surface p-5 shadow-sm">
               <p>
                 <span className="font-display text-h2">{rupees(listing.pricePerDayPaise)}</span>
                 <span className="text-sj-muted-foreground"> / day</span>
