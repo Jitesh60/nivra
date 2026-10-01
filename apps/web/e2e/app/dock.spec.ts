@@ -17,7 +17,7 @@ test.beforeAll(async () => {
   ]);
 });
 
-test('the dock sits at the bottom and the Me sheet holds borrowing and lending', async ({
+test('the dock sits at the bottom with five labelled items, and Me opens the rest', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -30,22 +30,20 @@ test('the dock sits at the bottom and the Me sheet holds borrowing and lending',
   const viewport = page.viewportSize()!;
   expect(box.y + box.height).toBeGreaterThan(viewport.height - 40);
 
+  for (const label of ['Borrow', 'Lend', 'Inbox', 'Bookings']) {
+    await expect(dock.getByRole('link', { name: label })).toBeVisible();
+    await expect(dock.getByText(label, { exact: true })).toBeVisible();
+  }
   await dock.getByRole('link', { name: 'Lend' }).click();
   await expect(page).toHaveURL(/\/listings$/);
   await expect(dock.getByRole('link', { name: 'Lend' })).toHaveAttribute('aria-current', 'page');
   await dock.getByRole('link', { name: 'Borrow' }).click();
   await expect(page).toHaveURL(/\/explore/);
-  await expect(dock.getByRole('link', { name: 'List an item' })).toHaveAttribute(
-    'href',
-    '/listings/new',
-  );
-
   await dock.getByRole('button', { name: 'Me', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Me' });
-  await expect(sheet.getByRole('region', { name: 'Borrowing' })).toBeVisible();
-  await expect(sheet.getByRole('region', { name: 'Lending' })).toBeVisible();
-  await sheet.getByRole('link', { name: 'Things I’m lending' }).click();
-  await expect(page).toHaveURL(/\/bookings\?role=LENDER/);
+  await expect(sheet.getByRole('link', { name: 'Wishlist' })).toBeVisible();
+  await sheet.getByRole('link', { name: 'Earnings' }).click();
+  await expect(page).toHaveURL(/\/earnings$/);
   await expect(sheet).toBeHidden();
   expect(errors).toEqual([]);
 });
