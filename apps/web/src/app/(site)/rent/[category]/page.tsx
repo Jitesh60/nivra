@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageShell } from '@/components/site/section';
 import { DownloadOrWaitlist } from '@/components/sections/download';
@@ -40,6 +41,14 @@ export default async function RentPage({ params }: PageProps<'/rent/[category]'>
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, '\\u003c') }}
       />
+      <div className="mx-auto max-w-6xl px-4 pt-8">
+        <Link
+          href={`/explore?q=${encodeURIComponent(page.name)}`}
+          className="inline-flex items-center rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
+        >
+          Browse {page.name.toLowerCase()} on Nivra →
+        </Link>
+      </div>
       <div className="mx-auto grid max-w-6xl gap-12 px-4 py-12 md:grid-cols-2">
         <section>
           <h2 className="font-display text-2xl font-bold text-ink-950">

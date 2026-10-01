@@ -25,8 +25,8 @@ export function Hero() {
               Join the waitlist
             </GlowLink>
           </Magnet>
-          <GlowLink href="/how-it-works" variant="ghost" size="lg">
-            How it works
+          <GlowLink href="/explore" variant="ghost" size="lg">
+            Browse items
           </GlowLink>
         </div>
         <p className="mt-8 text-sm text-ink-200">Launching in India · Free to join</p>
