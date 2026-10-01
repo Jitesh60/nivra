@@ -14,6 +14,7 @@ import {
   type Booking,
 } from '@/lib/bookings';
 import { DOC_LABEL, rupees, shortDate } from '@/lib/format';
+import { noShowAction } from '../rental-actions';
 import {
   acceptAction,
   approveDocsAction,
@@ -28,6 +29,11 @@ const NOTICES: Record<string, string> = {
   requested: 'Request sent. The lender usually replies within a day.',
   shared: 'Documents shared. The lender will check them.',
   paid: 'Payment received. Your booking is confirmed.',
+  handedover: 'Handover confirmed. Enjoy the rental!',
+  returned: 'Return confirmed. Thanks for renting on Nivra.',
+  disputed: 'Problem reported. Our team will look into it.',
+  responded: 'Response sent. Our team will decide fairly.',
+  reviewed: 'Thanks for the review!',
 };
 
 export default async function BookingPage({ params, searchParams }: PageProps<'/bookings/[id]'>) {
@@ -128,6 +134,48 @@ export default async function BookingPage({ params, searchParams }: PageProps<'/
               <Link href={`/bookings/${id}/pay`}>Pay {rupees(booking.totalPaise)}</Link>
             </Button>
           )}
+          {can.showCode && (
+            <Button asChild>
+              <Link href={`/bookings/${id}/code`}>
+                {booking.status === 'CONFIRMED' ? 'Show pickup code' : 'Show return code'}
+              </Link>
+            </Button>
+          )}
+          {can.handover && (
+            <Button asChild>
+              <Link href={`/bookings/${id}/handover`}>Confirm handover</Link>
+            </Button>
+          )}
+          {can.return && (
+            <Button asChild>
+              <Link href={`/bookings/${id}/return`}>Confirm return</Link>
+            </Button>
+          )}
+          {can.review && (
+            <Button asChild>
+              <Link href={`/bookings/${id}/review`}>Leave a review</Link>
+            </Button>
+          )}
+          {can.respond && (
+            <Button asChild>
+              <Link href={`/bookings/${id}/respond`}>Respond to the problem</Link>
+            </Button>
+          )}
+          {can.dispute && (
+            <Button asChild variant="outline">
+              <Link href={`/bookings/${id}/dispute`}>Report a problem</Link>
+            </Button>
+          )}
+          {can.noShow && (
+            <ReasonAction
+              run={noShowAction.bind(null, id)}
+              label="They didn’t show up"
+              prompt="What happened? (optional)"
+              submitLabel="Report no-show"
+              required={false}
+              variant="ghost"
+            />
+          )}
           <Button asChild variant="outline">
             <Link href={`/inbox/${booking.conversationId}`}>
               Message {borrower ? 'lender' : 'borrower'}
@@ -162,6 +210,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<'/
         </section>
       )}
 
+      <Rental booking={booking} />
       <Documents booking={booking} />
       <Price booking={booking} />
 
@@ -293,6 +342,91 @@ function Documents({ booking }: { booking: Booking }) {
             prompt="What’s wrong? (shown to the borrower)"
             submitLabel="Reject documents"
           />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Rental({ booking }: { booking: Booking }) {
+  const r = booking.rental;
+  const d = booking.dispute;
+  const reviews = booking.reviews;
+  if (!r && !booking.conditionReports.length && !d && !reviews.mine && !reviews.theirs) return null;
+  const when = (v: string) =>
+    new Date(v).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  return (
+    <section className="grid gap-4 rounded-lg border border-sj-border bg-sj-surface p-5">
+      <h2 className="text-h3">Rental</h2>
+      {r && (
+        <ul className="grid gap-1 text-small">
+          {r.handedOverAt && <li>Handed over {when(r.handedOverAt)}</li>}
+          <li>Due back by {when(r.dueAt)}</li>
+          {r.returnedAt && <li>Returned {when(r.returnedAt)}</li>}
+          {r.lateDays > 0 && (
+            <li className="text-sj-danger">
+              {r.lateDays} {r.lateDays === 1 ? 'day' : 'days'} late · late fee{' '}
+              {rupees(r.lateFeePaise)}
+            </li>
+          )}
+          {r.claimUntil && !r.completedAt && (
+            <li className="text-sj-muted-foreground">
+              Problems can be reported until {when(r.claimUntil)}
+            </li>
+          )}
+          {r.noShowAt && <li className="text-sj-danger">No-show reported {when(r.noShowAt)}</li>}
+        </ul>
+      )}
+      {booking.conditionReports.map((c, i) => (
+        <div key={`${c.stage}-${c.by}-${i}`} className="grid gap-2">
+          <p className="text-small font-semibold">
+            {c.stage === 'HANDOVER' ? 'At handover' : 'At return'}, photos by the{' '}
+            {c.by.toLowerCase()}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {c.photos.map((p, j) => (
+              <a key={j} href={p.url} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element -- short-lived storage URL */}
+                <img
+                  src={p.thumbUrl}
+                  alt={`Condition photo ${j + 1}`}
+                  className="size-20 rounded-md object-cover"
+                />
+              </a>
+            ))}
+          </div>
+          {c.note && <p className="text-small text-sj-muted-foreground">“{c.note}”</p>}
+        </div>
+      ))}
+      {d && (
+        <div
+          className="grid gap-1 rounded-md border border-sj-danger/30 bg-sj-danger/5 p-3 text-small"
+          data-testid="dispute"
+        >
+          <p className="font-semibold">
+            Problem reported: {d.reason.replace('_', ' ').toLowerCase()} · claim{' '}
+            {rupees(d.claimPaise)} · {d.status === 'OPEN' ? 'being reviewed' : 'resolved'}
+          </p>
+          <p>{d.description}</p>
+          {d.responseNote && <p className="text-sj-muted-foreground">Response: {d.responseNote}</p>}
+          {d.resolutionNote && <p>Decision: {d.resolutionNote}</p>}
+        </div>
+      )}
+      {(reviews.mine || reviews.theirs) && (
+        <div className="grid gap-1 text-small">
+          {reviews.mine && (
+            <p>
+              Your review: {'★'.repeat(reviews.mine.rating)}
+              {reviews.mine.comment && ` “${reviews.mine.comment}”`}
+              {!reviews.mine.publishedAt && ' (published once they review, or in 7 days)'}
+            </p>
+          )}
+          {reviews.theirs && (
+            <p>
+              Their review: {'★'.repeat(reviews.theirs.rating)}
+              {reviews.theirs.comment && ` “${reviews.theirs.comment}”`}
+            </p>
+          )}
         </div>
       )}
     </section>

@@ -134,6 +134,55 @@ export async function liveListing(lender: AppUser, input: ListingInput): Promise
   return listing;
 }
 
+/** A booking requested, accepted and paid (test payment): status CONFIRMED. */
+export async function confirmedBooking(
+  borrower: AppUser,
+  lender: AppUser,
+  listingId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{ id: string }> {
+  const booking = await call<{ id: string }>('POST', '/bookings', borrower.token, {
+    listingId,
+    startDate,
+    endDate,
+  });
+  await call('POST', `/bookings/${booking.id}/accept`, lender.token);
+  const order = await call<{ orderId: string }>(
+    'POST',
+    `/bookings/${booking.id}/pay`,
+    borrower.token,
+  );
+  const paid = await call<{ paymentId: string; signature: string }>(
+    'POST',
+    `/dev/payments/${order.orderId}/checkout`,
+    borrower.token,
+    { outcome: 'success', webhook: 'never' },
+  );
+  await call('POST', '/payments/verify', borrower.token, {
+    orderId: order.orderId,
+    paymentId: paid.paymentId,
+    signature: paid.signature,
+  });
+  return booking;
+}
+
+/** Ops settles a booking's open dispute (completing the booking). */
+export async function resolveDispute(bookingId: string, keptPaise: number): Promise<void> {
+  const token = await opsToken();
+  const page = await call<{ items: { id: string; bookingId: string }[] }>(
+    'GET',
+    '/admin/disputes?status=OPEN&limit=100',
+    token,
+  );
+  const dispute = page.items.find((d) => d.bookingId === bookingId);
+  if (!dispute) throw new Error(`No open dispute for booking ${bookingId}`);
+  await call('POST', `/admin/disputes/${dispute.id}/resolve`, token, {
+    keptPaise,
+    note: 'Split fairly from both sides’ photos.',
+  });
+}
+
 /** Approves a listing in review, as Ops. */
 export async function approveListing(id: string): Promise<void> {
   await call('POST', `/admin/listings/${id}/approve`, await opsToken());
