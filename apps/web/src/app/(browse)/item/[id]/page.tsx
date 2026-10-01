@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Avatar } from '@/components/app/avatar';
 import { Gallery } from '@/components/browse/gallery';
+import { RequestButton } from '@/components/browse/request-button';
 import { SaveButton } from '@/components/browse/save-button';
 import { Stars } from '@/components/browse/stars';
 import { ApiRequestError } from '@/lib/api';
 import { getListing, getQuote, getReviews, type PublicListing, type Quote } from '@/lib/discovery';
 import { CONDITION_LABEL, DOC_LABEL, longDate, rupees, shortDate, todayIst } from '@/lib/format';
+import { hasSession } from '@/lib/session';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -49,7 +51,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
       quoteError = e.message;
     }
   }
-  const reviews = await getReviews(id);
+  const [reviews, signedIn] = await Promise.all([getReviews(id), hasSession()]);
   const lender = listing.lender;
 
   return (
@@ -210,6 +212,14 @@ export default async function ItemPage({ params, searchParams }: PageProps<'/ite
                 <Line label="Total today" value={rupees(quote.totalPaise)} strong />
               </div>
             </div>
+          )}
+          {quote?.available && start && end && (
+            <RequestButton
+              listingId={listing.id}
+              startDate={start}
+              endDate={end}
+              signedIn={signedIn}
+            />
           )}
         </section>
 
