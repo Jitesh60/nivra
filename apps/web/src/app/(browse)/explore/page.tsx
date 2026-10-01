@@ -58,7 +58,9 @@ export default async function ExplorePage({ searchParams }: PageProps<'/explore'
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
         <h1 className="font-display text-h1 text-sj-foreground">
-          {activeCategory ? activeCategory.name : searching ? 'Search results' : 'Rent it nearby'}
+          <span className="gradient-text">
+            {activeCategory ? activeCategory.name : searching ? 'Search results' : 'Rent it nearby'}
+          </span>
         </h1>
         <SearchForm params={params} query={query} categories={categories} />
         <div className="flex flex-wrap items-center gap-2">

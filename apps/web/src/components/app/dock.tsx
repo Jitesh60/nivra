@@ -46,7 +46,7 @@ export function Dock({ name, avatarUrl }: { name?: string | null; avatarUrl?: st
         {DOCK.map((item) => (
           <DockLink key={item.href} item={item} mouseX={mouseX} active={isActive(pathname, item)} />
         ))}
-        <DockSlot mouseX={mouseX} label="Me" active={meOpen}>
+        <DockSlot mouseX={mouseX} label="Me" active={false}>
           {(size) => (
             <button
               type="button"
@@ -54,7 +54,7 @@ export function Dock({ name, avatarUrl }: { name?: string | null; avatarUrl?: st
               aria-haspopup="dialog"
               aria-expanded={meOpen}
               onClick={() => setMeOpen(true)}
-              className="grid size-full place-items-center rounded-2xl"
+              className="relative grid size-full place-items-center rounded-2xl"
             >
               <motion.span
                 style={{ width: size, height: size }}
@@ -155,12 +155,15 @@ function DockSlot({
       <motion.div
         ref={ref}
         style={{ width: size, height: size }}
-        className={cn(
-          'grid place-items-center',
-          primary && '-mt-3 sm:mt-0',
-          active && !primary && 'rounded-2xl bg-sj-primary-soft',
-        )}
+        className={cn('relative grid place-items-center', primary && '-mt-3 sm:mt-0')}
       >
+        {active && !primary && (
+          <motion.span
+            layoutId="dock-active"
+            transition={{ type: 'spring', bounce: 0.3, duration: 0.5 }}
+            className="absolute inset-0 rounded-2xl bg-sj-primary-soft"
+          />
+        )}
         {children(size)}
       </motion.div>
       <span

@@ -2,6 +2,7 @@ import { Badge, PageHeader } from '@sajha/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PayoutForm } from '@/components/bookings/payout-form';
+import { RupeeTicker } from '@/components/effects/rupee-ticker';
 import { getEarnings } from '@/lib/bookings';
 import { rupees, shortDate } from '@/lib/format';
 import { savePayoutAccountAction } from './actions';
@@ -43,9 +44,11 @@ export default async function EarningsPage() {
             ['Waiting for your bank account', totals.awaitingAccountPaise],
           ] as const
         ).map(([label, value]) => (
-          <div key={label} className="rounded-lg border border-sj-border bg-sj-surface p-4">
+          <div key={label} className="rise-in rounded-lg border border-sj-border bg-sj-surface p-4">
             <p className="text-caption text-sj-muted-foreground">{label}</p>
-            <p className="font-display text-h2">{rupees(value)}</p>
+            <p className="font-display text-h2">
+              <RupeeTicker paise={value} />
+            </p>
           </div>
         ))}
       </section>
